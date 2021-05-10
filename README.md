@@ -1,7 +1,7 @@
 SMIRNOFF Energy Evaluations
 ===========================
 [![Test Status](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/simonboothroyd/smirnoffee.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/simonboothroyd/smirnoffee/context:python)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/SimonBoothroyd/smirnoffee.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/simonboothroyd/smirnoffee/context:python)
 [![codecov](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main/graph/badge.svg)](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
