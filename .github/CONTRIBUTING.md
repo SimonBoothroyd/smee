@@ -14,7 +14,7 @@ describes how to merge code changes into this smirnoffee.
 ## Making Changes
 
 * Add some really awesome code to your local fork.  It's usually a [good
-  idea](http://blog.jasonmeridth.com/posts/do-not-issue-pull-requests-from-your-master-branch/)
+  idea](http://blog.jasonmeridth.com/posts/do-not-issue-pull-requests-from-your-main-branch/)
   to make changes on a
   [branch](https://help.github.com/articles/creating-and-deleting-branches-within-your-repository/)
   with the branch name relating to the feature you are going to add.
