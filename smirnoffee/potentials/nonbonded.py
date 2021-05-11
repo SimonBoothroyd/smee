@@ -6,12 +6,7 @@ from openff.system.models import PotentialKey
 from openff.toolkit.topology import Molecule
 from openff.units import unit
 
-from smirnoffee.exceptions import MissingArguments
-from smirnoffee.potentials import (
-    _POTENTIAL_ENERGY_FUNCTIONS,
-    add_parameter_delta,
-    potential_energy_function,
-)
+from smirnoffee.potentials import _POTENTIAL_ENERGY_FUNCTIONS, potential_energy_function
 from smirnoffee.smirnoff import vectorize_nonbonded_handler
 
 _COULOMB_PRE_FACTOR_UNITS = unit.kilojoule / unit.mole * unit.angstrom / unit.e ** 2
@@ -92,34 +87,9 @@ def evaluate_nonbonded_energy(
     if parameter_delta is not None or parameter_delta_ids is not None:
         raise NotImplementedError()
 
-    if not (
-        parameter_delta is None
-        and parameter_delta_ids is None
-        or parameter_delta is not None
-        and parameter_delta_ids is not None
-    ):
-
-        raise MissingArguments(
-            "Either both ``parameter_delta`` and ``parameter_delta_ids`` must be "
-            "specified or neither must be."
-        )
-
-    if parameter_delta is not None:
-
-        assert len(parameter_delta_ids) == parameter_delta.shape[0], (
-            f"each parameter delta (n={len(parameter_delta_ids)}) must have an "
-            f"associated id (n={parameter_delta.shape[0]})"
-        )
-
     indices, parameters, parameter_ids = vectorize_nonbonded_handler(
         nonbonded_handler, molecule
     )
-
-    if parameter_delta is not None:
-
-        parameters = add_parameter_delta(
-            parameters, parameter_ids, parameter_delta, parameter_delta_ids
-        )
 
     energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[
         (nonbonded_handler.name, nonbonded_handler.expression)
