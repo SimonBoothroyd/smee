@@ -5,26 +5,26 @@ from openff.system.stubs import ForceField
 from openff.toolkit.topology import Molecule
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def default_force_field() -> ForceField:
     """Returns the OpenFF 1.3.0 force field with constraints removed."""
 
     force_field = ForceField("openff-1.0.0.offxml")
-    force_field.deregister_parameter_handler("ToolkitAM1BCC")
+    # force_field.deregister_parameter_handler("ToolkitAM1BCC")
     force_field.deregister_parameter_handler("Constraints")
 
     return force_field
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ethanol() -> Molecule:
     """Returns an OpenFF ethanol molecule."""
 
-    molecule: Molecule = Molecule.from_smiles("CO")
+    molecule: Molecule = Molecule.from_smiles("CCO")
     return molecule.canonical_order_atoms()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ethanol_conformer(ethanol) -> torch.Tensor:
     """Returns a conformer [A] of ethanol with an ordering which matches the
     ``ethanol`` fixture."""
@@ -37,14 +37,14 @@ def ethanol_conformer(ethanol) -> torch.Tensor:
     return torch.from_numpy(conformer)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def ethanol_system(ethanol, default_force_field) -> System:
     """Returns a parametermized system of ethanol."""
 
     return default_force_field.create_openff_system(ethanol.to_topology())
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def formaldehyde() -> Molecule:
     """Returns an OpenFF formaldehyde molecule."""
 
@@ -52,7 +52,7 @@ def formaldehyde() -> Molecule:
     return molecule.canonical_order_atoms()
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
     """Returns a conformer [A] of formaldehyde with an ordering which matches the
     ``formaldehyde`` fixture."""
@@ -65,7 +65,7 @@ def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
     return torch.from_numpy(conformer)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def formaldehyde_system(formaldehyde, default_force_field) -> System:
     """Returns a parametermized system of formaldehyde."""
 

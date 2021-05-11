@@ -4,7 +4,7 @@ import torch
 from openff.system.components.potentials import PotentialHandler
 from openff.system.models import PotentialKey
 
-from smirnoffee.exceptions import MissingArguments
+from smirnoffee.exceptions import MissingArgumentsError
 from smirnoffee.potentials import (
     _POTENTIAL_ENERGY_FUNCTIONS,
     add_parameter_delta,
@@ -218,7 +218,7 @@ def evaluate_valence_energy(
         and parameter_delta_ids is not None
     ):
 
-        raise MissingArguments(
+        raise MissingArgumentsError(
             "Either both ``parameter_delta`` and ``parameter_delta_ids`` must be "
             "specified or neither must be."
         )
@@ -263,7 +263,7 @@ def evaluate_valence_energy(
 #         and parameter_delta_ids is not None
 #     ):
 #
-#         raise MissingArguments(
+#         raise MissingArgumentsError(
 #             "Either both ``parameter_delta`` and ``parameter_delta_ids`` must be "
 #             "specified or neither must be."
 #         )

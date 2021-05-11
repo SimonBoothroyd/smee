@@ -1,14 +1,18 @@
+import itertools
 from typing import List, Tuple
 
+import numpy
 import torch
 from openff.system.components.potentials import Potential, PotentialHandler
 from openff.system.components.smirnoff import (
+    ElectrostaticsMetaHandler,
     SMIRNOFFAngleHandler,
     SMIRNOFFBondHandler,
     SMIRNOFFImproperTorsionHandler,
     SMIRNOFFProperTorsionHandler,
 )
 from openff.system.models import PotentialKey
+from openff.toolkit.topology import Molecule
 from openff.units import unit
 
 _DEFAULT_UNITS = {
@@ -245,6 +249,131 @@ def vectorize_valence_handler(
 
     vectorizer = _HANDLER_TO_VECTORIZER[handler.name]
     return vectorizer(handler)
+
+
+@handler_vectorizer("Electrostatics")
+def vectorize_electrostatics_handler(
+    handler: ElectrostaticsMetaHandler, molecule: Molecule
+) -> Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    List[Tuple[PotentialKey, Tuple[str, str, str]]],
+]:
+    """Maps a SMIRNOFF electrostatics potential handler into a vectorized form which
+    which more readily allows evaluating the potential energy.
+
+    Args:
+        handler: The handler to vectorize.
+        molecule: The molecule that the handler was created for.
+
+    Returns:
+        A tuple of:
+
+        * a tensor of the atom indices involved in each pair of electrostatics
+          interactions with shape=(n_pairs, 2)
+        * a 2D tensor of the values of the parameters with shape=(n_pairs, 3) where
+          the first column is the charge on the first atom, the second column the charge
+          on the second atom, and the final column a scale factor
+        * a list of identifiers which uniquely maps an assigned parameters back to the
+          original force field parameter
+    """
+
+    if not numpy.isclose(handler.scale_15, 1.0):
+        raise NotImplementedError()
+
+    handler_scale_factors = {
+        "scale_12": 0.0,
+        "scale_13": handler.scale_13,
+        "scale_14": handler.scale_14,
+        "scale_1n": 1.0,
+    }
+
+    interaction_pairs = {
+        **{
+            tuple(sorted((bond.atom1_index, bond.atom2_index))): "scale_12"
+            for bond in molecule.bonds
+        },
+        **{
+            tuple(
+                sorted((angle[0].molecule_atom_index, angle[2].molecule_atom_index))
+            ): "scale_13"
+            for angle in molecule.angles
+        },
+        **{
+            tuple(
+                sorted((proper[0].molecule_atom_index, proper[3].molecule_atom_index))
+            ): "scale_14"
+            for proper in molecule.propers
+        },
+    }
+    interaction_pairs.update(
+        {
+            tuple(sorted(pair)): "scale_1n"
+            for pair in itertools.combinations(range(molecule.n_atoms), 2)
+            if tuple(sorted(pair)) not in interaction_pairs
+        }
+    )
+
+    pair_indices, scale_factors, scale_types = zip(
+        *(
+            (pair, handler_scale_factors[scale_type], scale_type)
+            for pair, scale_type in interaction_pairs.items()
+            if not numpy.isclose(handler_scale_factors[scale_type], 0.0)
+        )
+    )
+
+    atom_charges = torch.tensor(
+        [charge.to(unit.e).magnitude for charge in handler.charges.values()]
+    )
+
+    parameters = torch.tensor(
+        [
+            [atom_charges[pair[0]], atom_charges[pair[1]], scale_factor]
+            for pair, scale_factor in zip(pair_indices, scale_factors)
+        ]
+    )
+
+    parameter_ids = [
+        (PotentialKey(id="[*:1]"), ("q1", "q2", scale_type))
+        for scale_type in scale_types
+    ]
+
+    return torch.tensor(pair_indices), parameters, parameter_ids
+
+
+def vectorize_nonbonded_handler(
+    handler: PotentialHandler,
+    molecule: Molecule,
+) -> Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    List[Tuple[PotentialKey, Tuple[str, str, str]]],
+]:
+    """Maps a SMIRNOFF nonbonded potential handler into a vectorized form which
+    which more readily allows evaluating the potential energy.
+
+    Args:
+        handler: The handler to vectorize.
+        molecule: The molecule that the handler was created for.
+
+    Returns:
+        A tuple of:
+
+        * a tensor of the atom indices involved in each pair of nonbonded
+          interactions with shape=(n_pairs, 2)
+        * a 2D tensor of the values of the parameters with shape=(n_pairs, n_params)
+        * a list of identifiers which uniquely maps an assigned parameters back to the
+          original force field parameter
+    """
+
+    if handler.name not in _HANDLER_TO_VECTORIZER:
+
+        raise NotImplementedError(
+            f"Vectorizing {handler.name} handlers is not yet supported."
+        )
+
+    vectorizer = _HANDLER_TO_VECTORIZER[handler.name]
+    return vectorizer(handler, molecule)
 
 
 # def vectorize_system(
