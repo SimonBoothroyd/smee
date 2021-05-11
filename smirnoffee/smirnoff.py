@@ -2,7 +2,12 @@ from typing import List, Tuple
 
 import torch
 from openff.system.components.potentials import Potential, PotentialHandler
-from openff.system.components.smirnoff import SMIRNOFFAngleHandler, SMIRNOFFBondHandler
+from openff.system.components.smirnoff import (
+    SMIRNOFFAngleHandler,
+    SMIRNOFFBondHandler,
+    SMIRNOFFImproperTorsionHandler,
+    SMIRNOFFProperTorsionHandler,
+)
 from openff.system.models import PotentialKey
 from openff.units import unit
 
@@ -59,7 +64,7 @@ def _get_parameter_value(potential: Potential, handler: str, parameter: str) -> 
 
 def _vectorize_smirnoff_handler(
     handler: PotentialHandler, attributes: List[str]
-) -> Tuple[torch.Tensor, List[Tuple[PotentialKey, Tuple[str, ...]]], torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, ...]]]]:
     """Maps a SMIRNOFF potential handler into a tensor of the atom indices involved
     in the potential (e.g. for an angle handler this would be a ``(n_angles, 3)``
     tensor), a list of identifiers which uniquely maps an assigned parameter back
@@ -78,7 +83,7 @@ def _vectorize_smirnoff_handler(
     """
 
     if len(handler.potentials) == 0:
-        return torch.tensor([]), [], torch.tensor([])
+        return torch.tensor([]), torch.tensor([]), []
 
     first_parameter = next(iter(handler.potentials.values()))
     assert {*first_parameter.parameters} == {*attributes}
@@ -112,15 +117,15 @@ def _vectorize_smirnoff_handler(
 
     return (
         torch.tensor(atom_indices),
-        [(assigned_id, tuple(attributes)) for assigned_id in assigned_ids],
         assigned_parameters,
+        [(assigned_id, tuple(attributes)) for assigned_id in assigned_ids],
     )
 
 
 @handler_vectorizer("Bonds")
 def vectorize_bond_handler(
     handler: SMIRNOFFBondHandler,
-) -> Tuple[torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str]]], torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str]]]]:
     """Maps a SMIRNOFF bond potential handler into a ``(n_bonds, 2)`` tensor of the
     atom indices involved in each bond, a list of identifiers which uniquely maps an
     assigned parameters back to the original force field parameter, and a 2D tensor of
@@ -136,13 +141,14 @@ def vectorize_bond_handler(
         and a tensor of the values of the parameters.
     """
 
+    # noinspection PyTypeChecker
     return _vectorize_smirnoff_handler(handler, ["k", "length"])
 
 
 @handler_vectorizer("Angles")
 def vectorize_angle_handler(
     handler: SMIRNOFFAngleHandler,
-) -> Tuple[torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str]]], torch.Tensor]:
+) -> Tuple[torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str]]]]:
     """Maps a SMIRNOFF angle potential handler into a ``(n_bonds, 3)`` tensor of the
     atom indices involved in each angle, a list of identifiers which uniquely maps an
     assigned parameters back to the original force field parameter, and a 2D tensor of
@@ -158,18 +164,19 @@ def vectorize_angle_handler(
         and a tensor of the values of the parameters.
     """
 
+    # noinspection PyTypeChecker
     return _vectorize_smirnoff_handler(handler, ["k", "angle"])
 
 
 @handler_vectorizer("ProperTorsions")
 def vectorize_proper_handler(
-    handler: SMIRNOFFBondHandler,
+    handler: SMIRNOFFProperTorsionHandler,
 ) -> Tuple[
-    torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str, str, str]]], torch.Tensor
+    torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str, str, str]]]
 ]:
-    """Maps a SMIRNOFF proper torsion potential handler into a ``(n_bonds, 4)`` tensor
+    """Maps a SMIRNOFF proper torsion potential handler into a ``(n_propers, 4)`` tensor
     of the atom indices involved in each torsion, a list of identifiers which uniquely
-    maps an assigned parameters back to the original force field parameter, and a 4D
+    maps an assigned parameters back to the original force field parameter, and a 2D
     tensor of the values of the parameters where the first column are force constants,
     the second column periodicities, the third column phases, and the last column
     ``idivf`` values.
@@ -183,19 +190,22 @@ def vectorize_proper_handler(
         and a tensor of the values of the parameters.
     """
 
+    # noinspection PyTypeChecker
     return _vectorize_smirnoff_handler(handler, ["k", "periodicity", "phase", "idivf"])
 
 
 @handler_vectorizer("ImproperTorsions")
 def vectorize_improper_handler(
-    handler: SMIRNOFFBondHandler,
-) -> Tuple[torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str]]], torch.Tensor]:
-    """Maps a SMIRNOFF improper torsion potential handler into a ``(n_bonds, 4)`` tensor
-    of the atom indices involved in each torsion, a list of identifiers which uniquely
-    maps an assigned parameters back to the original force field parameter, and a 4D
-    tensor of the values of the parameters where the first column are force constants,
-    the second column periodicities, the third column phases, and the last column
-    ``idivf`` values.
+    handler: SMIRNOFFImproperTorsionHandler,
+) -> Tuple[
+    torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, str, str, str]]]
+]:
+    """Maps a SMIRNOFF improper torsion potential handler into a ``(n_impropers, 4)``
+    tensor of the atom indices involved in each torsion, a list of identifiers which
+    uniquely maps an assigned parameters back to the original force field parameter,
+    and a 2D tensor of the values of the parameters where the first column are force
+    constants, the second column periodicities, the third column phases, and the last
+    column ``idivf`` values.
 
     Args:
         handler: The handler to vectorize.
@@ -206,15 +216,17 @@ def vectorize_improper_handler(
         and a tensor of the values of the parameters.
     """
 
+    # noinspection PyTypeChecker
     return _vectorize_smirnoff_handler(handler, ["k", "periodicity", "phase", "idivf"])
 
 
-def vectorize_handler(
+def vectorize_valence_handler(
     handler: PotentialHandler,
-) -> Tuple[torch.Tensor, List[Tuple[PotentialKey, Tuple[str, ...]]], torch.Tensor]:
-    """Maps a SMIRNOFF potential handler into a tensor of the atom indices involved in
-    each slot, a list of identifiers which uniquely maps an assigned parameters back to
-    the original force field parameter, and a 4D tensor of the values of the parameters.
+) -> Tuple[torch.Tensor, torch.Tensor, List[Tuple[PotentialKey, Tuple[str, ...]]]]:
+    """Maps a valence (i.e. not vdW or electrostatics) SMIRNOFF potential handler into
+    a tensor of the atom indices involved in each slot, a list of identifiers which
+    uniquely maps an assigned parameters back to the original force field parameter,
+    and a 2D tensor of the values of the parameters.
 
     Args:
         handler: The handler to vectorize.

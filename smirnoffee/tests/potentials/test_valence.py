@@ -5,14 +5,14 @@ from openff.system.models import PotentialKey
 from openff.toolkit.typing.engines.smirnoff import ForceField
 from simtk import unit
 
-from smirnoffee.potentials import (
-    _add_parameter_delta,
+from smirnoffee.potentials.valence import (
     _evaluate_cosine_torsion_energy,
+    add_parameter_delta,
     evaluate_cosine_improper_torsion_energy,
     evaluate_cosine_proper_torsion_energy,
-    evaluate_handler_energy,
     evaluate_harmonic_angle_energy,
     evaluate_harmonic_bond_energy,
+    evaluate_valence_energy,
 )
 from smirnoffee.tests.utilities import (
     evaluate_openmm_energy,
@@ -23,19 +23,23 @@ from smirnoffee.tests.utilities import (
 def test_add_parameter_delta():
 
     parameters = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
-    parameter_ids = [("a", ("i", "j")), ("b", ("i", "j"))]
+
+    parameter_ids = [
+        (PotentialKey(id="a"), ("i", "j")),
+        (PotentialKey(id="b"), ("i", "j")),
+    ]
 
     delta = torch.tensor([2.0, 3.0, 4.0, 5.0, 6.0, 7.0], requires_grad=True)
     delta_ids = [
-        ("b", "i"),
-        ("c", "k"),
-        ("a", "j"),
-        ("a", "i"),
-        ("b", "j"),
-        ("c", "l"),
+        (PotentialKey(id="b"), "i"),
+        (PotentialKey(id="c"), "k"),
+        (PotentialKey(id="a"), "j"),
+        (PotentialKey(id="a"), "i"),
+        (PotentialKey(id="b"), "j"),
+        (PotentialKey(id="c"), "l"),
     ]
 
-    new_parameters = _add_parameter_delta(parameters, parameter_ids, delta, delta_ids)
+    new_parameters = add_parameter_delta(parameters, parameter_ids, delta, delta_ids)
     assert parameters.shape == new_parameters.shape
 
     expected_parameters = torch.tensor([[6.0, 6.0], [5.0, 10.0]])
@@ -196,7 +200,7 @@ def test_evaluate_handler_energy(
 
     openff_system = force_field.create_openff_system(ethanol.to_topology())
 
-    openff_energy = evaluate_handler_energy(
+    openff_energy = evaluate_valence_energy(
         openff_system.handlers[handler], ethanol_conformer, delta, delta_ids
     )
 

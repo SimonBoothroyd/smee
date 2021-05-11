@@ -5,75 +5,12 @@ from openff.system.components.potentials import PotentialHandler
 from openff.system.models import PotentialKey
 
 from smirnoffee.exceptions import MissingArguments
-from smirnoffee.smirnoff import vectorize_handler
-
-_POTENTIAL_FUNCTIONS = {}
-
-
-def potential_energy_function(handler_type, energy_expression):
-    """A decorator used to flag a function as being able to compute the potential for a
-    specific handler and its associated energy expression.."""
-
-    def _potential_function_inner(func):
-
-        if energy_expression in _POTENTIAL_FUNCTIONS:
-
-            raise KeyError(
-                f"A potential energy function is already defined for "
-                f"handler={handler_type} fn={energy_expression}."
-            )
-
-        _POTENTIAL_FUNCTIONS[(handler_type, energy_expression)] = func
-        return func
-
-    return _potential_function_inner
-
-
-def _add_parameter_delta(
-    parameters: torch.Tensor,
-    parameter_ids: List[Tuple[PotentialKey, Tuple[str, ...]]],
-    delta: torch.Tensor,
-    delta_ids: List[Tuple[PotentialKey, str]],
-) -> torch.Tensor:
-    """Adds a 1D vector of parameter 'deltas' to an existing 2D tensor of parameter
-    values, whereby each parameter in the flat delta is matched to a parameter in the
-    2D tensor according to a combination of its 'potential key' and the specific
-    attribute it represents.
-
-    Args:
-        parameters: A 2D tensor of parameters to add the deltas to.
-        parameter_ids: A list of tuples of the form ``(potential_key, (attrs, ...))``.
-            The attributes may include, for example, ``['k', 'length', ...]``.
-        delta: A 1D tensor of the values to add to the 2D parameters.
-        delta_ids: A list of tuples of the form ``(potential_key, attr)`` which
-            identify which delta is associated with which parameter. This must be
-            the same length as the ``delta`` tensor. Not all values in the list
-            need to appear in ``parameter_ids`` and vice versa.
-
-    Returns:
-        A new parameter tensor of the form ``parameters + delta[map_indices]`` where
-        ``map_indices`` is constructed by this function by matching ``parameter_ids``
-        to ``delta_ids``.
-    """
-
-    delta = torch.cat([delta, torch.zeros(1)])
-    zero_index = len(delta) - 1
-
-    delta_indices = torch.tensor(
-        [
-            [
-                zero_index
-                if (parameter_id, attribute_name) not in delta_ids
-                else delta_ids.index((parameter_id, attribute_name))
-                for attribute_name in attribute_names
-            ]
-            for parameter_id, attribute_names in parameter_ids
-        ]
-    )
-
-    delta = delta[delta_indices]
-
-    return parameters + delta
+from smirnoffee.potentials import (
+    _POTENTIAL_ENERGY_FUNCTIONS,
+    add_parameter_delta,
+    potential_energy_function,
+)
+from smirnoffee.smirnoff import vectorize_valence_handler
 
 
 @potential_energy_function("Bonds", "1/2 * k * (r - length) ** 2")
@@ -82,6 +19,22 @@ def evaluate_harmonic_bond_energy(
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a set of bonds for a given conformer
+    using a harmonic potential of the form:
+
+    `1/2 * k * (r - length) ** 2`
+
+    Args:
+        conformer: The conformer to evaluate the potential at.
+        atom_indices: The indices of the atoms involved in each bond with
+            shape=(n_bonds, 4).
+        parameters: A tensor with shape=(n_bonds, 2) where there first column
+            contains the force constants ``k``, and the second the equilibrium
+            bond ``length``.
+
+    Returns:
+        The evaluated potential energy [kJ / mol].
+    """
 
     if len(atom_indices) == 0:
         return torch.zeros(1)
@@ -99,6 +52,22 @@ def evaluate_harmonic_angle_energy(
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a set of valence angles
+    for a given conformer using a harmonic potential of the form:
+
+    `1/2 * k * (theta - angle) ** 2`
+
+    Args:
+        conformer: The conformer to evaluate the potential at.
+        atom_indices: The indices of the atoms involved in each valence angle with
+            shape=(n_angles, 4).
+        parameters: A tensor with shape=(n_angles, 2) where there first column
+            contains the force constants ``k``, and the second the equilibrium
+            ``angle``.
+
+    Returns:
+        The evaluated potential energy [kJ / mol].
+    """
 
     if len(atom_indices) == 0:
         return torch.zeros(1)
@@ -120,6 +89,23 @@ def _evaluate_cosine_torsion_energy(
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a set of torsions
+    for a given conformer using a cosine potential of the form:
+
+    `k*(1+cos(periodicity*theta-phase))`
+
+    Args:
+        conformer: The conformer to evaluate the potential at.
+        atom_indices: The indices of the atoms involved in each proper torsion with
+            shape=(n_torsions, 4).
+        parameters: A tensor with shape=(n_torsions, 4) where there first column
+            contains the force constants ``k``, the second the ``periodicities``,
+            the third the ``phase`` and the fourth an ``idivf`` factor to divide the
+            force constant by.
+
+    Returns:
+        The evaluated potential energy [kJ / mol].
+    """
 
     if len(atom_indices) == 0:
         return torch.zeros(1)
@@ -154,7 +140,23 @@ def evaluate_cosine_proper_torsion_energy(
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a set of proper torsions
+    for a given conformer using a cosine potential of the form:
 
+    `k*(1+cos(periodicity*theta-phase))`
+
+    Args:
+        conformer: The conformer to evaluate the potential at.
+        atom_indices: The indices of the atoms involved in each proper torsion with
+            shape=(n_propers, 4).
+        parameters: A tensor with shape=(n_propers, 4) where there first column
+            contains the force constants ``k``, the second the ``periodicities``,
+            the third the ``phase`` and the fourth an ``idivf`` factor to divide the
+            force constant by.
+
+    Returns:
+        The evaluated potential energy [kJ / mol].
+    """
     return _evaluate_cosine_torsion_energy(conformer, atom_indices, parameters)
 
 
@@ -164,16 +166,50 @@ def evaluate_cosine_improper_torsion_energy(
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a set of improper torsions
+    for a given conformer using a cosine potential of the form:
 
+    `k*(1+cos(periodicity*theta-phase))`
+
+    Args:
+        conformer: The conformer to evaluate the potential at.
+        atom_indices: The indices of the atoms involved in each improper torsion with
+            shape=(n_impropers, 4).
+        parameters: A tensor with shape=(n_impropers, 4) where there first column
+            contains the force constants ``k``, the second the ``periodicities``,
+            the third the ``phase`` and the fourth an ``idivf`` factor to divide the
+            force constant by.
+
+    Returns:
+        The evaluated potential energy [kJ / mol].
+    """
     return _evaluate_cosine_torsion_energy(conformer, atom_indices, parameters)
 
 
-def evaluate_handler_energy(
-    handler: PotentialHandler,
+def evaluate_valence_energy(
+    valence_handler: PotentialHandler,
     conformer: torch.Tensor,
     parameter_delta: Optional[torch.Tensor] = None,
     parameter_delta_ids: Optional[List[Tuple[PotentialKey, str]]] = None,
 ) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] contribution of a particular valence
+    potential handler for a given conformer.
+
+    Args:
+        valence_handler: The valence potential handler that encodes the potential
+            energy function to evaluate.
+        conformer: The conformer to evaluate the potential at.
+        parameter_delta: An optional tensor of values to perturb the assigned
+            valence parameters by before evaluating the potential energy. If this
+            option is specified then ``parameter_delta_ids`` must also be.
+        parameter_delta_ids: An optional list of ids associated with the
+            ``parameter_delta`` tensor which is used to identify which parameter
+            delta matches which assigned parameter in the ``valence_handler``. If this
+            option is specified then ``parameter_delta`` must also be.
+
+    Returns:
+        The potential energy of the conformer [kJ / mol].
+    """
 
     if not (
         parameter_delta is None
@@ -194,18 +230,20 @@ def evaluate_handler_energy(
             f"associated id (n={parameter_delta.shape[0]})"
         )
 
-    indices, parameter_ids, parameters = vectorize_handler(handler)
+    indices, parameters, parameter_ids = vectorize_valence_handler(valence_handler)
 
     if len(parameter_ids) == 0:
         return torch.zeros(1)
 
     if parameter_delta is not None:
 
-        parameters = _add_parameter_delta(
+        parameters = add_parameter_delta(
             parameters, parameter_ids, parameter_delta, parameter_delta_ids
         )
 
-    energy_expression = _POTENTIAL_FUNCTIONS[(handler.name, handler.expression)]
+    energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[
+        (valence_handler.name, valence_handler.expression)
+    ]
     handler_energy = energy_expression(conformer, indices, parameters)
 
     return handler_energy

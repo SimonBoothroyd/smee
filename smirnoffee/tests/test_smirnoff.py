@@ -7,9 +7,9 @@ from smirnoffee.smirnoff import (
     handler_vectorizer,
     vectorize_angle_handler,
     vectorize_bond_handler,
-    vectorize_handler,
     vectorize_improper_handler,
     vectorize_proper_handler,
+    vectorize_valence_handler,
 )
 
 
@@ -27,15 +27,17 @@ def test_handler_vectorizer_decorator():
 def test_vectorize_handler_error():
 
     with pytest.raises(NotImplementedError, match="Vectorizing Constraints handlers"):
-        vectorize_handler(SMIRNOFFConstraintHandler())
+        vectorize_valence_handler(SMIRNOFFConstraintHandler())
 
 
-@pytest.mark.parametrize("vectorizer", [vectorize_handler, vectorize_bond_handler])
+@pytest.mark.parametrize(
+    "vectorizer", [vectorize_valence_handler, vectorize_bond_handler]
+)
 def test_vectorize_bond_handler(ethanol, ethanol_system, vectorizer):
 
     bond_handler = ethanol_system.handlers["Bonds"]
 
-    bond_indices, parameter_ids, parameters = vectorizer(bond_handler)
+    bond_indices, parameters, parameter_ids = vectorizer(bond_handler)
 
     expected_bond_indices = [
         sorted((bond.atom1_index, bond.atom2_index)) for bond in ethanol.bonds
@@ -56,12 +58,14 @@ def test_vectorize_bond_handler(ethanol, ethanol_system, vectorizer):
     assert parameters.shape == (ethanol.n_bonds, 2)
 
 
-@pytest.mark.parametrize("vectorizer", [vectorize_handler, vectorize_angle_handler])
+@pytest.mark.parametrize(
+    "vectorizer", [vectorize_valence_handler, vectorize_angle_handler]
+)
 def test_vectorize_angle_handler(ethanol, ethanol_system, vectorizer):
 
     angle_handler = ethanol_system.handlers["Angles"]
 
-    angle_indices, parameter_ids, parameters = vectorizer(angle_handler)
+    angle_indices, parameters, parameter_ids = vectorizer(angle_handler)
 
     expected_angle_indices = sorted(
         tuple(atom.molecule_atom_index for atom in angle) for angle in ethanol.angles
@@ -85,12 +89,14 @@ def test_vectorize_angle_handler(ethanol, ethanol_system, vectorizer):
     assert parameters.shape == (ethanol.n_angles, 2)
 
 
-@pytest.mark.parametrize("vectorizer", [vectorize_handler, vectorize_proper_handler])
+@pytest.mark.parametrize(
+    "vectorizer", [vectorize_valence_handler, vectorize_proper_handler]
+)
 def test_vectorize_proper_handler(ethanol, ethanol_system, vectorizer):
 
     proper_handler = ethanol_system.handlers["ProperTorsions"]
 
-    proper_indices, parameter_ids, parameters = vectorizer(proper_handler)
+    proper_indices, parameters, parameter_ids = vectorizer(proper_handler)
 
     expected_proper_indices = sorted(
         tuple(atom.molecule_atom_index for atom in proper) for proper in ethanol.propers
@@ -122,12 +128,14 @@ def test_vectorize_proper_handler(ethanol, ethanol_system, vectorizer):
 @pytest.mark.xfail(
     reason="`openff-system` incorrectly populates the improper slot maps"
 )
-@pytest.mark.parametrize("vectorizer", [vectorize_handler, vectorize_improper_handler])
+@pytest.mark.parametrize(
+    "vectorizer", [vectorize_valence_handler, vectorize_improper_handler]
+)
 def test_vectorize_improper_handler(formaldehyde, formaldehyde_system, vectorizer):
 
     improper_handler = formaldehyde_system.handlers["ImproperTorsions"]
 
-    improper_indices, parameter_ids, parameters = vectorizer(improper_handler)
+    improper_indices, parameters, parameter_ids = vectorizer(improper_handler)
 
     expected_improper_indices = sorted(
         tuple(atom.molecule_atom_index for atom in improper)
