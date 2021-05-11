@@ -35,6 +35,9 @@ def reduce_and_perturb_force_field(
             }
         )
 
+    if handler in ["ToolkitAM1BCC"]:
+        force_field.get_parameter_handler("Electrostatics")
+
     for (smirks, attribute), delta in deltas.items():
 
         parameter = force_field.get_parameter_handler(handler).parameters[smirks]
