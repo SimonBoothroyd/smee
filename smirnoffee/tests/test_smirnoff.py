@@ -12,6 +12,7 @@ from smirnoffee.smirnoff import (
     vectorize_improper_handler,
     vectorize_proper_handler,
     vectorize_valence_handler,
+    vectorize_vdw_handler,
 )
 
 
@@ -209,4 +210,35 @@ def test_vectorize_electrostatics_handler(ethanol, ethanol_system, vectorizer):
     assert parameter_ids == expected_parameter_ids
 
     assert numpy.allclose(parameters[: ethanol.n_propers, 2].numpy(), 1.0 / 1.2)
+    assert numpy.allclose(parameters[ethanol.n_propers :, 2].numpy(), 1.0)
+
+
+@pytest.mark.parametrize("vectorizer", [vectorize_vdw_handler])
+def test_vectorize_vdw_handler(ethanol, ethanol_system, vectorizer):
+
+    electrostatics_handler = ethanol_system.handlers["vdW"]
+
+    pair_indices, parameters, parameter_ids = vectorizer(
+        electrostatics_handler, ethanol
+    )
+
+    expected_pair_indices = [
+        (proper[0].molecule_atom_index, proper[3].molecule_atom_index)
+        for proper in ethanol.propers
+    ] + [(3, 4), (3, 5), (3, 6)]
+    actual_pair_indices = [
+        tuple(int(i) for i in pair_index) for pair_index in pair_indices
+    ]
+
+    assert actual_pair_indices == expected_pair_indices
+
+    expected_parameter_ids = [
+        (PotentialKey(id="[*:1]"), ("epsilon", "sigma", "scale_14"))
+    ] * ethanol.n_propers + [
+        (PotentialKey(id="[*:1]"), ("epsilon", "sigma", "scale_1n"))
+    ] * 3
+
+    assert parameter_ids == expected_parameter_ids
+
+    assert numpy.allclose(parameters[: ethanol.n_propers, 2].numpy(), 0.5)
     assert numpy.allclose(parameters[ethanol.n_propers :, 2].numpy(), 1.0)
