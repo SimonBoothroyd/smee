@@ -1,5 +1,5 @@
 import itertools
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy
 import torch
@@ -10,8 +10,9 @@ from openff.system.components.smirnoff import (
     SMIRNOFFBondHandler,
     SMIRNOFFImproperTorsionHandler,
     SMIRNOFFProperTorsionHandler,
+    SMIRNOFFvdWHandler,
 )
-from openff.system.models import PotentialKey
+from openff.system.models import PotentialKey, TopologyKey
 from openff.toolkit.topology import Molecule
 from openff.units import unit
 
@@ -35,6 +36,10 @@ _DEFAULT_UNITS = {
         "periodicity": unit.dimensionless,
         "phase": unit.degree,
         "idivf": unit.dimensionless,
+    },
+    "vdW": {
+        "epsilon": unit.kilojoules / unit.mole,
+        "sigma": unit.angstrom,
     },
 }
 
@@ -251,32 +256,10 @@ def vectorize_valence_handler(
     return vectorizer(handler)
 
 
-@handler_vectorizer("Electrostatics")
-def vectorize_electrostatics_handler(
-    handler: ElectrostaticsMetaHandler, molecule: Molecule
-) -> Tuple[
-    torch.Tensor,
-    torch.Tensor,
-    List[Tuple[PotentialKey, Tuple[str, str, str]]],
-]:
-    """Maps a SMIRNOFF electrostatics potential handler into a vectorized form which
-    which more readily allows evaluating the potential energy.
-
-    Args:
-        handler: The handler to vectorize.
-        molecule: The molecule that the handler was created for.
-
-    Returns:
-        A tuple of:
-
-        * a tensor of the atom indices involved in each pair of electrostatics
-          interactions with shape=(n_pairs, 2)
-        * a 2D tensor of the values of the parameters with shape=(n_pairs, 3) where
-          the first column is the charge on the first atom, the second column the charge
-          on the second atom, and the final column a scale factor
-        * a list of identifiers which uniquely maps an assigned parameters back to the
-          original force field parameter
-    """
+def _vectorize_nonbonded_scales(
+    handler: Union[SMIRNOFFvdWHandler, ElectrostaticsMetaHandler], molecule: Molecule
+) -> Tuple[Tuple[Tuple[int, int], ...], Tuple[float, ...], Tuple[str, ...]]:
+    """ """
 
     if not numpy.isclose(handler.scale_15, 1.0):
         raise NotImplementedError()
@@ -320,6 +303,110 @@ def vectorize_electrostatics_handler(
             for pair, scale_type in interaction_pairs.items()
             if not numpy.isclose(handler_scale_factors[scale_type], 0.0)
         )
+    )
+
+    return pair_indices, scale_factors, scale_types
+
+
+def _lorentz_berthelot(
+    epsilon_1: float, epsilon_2: float, sigma_1: float, sigma_2: float
+) -> Tuple[float, float]:
+
+    return numpy.sqrt(epsilon_1 * epsilon_2), 0.5 * (sigma_1 + sigma_2)
+
+
+@handler_vectorizer("vdW")
+def vectorize_vdw_handler(
+    handler: SMIRNOFFvdWHandler, molecule: Molecule
+) -> Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    List[Tuple[PotentialKey, Tuple[str, str, str]]],
+]:
+    """Maps a SMIRNOFF vdW potential handler into a vectorized form which
+    which more readily allows evaluating the potential energy.
+
+    Args:
+        handler: The handler to vectorize.
+        molecule: The molecule that the handler was created for.
+
+    Returns:
+        A tuple of:
+
+        * a tensor of the atom indices involved in each pair of electrostatics
+          interactions with shape=(n_pairs, 2)
+        * a 2D tensor of the values of the parameters with shape=(n_pairs, 3) where
+          the first and second column are the epsilon and sigma parameters respectively
+          combined using the handler specified mixing rule, and the final column a
+          scale factor
+        * a list of identifiers which uniquely maps an assigned parameters back to the
+          original force field parameter
+    """
+
+    pair_indices, scale_factors, scale_types = _vectorize_nonbonded_scales(
+        handler, molecule
+    )
+
+    parameter_ids = {
+        pair: (
+            handler.potentials[handler.slot_map[TopologyKey(atom_indices=(pair[0],))]],
+            handler.potentials[handler.slot_map[TopologyKey(atom_indices=(pair[1],))]],
+        )
+        for pair in pair_indices
+    }
+
+    parameters = torch.tensor(
+        [
+            [
+                *_lorentz_berthelot(
+                    _get_parameter_value(parameter_ids[pair][0], "vdW", "epsilon"),
+                    _get_parameter_value(parameter_ids[pair][1], "vdW", "epsilon"),
+                    _get_parameter_value(parameter_ids[pair][0], "vdW", "sigma"),
+                    _get_parameter_value(parameter_ids[pair][1], "vdW", "sigma"),
+                ),
+                scale_factor,
+            ]
+            for pair, scale_factor in zip(pair_indices, scale_factors)
+        ]
+    )
+
+    parameter_ids = [
+        (PotentialKey(id="[*:1]"), ("epsilon", "sigma", scale_type))
+        for scale_type in scale_types
+    ]
+
+    return torch.tensor(pair_indices), parameters, parameter_ids
+
+
+@handler_vectorizer("Electrostatics")
+def vectorize_electrostatics_handler(
+    handler: ElectrostaticsMetaHandler, molecule: Molecule
+) -> Tuple[
+    torch.Tensor,
+    torch.Tensor,
+    List[Tuple[PotentialKey, Tuple[str, str, str]]],
+]:
+    """Maps a SMIRNOFF electrostatics potential handler into a vectorized form which
+    which more readily allows evaluating the potential energy.
+
+    Args:
+        handler: The handler to vectorize.
+        molecule: The molecule that the handler was created for.
+
+    Returns:
+        A tuple of:
+
+        * a tensor of the atom indices involved in each pair of electrostatics
+          interactions with shape=(n_pairs, 2)
+        * a 2D tensor of the values of the parameters with shape=(n_pairs, 3) where
+          the first column is the charge on the first atom, the second column the charge
+          on the second atom, and the final column a scale factor
+        * a list of identifiers which uniquely maps an assigned parameters back to the
+          original force field parameter
+    """
+
+    pair_indices, scale_factors, scale_types = _vectorize_nonbonded_scales(
+        handler, molecule
     )
 
     atom_charges = torch.tensor(
