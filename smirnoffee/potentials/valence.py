@@ -13,7 +13,7 @@ from smirnoffee.potentials import (
 from smirnoffee.smirnoff import vectorize_valence_handler
 
 
-@potential_energy_function("Bonds", "1/2 * k * (r - length) ** 2")
+@potential_energy_function("Bonds", "k/2*(r-length)**2")
 def evaluate_harmonic_bond_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -46,7 +46,7 @@ def evaluate_harmonic_bond_energy(
     return (0.5 * parameters[:, 0] * (distances - parameters[:, 1]) ** 2).sum()
 
 
-@potential_energy_function("Angles", "1/2 * k * (theta - angle) ** 2")
+@potential_energy_function("Angles", "k/2*(theta-angle)**2")
 def evaluate_harmonic_angle_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -242,7 +242,7 @@ def evaluate_valence_energy(
         )
 
     energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[
-        (valence_handler.name, valence_handler.expression)
+        (valence_handler.type, valence_handler.expression)
     ]
     handler_energy = energy_expression(conformer, indices, parameters)
 
@@ -275,13 +275,13 @@ def evaluate_valence_energy(
 #         handler_delta_ids = [
 #             (parameter_id, attribute_id)
 #             for handler_type, parameter_id, attribute_id in parameter_delta_ids
-#             if handler_type == handler.name
+#             if handler_type == handler.type
 #         ]
 #         handler_delta_indices = torch.tensor(
 #             [
 #                 i
 #                 for i, (handler_type, _, _) in enumerate(parameter_delta_ids)
-#                 if handler_type == handler.name
+#                 if handler_type == handler.type
 #             ]
 #         )
 #         handler_delta = parameter_delta[handler_delta_indices]

@@ -149,9 +149,6 @@ def test_vectorize_proper_handler(ethanol, ethanol_system, vectorizer):
     assert parameters.shape[1] == 4
 
 
-@pytest.mark.xfail(
-    reason="`openff-system` incorrectly populates the improper slot maps"
-)
 @pytest.mark.parametrize(
     "vectorizer", [vectorize_valence_handler, vectorize_improper_handler]
 )
@@ -161,27 +158,23 @@ def test_vectorize_improper_handler(formaldehyde, formaldehyde_system, vectorize
 
     improper_indices, parameters, parameter_ids = vectorizer(improper_handler)
 
-    expected_improper_indices = sorted(
-        tuple(atom.molecule_atom_index for atom in improper)
-        for improper in formaldehyde.impropers
+    expected_improper_indices = sorted([(1, 0, 2, 3), (1, 2, 3, 0), (1, 3, 0, 2)])
+
+    actual_improper_indices = sorted(
+        tuple(i.item() for i in improper_tuple) for improper_tuple in improper_indices
     )
-    assert (
-        sorted(
-            tuple(i.item() for i in improper_tuple)
-            for improper_tuple in improper_indices
-        )
-        == expected_improper_indices
-    )
+
+    assert actual_improper_indices == expected_improper_indices
 
     expected_parameter_ids = [
         (
-            PotentialKey(id="'[*:1]~[#6X3:2](~[*:3])~[*:4]'", mult=0),
+            PotentialKey(id="[*:1]~[#6X3:2](~[*:3])~[*:4]", mult=0),
             ("k", "periodicity", "phase", "idivf"),
         )
-    ]
+    ] * 3
 
     assert parameter_ids == expected_parameter_ids
-    assert parameters.shape == (formaldehyde.n_impropers, 4)
+    assert parameters.shape == (3, 4)
 
 
 @pytest.mark.parametrize("vectorizer", [vectorize_electrostatics_handler])
