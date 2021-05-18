@@ -102,7 +102,7 @@ def _vectorize_smirnoff_handler(
             (
                 potential_key,
                 tuple(
-                    _get_parameter_value(potential, handler.name, attribute)
+                    _get_parameter_value(potential, handler.type, attribute)
                     for attribute in attributes
                 ),
             )
@@ -246,13 +246,13 @@ def vectorize_valence_handler(
         and a tensor of the values of the parameters.
     """
 
-    if handler.name not in _HANDLER_TO_VECTORIZER:
+    if handler.type not in _HANDLER_TO_VECTORIZER:
 
         raise NotImplementedError(
-            f"Vectorizing {handler.name} handlers is not yet supported."
+            f"Vectorizing {handler.type} handlers is not yet supported."
         )
 
-    vectorizer = _HANDLER_TO_VECTORIZER[handler.name]
+    vectorizer = _HANDLER_TO_VECTORIZER[handler.type]
     return vectorizer(handler)
 
 
@@ -453,13 +453,13 @@ def vectorize_nonbonded_handler(
           original force field parameter
     """
 
-    if handler.name not in _HANDLER_TO_VECTORIZER:
+    if handler.type not in _HANDLER_TO_VECTORIZER:
 
         raise NotImplementedError(
-            f"Vectorizing {handler.name} handlers is not yet supported."
+            f"Vectorizing {handler.type} handlers is not yet supported."
         )
 
-    vectorizer = _HANDLER_TO_VECTORIZER[handler.name]
+    vectorizer = _HANDLER_TO_VECTORIZER[handler.type]
     return vectorizer(handler, molecule)
 
 

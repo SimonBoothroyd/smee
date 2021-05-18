@@ -136,7 +136,7 @@ def evaluate_nonbonded_energy(
     )
 
     energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[
-        (nonbonded_handler.name, nonbonded_handler.expression)
+        (nonbonded_handler.type, nonbonded_handler.expression)
     ]
     handler_energy = energy_expression(conformer, indices, parameters)
 
