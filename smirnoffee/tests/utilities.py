@@ -2,6 +2,7 @@ import copy
 from typing import Dict, Tuple
 
 import numpy
+from openff.system.models import PotentialKey
 from openff.toolkit.topology import Molecule
 from openff.toolkit.typing.engines.smirnoff import ForceField
 from simtk import unit
@@ -39,6 +40,13 @@ def reduce_and_perturb_force_field(
         force_field.get_parameter_handler("Electrostatics")
 
     for (smirks, attribute), delta in deltas.items():
+
+        if isinstance(smirks, PotentialKey):
+
+            if smirks.mult is not None:
+                attribute = f"{attribute}{smirks.mult + 1}"
+
+            smirks = smirks.id
 
         parameter = force_field.get_parameter_handler(handler).parameters[smirks]
         setattr(parameter, attribute, getattr(parameter, attribute) + delta)

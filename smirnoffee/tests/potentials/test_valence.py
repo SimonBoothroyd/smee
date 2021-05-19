@@ -2,7 +2,6 @@ import numpy
 import pytest
 import torch
 from openff.system.models import PotentialKey
-from openff.toolkit.typing.engines.smirnoff import ForceField
 from simtk import unit
 
 from smirnoffee.potentials.valence import (
@@ -14,10 +13,38 @@ from smirnoffee.potentials.valence import (
     evaluate_harmonic_bond_energy,
     evaluate_valence_energy,
 )
+from smirnoffee.smirnoff import _get_parameter_value
 from smirnoffee.tests.utilities import (
     evaluate_openmm_energy,
     reduce_and_perturb_force_field,
 )
+
+_DEFAULT_UNITS = {
+    "Bonds": {
+        "k": unit.kilojoules / unit.mole / unit.angstrom ** 2,
+        "length": unit.angstrom,
+    },
+    "Angles": {
+        "k": unit.kilojoules / unit.mole / unit.degree ** 2,
+        "angle": unit.degree,
+    },
+    "ProperTorsions": {
+        "k": unit.kilojoules / unit.mole,
+        "periodicity": unit.dimensionless,
+        "phase": unit.degree,
+        "idivf": unit.dimensionless,
+    },
+    "ImproperTorsions": {
+        "k": unit.kilojoules / unit.mole,
+        "periodicity": unit.dimensionless,
+        "phase": unit.degree,
+        "idivf": unit.dimensionless,
+    },
+    "vdW": {
+        "epsilon": unit.kilojoules / unit.mole,
+        "sigma": unit.angstrom,
+    },
+}
 
 
 def test_add_parameter_delta():
@@ -134,83 +161,76 @@ def test_evaluate_cosine_torsion_energy(energy_function, phi_sign):
 
 
 @pytest.mark.parametrize(
-    "handler, delta, delta_ids, force_field, perturbed_force_field",
-    [
-        (
-            "Bonds",
-            None,
-            None,
-            reduce_and_perturb_force_field(ForceField("openff-1.0.0.offxml"), "Bonds"),
-            reduce_and_perturb_force_field(ForceField("openff-1.0.0.offxml"), "Bonds"),
-        ),
-        (
-            "Bonds",
-            torch.tensor([0.1, 0.02], requires_grad=True),
-            [
-                (PotentialKey(id="[#6:1]-[#7:2]"), "k"),
-                (PotentialKey(id="[#8:1]-[#1:2]"), "length"),
-            ],
-            reduce_and_perturb_force_field(ForceField("openff-1.0.0.offxml"), "Bonds"),
-            reduce_and_perturb_force_field(
-                ForceField("openff-1.0.0.offxml"),
-                "Bonds",
-                {("[#8:1]-[#1:2]", "length"): 0.02 * unit.angstrom},
-            ),
-        ),
-        (
-            "Angles",
-            None,
-            None,
-            reduce_and_perturb_force_field(ForceField("openff-1.0.0.offxml"), "Angles"),
-            reduce_and_perturb_force_field(ForceField("openff-1.0.0.offxml"), "Angles"),
-        ),
-        (
-            "ProperTorsions",
-            None,
-            None,
-            reduce_and_perturb_force_field(
-                ForceField("openff-1.0.0.offxml"), "ProperTorsions"
-            ),
-            reduce_and_perturb_force_field(
-                ForceField("openff-1.0.0.offxml"), "ProperTorsions"
-            ),
-        ),
-        (
-            "ImproperTorsions",
-            None,
-            None,
-            reduce_and_perturb_force_field(
-                ForceField("openff-1.0.0.offxml"), "ImproperTorsions"
-            ),
-            reduce_and_perturb_force_field(
-                ForceField("openff-1.0.0.offxml"), "ImproperTorsions"
-            ),
-        ),
-    ],
+    "molecule_name",
+    ["ethanol", "formaldehyde"],
 )
-def test_evaluate_handler_energy(
+@pytest.mark.parametrize(
+    "handler",
+    ["Bonds", "Angles", "ProperTorsions", "ImproperTorsions"],
+)
+def test_evaluate_handler_energy(request, handler, molecule_name, default_force_field):
+
+    molecule = request.getfixturevalue(molecule_name)
+    conformer = request.getfixturevalue(f"{molecule_name}_conformer")
+
+    force_field = reduce_and_perturb_force_field(default_force_field, handler)
+
+    openff_system = force_field.create_openff_system(molecule.to_topology())
+
+    openff_energy = evaluate_valence_energy(openff_system.handlers[handler], conformer)
+    expected_energy = evaluate_openmm_energy(molecule, conformer.numpy(), force_field)
+
+    assert numpy.isclose(expected_energy, openff_energy.numpy())
+
+
+@pytest.mark.parametrize(
+    "molecule_name",
+    ["ethanol", "formaldehyde"],
+)
+@pytest.mark.parametrize(
+    "handler",
+    ["Bonds", "Angles", "ProperTorsions", "ImproperTorsions"],
+)
+def test_evaluate_handler_energy_delta(
+    request,
     handler,
-    delta,
-    delta_ids,
-    force_field,
-    perturbed_force_field,
-    ethanol,
-    ethanol_conformer,
+    molecule_name,
+    default_force_field,
 ):
 
-    openff_system = force_field.create_openff_system(ethanol.to_topology())
+    molecule = request.getfixturevalue(molecule_name)
+    conformer = request.getfixturevalue(f"{molecule_name}_conformer")
 
-    openff_energy = evaluate_valence_energy(
-        openff_system.handlers[handler], ethanol_conformer, delta, delta_ids
+    force_field = reduce_and_perturb_force_field(default_force_field, handler)
+    openff_system = force_field.create_openff_system(molecule.to_topology())
+
+    deltas = {
+        (key, parameter): _get_parameter_value(potential, handler, parameter) * 0.01
+        for key, potential in openff_system.handlers[handler].potentials.items()
+        for parameter in potential.parameters
+        if parameter not in ["periodicity", "idivf"]
+    }
+
+    if len(deltas) == 0:
+        pytest.skip(f"{molecule_name} has no {handler} parameters")
+
+    perturbed_force_field = reduce_and_perturb_force_field(
+        default_force_field,
+        handler,
+        {key: value * _DEFAULT_UNITS[handler][key[1]] for key, value in deltas.items()},
+    )
+    expected_energy = evaluate_openmm_energy(
+        molecule, conformer.numpy(), perturbed_force_field
     )
 
-    expected_energy = evaluate_openmm_energy(
-        ethanol, ethanol_conformer.numpy(), perturbed_force_field
+    delta_ids, delta_values = zip(*deltas.items())
+    delta_values = torch.tensor(delta_values, requires_grad=True)
+
+    openff_energy = evaluate_valence_energy(
+        openff_system.handlers[handler], conformer, delta_values, delta_ids
     )
 
     assert numpy.isclose(expected_energy, openff_energy.detach().numpy())
 
-    if delta is not None and delta.requires_grad is not None:
-
-        openff_energy.backward()
-        assert not numpy.allclose(delta.grad, torch.zeros_like(delta.grad))
+    openff_energy.backward()
+    assert not numpy.allclose(delta_values.grad, torch.zeros_like(delta_values.grad))
