@@ -330,6 +330,12 @@ def vectorize_vdw_handler(
           original force field parameter
     """
 
+    if handler.mixing_rule != "lorentz-berthelot":
+
+        raise NotImplementedError(
+            "Only the Lorentz-Berthelot vdW mixing rule is currently supported."
+        )
+
     pair_indices, scale_factors, scale_types = _vectorize_nonbonded_scales(
         handler, molecule
     )

@@ -31,4 +31,4 @@ dependencies:
   - pip:
 
       - git+git://github.com/openforcefield/openff-units.git
-      - git+git://github.com/openforcefield/openff-system.git@fix-from-smirnoff-topology
+      - git+git://github.com/openforcefield/openff-system.git
