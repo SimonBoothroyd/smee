@@ -4,4 +4,12 @@ from smirnoffee.potentials.potentials import (
     potential_energy_function,
 )
 
-__all__ = [add_parameter_delta, _POTENTIAL_ENERGY_FUNCTIONS, potential_energy_function]
+from smirnoffee.potentials import nonbonded, valence  # isort:skip
+
+__all__ = [
+    add_parameter_delta,
+    _POTENTIAL_ENERGY_FUNCTIONS,
+    potential_energy_function,
+    nonbonded,
+    valence,
+]

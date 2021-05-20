@@ -1,7 +1,13 @@
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
+from openff.system.components.smirnoff import SMIRNOFFPotentialHandler
+from openff.system.components.system import System
 from openff.system.models import PotentialKey
+from openff.toolkit.topology import Molecule
+
+from smirnoffee.exceptions import MissingArgumentsError
+from smirnoffee.smirnoff import VectorizedHandler, vectorize_handler, vectorize_system
 
 _POTENTIAL_ENERGY_FUNCTIONS = {}
 
@@ -73,3 +79,210 @@ def add_parameter_delta(
     delta = delta[delta_indices]
 
     return parameters + delta
+
+
+def evaluate_handler_energy(
+    handler: SMIRNOFFPotentialHandler,
+    molecule: Molecule,
+    conformer: torch.Tensor,
+    parameter_delta: Optional[torch.Tensor] = None,
+    parameter_delta_ids: Optional[List[Tuple[PotentialKey, str]]] = None,
+) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] contribution of a particular SMIRNOFF
+    potential handler for a given conformer.
+
+    Args:
+        handler: The potential handler that encodes the potential energy function to
+            evaluate.
+        molecule: The molecule that the handler is associated with.
+        conformer: The conformer to evaluate the potential at.
+        parameter_delta: An optional tensor of values to perturb the assigned
+            valence parameters by before evaluating the potential energy. If this
+            option is specified then ``parameter_delta_ids`` must also be.
+        parameter_delta_ids: An optional list of ids associated with the
+            ``parameter_delta`` tensor which is used to identify which parameter
+            delta matches which assigned parameter in the ``valence_handler``. If this
+            option is specified then ``parameter_delta`` must also be.
+
+    Returns:
+        The potential energy of the conformer [kJ / mol].
+    """
+
+    return evaluate_vectorized_handler_energy(
+        vectorize_handler(handler, molecule),
+        handler.type,
+        handler.expression,
+        conformer,
+        parameter_delta,
+        parameter_delta_ids,
+    )
+
+
+def evaluate_vectorized_handler_energy(
+    handler: VectorizedHandler,
+    handler_type: str,
+    handler_expression: str,
+    conformer: torch.Tensor,
+    parameter_delta: Optional[torch.Tensor] = None,
+    parameter_delta_ids: Optional[List[Tuple[PotentialKey, str]]] = None,
+) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] contribution of a vectorized SMIRNOFF
+    potential handler for a given conformer.
+
+    Args:
+        handler: The vectorized handler.
+        handler_type: The type of handler which was vectorised.
+        handler_expression: The energy expression associated with the handler.
+        conformer: The conformer to evaluate the potential at.
+        parameter_delta: An optional tensor of values to perturb the assigned
+            valence parameters by before evaluating the potential energy. If this
+            option is specified then ``parameter_delta_ids`` must also be.
+        parameter_delta_ids: An optional list of ids associated with the
+            ``parameter_delta`` tensor which is used to identify which parameter
+            delta matches which assigned parameter in the ``valence_handler``. If this
+            option is specified then ``parameter_delta`` must also be.
+
+    Returns:
+        The potential energy of the conformer [kJ / mol].
+    """
+
+    if not (
+        parameter_delta is None
+        and parameter_delta_ids is None
+        or parameter_delta is not None
+        and parameter_delta_ids is not None
+    ):
+
+        raise MissingArgumentsError(
+            "Either both ``parameter_delta`` and ``parameter_delta_ids`` must be "
+            "specified or neither must be."
+        )
+
+    if parameter_delta is not None:
+
+        assert len(parameter_delta_ids) == parameter_delta.shape[0], (
+            f"each parameter delta (n={len(parameter_delta_ids)}) must have an "
+            f"associated id (n={parameter_delta.shape[0]})"
+        )
+
+    indices, parameters, parameter_ids = handler
+
+    if len(parameter_ids) == 0:
+        return torch.zeros(1)
+
+    if parameter_delta is not None:
+
+        parameters = add_parameter_delta(
+            parameters, parameter_ids, parameter_delta, parameter_delta_ids
+        )
+
+    energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[(handler_type, handler_expression)]
+    handler_energy = energy_expression(conformer, indices, parameters)
+
+    return handler_energy
+
+
+def evaluate_system_energy(
+    system: System,
+    conformer: torch.Tensor,
+    parameter_delta: Optional[torch.Tensor] = None,
+    parameter_delta_ids: Optional[List[Tuple[str, PotentialKey, str]]] = None,
+) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a full OpenFF system containing
+    a single molecule.
+
+    Args:
+        system: The system that encodes the potential energy function to evaluate.
+        conformer: The conformer to evaluate the potential at.
+        parameter_delta: An optional tensor of values to perturb the assigned
+            parameters by before evaluating the potential energy. If this
+            option is specified then ``parameter_delta_ids`` must also be.
+        parameter_delta_ids: An optional list of ids associated with the
+            ``parameter_delta`` tensor which is used to identify which parameter
+            delta matches which assigned parameter. If this option is specified then
+            ``parameter_delta`` must also be.
+
+    Returns:
+        The potential energy of the conformer [kJ / mol].
+    """
+
+    return evaluate_vectorized_system_energy(
+        vectorize_system(system), conformer, parameter_delta, parameter_delta_ids
+    )
+
+
+def evaluate_vectorized_system_energy(
+    system: Dict[Tuple[str, str], VectorizedHandler],
+    conformer: torch.Tensor,
+    parameter_delta: Optional[torch.Tensor] = None,
+    parameter_delta_ids: Optional[List[Tuple[str, PotentialKey, str]]] = None,
+) -> torch.Tensor:
+    """Evaluates the potential energy [kJ / mol] of a vectorized OpenFF system containing
+    a single molecule.
+
+    Args:
+        system: The vectorized system that encodes the potential energy function to
+            evaluate.
+        conformer: The conformer to evaluate the potential at.
+        parameter_delta: An optional tensor of values to perturb the assigned
+            parameters by before evaluating the potential energy. If this
+            option is specified then ``parameter_delta_ids`` must also be.
+        parameter_delta_ids: An optional list of ids associated with the
+            ``parameter_delta`` tensor which is used to identify which parameter
+            delta matches which assigned parameter. If this option is specified then
+            ``parameter_delta`` must also be.
+
+    Returns:
+        The potential energy of the conformer [kJ / mol].
+    """
+
+    if not (
+        parameter_delta is None
+        and parameter_delta_ids is None
+        or parameter_delta is not None
+        and parameter_delta_ids is not None
+    ):
+
+        raise MissingArgumentsError(
+            "Either both ``parameter_delta`` and ``parameter_delta_ids`` must be "
+            "specified or neither must be."
+        )
+
+    total_energy = torch.zeros(1)
+
+    for (handler_type, handler_expression), handler in system.items():
+
+        handler_delta, handler_delta_ids = None, None
+
+        if parameter_delta is not None:
+
+            handler_delta_ids = [
+                (parameter_id, attribute_id)
+                for delta_type, parameter_id, attribute_id in parameter_delta_ids
+                if delta_type == handler_type
+            ]
+            handler_delta_indices = torch.tensor(
+                [
+                    i
+                    for i, (delta_type, _, _) in enumerate(parameter_delta_ids)
+                    if delta_type == handler_type
+                ]
+            )
+            handler_delta = (
+                torch.tensor([])
+                if len(handler_delta_indices) == 0
+                else parameter_delta[handler_delta_indices]
+            )
+
+        handler_energy = evaluate_vectorized_handler_energy(
+            handler,
+            handler_type,
+            handler_expression,
+            conformer,
+            handler_delta,
+            handler_delta_ids,
+        )
+
+        total_energy += handler_energy
+
+    return total_energy

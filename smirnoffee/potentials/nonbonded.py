@@ -1,13 +1,7 @@
-from typing import List, Optional, Tuple
-
 import torch
-from openff.system.components.potentials import PotentialHandler
-from openff.system.models import PotentialKey
-from openff.toolkit.topology import Molecule
 from openff.units import unit
 
-from smirnoffee.potentials import _POTENTIAL_ENERGY_FUNCTIONS, potential_energy_function
-from smirnoffee.smirnoff import vectorize_nonbonded_handler
+from smirnoffee.potentials import potential_energy_function
 
 _COULOMB_PRE_FACTOR_UNITS = unit.kilojoule / unit.mole * unit.angstrom / unit.e ** 2
 _COULOMB_PRE_FACTOR = (
@@ -42,6 +36,9 @@ def evaluate_lj_energy(
     Returns:
         The evaluated potential energy [kJ / mol].
     """
+
+    if len(atom_indices) == 0:
+        return torch.zeros(1)
 
     directions = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 0]]
     distances_sqr = (directions * directions).sum(dim=1)
@@ -87,6 +84,9 @@ def evaluate_coulomb_energy(
         The evaluated potential energy [kJ / mol].
     """
 
+    if len(atom_indices) == 0:
+        return torch.zeros(1)
+
     directions = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 0]]
     distances_sqr = (directions * directions).sum(dim=1)
 
@@ -99,45 +99,3 @@ def evaluate_coulomb_energy(
         * parameters[:, 2]
         * inverse_distances
     ).sum()
-
-
-def evaluate_nonbonded_energy(
-    nonbonded_handler: PotentialHandler,
-    molecule: Molecule,
-    conformer: torch.Tensor,
-    parameter_delta: Optional[torch.Tensor] = None,
-    parameter_delta_ids: Optional[List[Tuple[PotentialKey, str]]] = None,
-) -> torch.Tensor:
-    """Evaluates the potential energy [kJ / mol] contribution of a particular nonbonded
-    potential handler for a given conformer.
-
-    Args:
-        nonbonded_handler: The nonbonded potential handler that encodes the potential
-            energy function to evaluate.
-        molecule: The molecule associated with the handler.
-        conformer: The conformer to evaluate the potential at.
-        parameter_delta: An optional tensor of values to perturb the assigned
-            valence parameters by before evaluating the potential energy. If this
-            option is specified then ``parameter_delta_ids`` must also be.
-        parameter_delta_ids: An optional list of ids associated with the
-            ``parameter_delta`` tensor which is used to identify which parameter
-            delta matches which assigned parameter in the ``valence_handler``. If this
-            option is specified then ``parameter_delta`` must also be.
-
-    Returns:
-        The potential energy of the conformer [kJ / mol].
-    """
-
-    if parameter_delta is not None or parameter_delta_ids is not None:
-        raise NotImplementedError()
-
-    indices, parameters, parameter_ids = vectorize_nonbonded_handler(
-        nonbonded_handler, molecule
-    )
-
-    energy_expression = _POTENTIAL_ENERGY_FUNCTIONS[
-        (nonbonded_handler.type, nonbonded_handler.expression)
-    ]
-    handler_energy = energy_expression(conformer, indices, parameters)
-
-    return handler_energy

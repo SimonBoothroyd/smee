@@ -41,7 +41,7 @@ def ethanol_conformer(ethanol) -> torch.Tensor:
 def ethanol_system(ethanol, default_force_field) -> System:
     """Returns a parametermized system of ethanol."""
 
-    return default_force_field.create_openff_system(ethanol.to_topology())
+    return System.from_smirnoff(default_force_field, ethanol.to_topology())
 
 
 @pytest.fixture(scope="module")
@@ -69,4 +69,4 @@ def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
 def formaldehyde_system(formaldehyde, default_force_field) -> System:
     """Returns a parametermized system of formaldehyde."""
 
-    return default_force_field.create_openff_system(formaldehyde.to_topology())
+    return System.from_smirnoff(default_force_field, formaldehyde.to_topology())
