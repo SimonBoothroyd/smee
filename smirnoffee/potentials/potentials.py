@@ -258,17 +258,21 @@ def evaluate_vectorized_system_energy(
 
             handler_delta_ids = [
                 (parameter_id, attribute_id)
-                for handler_type, parameter_id, attribute_id in parameter_delta_ids
-                if handler_type == handler_type
+                for delta_type, parameter_id, attribute_id in parameter_delta_ids
+                if delta_type == handler_type
             ]
             handler_delta_indices = torch.tensor(
                 [
                     i
-                    for i, (handler_type, _, _) in enumerate(parameter_delta_ids)
-                    if handler_type == handler_type
+                    for i, (delta_type, _, _) in enumerate(parameter_delta_ids)
+                    if delta_type == handler_type
                 ]
             )
-            handler_delta = parameter_delta[handler_delta_indices]
+            handler_delta = (
+                torch.tensor([])
+                if len(handler_delta_indices) == 0
+                else parameter_delta[handler_delta_indices]
+            )
 
         handler_energy = evaluate_vectorized_handler_energy(
             handler,
