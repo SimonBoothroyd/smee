@@ -9,8 +9,7 @@ from smirnoffee.potentials.potentials import evaluate_system_energy
 
 def main():
 
-    # Load in a paracetamol molecules, generate a conformer for it, and perturb the
-    # conformer to ensure it needs minimization.
+    # Load in a paracetamol molecule and generate a conformer for it.
     molecule: Molecule = Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
     molecule.generate_conformers(n_conformers=1)
     molecule.to_file("initial.xyz", "XYZ")
@@ -22,7 +21,8 @@ def main():
         ForceField("openff_unconstrained-1.0.0.offxml"), molecule.to_topology()
     )
 
-    # Specify the parameters that we want to take the derivative with respect to.
+    # Specify the parameters that we want to differentiate respect to, as well as a
+    # tensor that the computed gradients will be attached to.
     parameter_ids = [
         (handler_type, potential_key, attribute)
         for handler_type, handler in openff_system.handlers.items()
@@ -31,8 +31,6 @@ def main():
         for potential_key, potential in handler.potentials.items()
         for attribute in potential.parameters
     ]
-
-    # Specify the tensor that the computed gradients will be attached to.
     parameter_delta = torch.zeros(len(parameter_ids), requires_grad=True)
 
     # Compute the energies and backpropagate to get gradient of the energy with respect

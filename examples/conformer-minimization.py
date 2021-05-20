@@ -10,7 +10,7 @@ from smirnoffee.potentials.potentials import evaluate_system_energy
 
 def main():
 
-    # Load in a paracetamol molecules, generate a conformer for it, and perturb the
+    # Load in a paracetamol molecule, generate a conformer for it, and perturb the
     # conformer to ensure it needs minimization.
     molecule: Molecule = Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
     molecule.generate_conformers(n_conformers=1)
