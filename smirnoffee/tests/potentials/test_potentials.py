@@ -134,10 +134,7 @@ def test_evaluate_handler_energy(request, handler, molecule_name, default_force_
     )
     expected_energy = evaluate_openmm_energy(molecule, conformer.numpy(), force_field)
 
-    if handler == "ImproperTorsions":
-        assert numpy.isclose(expected_energy, openff_energy.numpy(), atol=1e-6)
-    else:
-        assert numpy.isclose(expected_energy, openff_energy.numpy())
+    assert numpy.isclose(expected_energy, openff_energy.numpy())
 
 
 @pytest.mark.parametrize(
@@ -189,11 +186,7 @@ def test_evaluate_handler_energy_delta(
     openff_energy = evaluate_handler_energy(
         openff_system.handlers[handler], molecule, conformer, delta_values, delta_ids
     )
-
-    if handler == "ImproperTorsions":
-        assert numpy.isclose(expected_energy, openff_energy.detach().numpy(), atol=1e-4)
-    else:
-        assert numpy.isclose(expected_energy, openff_energy.numpy())
+    assert numpy.isclose(expected_energy, openff_energy.detach().numpy())
 
     openff_energy.backward()
     assert not numpy.allclose(delta_values.grad, torch.zeros_like(delta_values.grad))

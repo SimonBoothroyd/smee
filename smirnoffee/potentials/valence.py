@@ -113,19 +113,17 @@ def _evaluate_cosine_torsion_energy(
     vector_ab_cross_cb = torch.cross(vector_ab, vector_cb, dim=1)
     vector_cb_cross_cd = torch.cross(vector_cb, vector_cd, dim=1)
 
-    vector_ab_cross_cb = vector_ab_cross_cb / torch.norm(
-        vector_ab_cross_cb, dim=1
-    ).unsqueeze(1)
-    vector_cb_cross_cd = vector_cb_cross_cd / torch.norm(
-        vector_cb_cross_cd, dim=1
-    ).unsqueeze(1)
+    vector_cb_norm = torch.norm(vector_cb, dim=1).unsqueeze(1)
 
-    cos_phi = (vector_ab_cross_cb * vector_cb_cross_cd).sum(dim=1)
-    # TODO: properly handle the acos singularity.
-    cos_phi = torch.clamp(cos_phi, -1.0 + _EPSILON, 1.0 - _EPSILON)
+    y = (
+        torch.cross(vector_ab_cross_cb, vector_cb_cross_cd, dim=1)
+        * vector_cb
+        / vector_cb_norm
+    ).sum(axis=-1)
 
-    phi = torch.acos(cos_phi)
-    phi = phi * torch.where((vector_ab * vector_cb_cross_cd).sum(dim=1) < 0, -1.0, 1.0)
+    x = (vector_ab_cross_cb * vector_cb_cross_cd).sum(axis=-1)
+
+    phi = torch.atan2(y, x)
 
     return (
         parameters[:, 0]
