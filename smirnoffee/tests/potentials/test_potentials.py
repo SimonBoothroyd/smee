@@ -186,7 +186,6 @@ def test_evaluate_handler_energy_delta(
     openff_energy = evaluate_handler_energy(
         openff_system.handlers[handler], molecule, conformer, delta_values, delta_ids
     )
-
     assert numpy.isclose(expected_energy, openff_energy.detach().numpy())
 
     openff_energy.backward()

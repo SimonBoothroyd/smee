@@ -253,29 +253,36 @@ def _vectorize_nonbonded_scales(
     }
 
     interaction_pairs = {
-        **{
-            tuple(sorted((bond.atom1_index, bond.atom2_index))): "scale_12"
-            for bond in molecule.bonds
-        },
-        **{
-            tuple(
-                sorted((angle[0].molecule_atom_index, angle[2].molecule_atom_index))
-            ): "scale_13"
-            for angle in molecule.angles
-        },
-        **{
-            tuple(
-                sorted((proper[0].molecule_atom_index, proper[3].molecule_atom_index))
-            ): "scale_14"
-            for proper in molecule.propers
-        },
+        tuple(sorted((bond.atom1_index, bond.atom2_index))): "scale_12"
+        for bond in molecule.bonds
+    }
+
+    pairs_13 = {
+        tuple(
+            sorted((angle[0].molecule_atom_index, angle[2].molecule_atom_index))
+        ): "scale_13"
+        for angle in molecule.angles
     }
     interaction_pairs.update(
-        {
-            tuple(sorted(pair)): "scale_1n"
-            for pair in itertools.combinations(range(molecule.n_atoms), 2)
-            if tuple(sorted(pair)) not in interaction_pairs
-        }
+        {key: value for key, value in pairs_13.items() if key not in interaction_pairs}
+    )
+
+    pairs_14 = {
+        tuple(
+            sorted((proper[0].molecule_atom_index, proper[3].molecule_atom_index))
+        ): "scale_14"
+        for proper in molecule.propers
+    }
+    interaction_pairs.update(
+        {key: value for key, value in pairs_14.items() if key not in interaction_pairs}
+    )
+
+    pairs_1n = {
+        tuple(sorted(pair)): "scale_1n"
+        for pair in itertools.combinations(range(molecule.n_atoms), 2)
+    }
+    interaction_pairs.update(
+        {key: value for key, value in pairs_1n.items() if key not in interaction_pairs}
     )
 
     if len(interaction_pairs) == 0 or all(
