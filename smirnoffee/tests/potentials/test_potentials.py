@@ -5,7 +5,6 @@ import pytest
 import torch
 from openff.system.components.system import System
 from openff.system.models import PotentialKey
-from openff.toolkit.topology import Molecule
 from simtk import unit
 
 from smirnoffee.exceptions import MissingArgumentsError
