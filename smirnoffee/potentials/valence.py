@@ -2,6 +2,8 @@ import torch
 
 from smirnoffee.potentials import potential_energy_function
 
+_EPSILON = 1.0e-8
+
 
 @potential_energy_function("Bonds", "k/2*(r-length)**2")
 def evaluate_harmonic_bond_energy(
@@ -68,8 +70,11 @@ def evaluate_harmonic_angle_energy(
     vector_ac = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 2]]
     vector_ac = vector_ac / torch.norm(vector_ac, dim=1).unsqueeze(1)
 
-    # TODO: handle the ACOS singularity.
-    angles = torch.rad2deg(torch.acos((vector_ab * vector_ac).sum(dim=1)))
+    cos_angle = (vector_ab * vector_ac).sum(dim=1)
+    # TODO: properly handle the acos singularity.
+    cos_angle = torch.clamp(cos_angle, -1.0 + _EPSILON, 1.0 - _EPSILON)
+
+    angles = torch.rad2deg(torch.acos(cos_angle))
 
     return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum()
 
@@ -116,8 +121,9 @@ def _evaluate_cosine_torsion_energy(
     ).unsqueeze(1)
 
     cos_phi = (vector_ab_cross_cb * vector_cb_cross_cd).sum(dim=1)
+    # TODO: properly handle the acos singularity.
+    cos_phi = torch.clamp(cos_phi, -1.0 + _EPSILON, 1.0 - _EPSILON)
 
-    # TODO: handle the ACOS singularity.
     phi = torch.acos(cos_phi)
     phi = phi * torch.where((vector_ab * vector_cb_cross_cd).sum(dim=1) < 0, -1.0, 1.0)
 

@@ -5,6 +5,7 @@ import pytest
 import torch
 from openff.system.components.system import System
 from openff.system.models import PotentialKey
+from openff.toolkit.topology import Molecule
 from simtk import unit
 
 from smirnoffee.exceptions import MissingArgumentsError
@@ -134,7 +135,10 @@ def test_evaluate_handler_energy(request, handler, molecule_name, default_force_
     )
     expected_energy = evaluate_openmm_energy(molecule, conformer.numpy(), force_field)
 
-    assert numpy.isclose(expected_energy, openff_energy.numpy())
+    if handler == "ImproperTorsions":
+        assert numpy.isclose(expected_energy, openff_energy.numpy(), atol=1e-6)
+    else:
+        assert numpy.isclose(expected_energy, openff_energy.numpy())
 
 
 @pytest.mark.parametrize(
@@ -187,7 +191,10 @@ def test_evaluate_handler_energy_delta(
         openff_system.handlers[handler], molecule, conformer, delta_values, delta_ids
     )
 
-    assert numpy.isclose(expected_energy, openff_energy.detach().numpy())
+    if handler == "ImproperTorsions":
+        assert numpy.isclose(expected_energy, openff_energy.detach().numpy(), atol=1e-4)
+    else:
+        assert numpy.isclose(expected_energy, openff_energy.numpy())
 
     openff_energy.backward()
     assert not numpy.allclose(delta_values.grad, torch.zeros_like(delta_values.grad))
