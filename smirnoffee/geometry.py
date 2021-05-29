@@ -65,7 +65,7 @@ def compute_dihedrals(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1)
+        return torch.tensor([])
 
     # Based on the OpenMM formalism.
     vector_ab = conformer[atom_indices[:, 0]] - conformer[atom_indices[:, 1]]

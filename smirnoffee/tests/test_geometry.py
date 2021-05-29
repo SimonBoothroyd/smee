@@ -5,6 +5,18 @@ import torch
 from smirnoffee.geometry import compute_angles, compute_bond_vectors, compute_dihedrals
 
 
+@pytest.mark.parametrize(
+    "geometry_function", [compute_angles, compute_dihedrals, compute_bond_vectors]
+)
+def test_compute_geometry_no_atoms(geometry_function):
+    valence_terms = geometry_function(torch.tensor([]), torch.tensor([]))
+
+    if not isinstance(valence_terms, tuple):
+        valence_terms = (valence_terms,)
+
+    assert all(term.shape == torch.Size([0]) for term in valence_terms)
+
+
 def test_compute_bond_vectors():
 
     conformer = torch.tensor([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]])
