@@ -1,5 +1,6 @@
 import torch
 
+from smirnoffee.geometry import compute_angles, compute_bond_vectors, compute_dihedrals
 from smirnoffee.potentials import potential_energy_function
 
 _EPSILON = 1.0e-8
@@ -31,9 +32,7 @@ def evaluate_harmonic_bond_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    distances = torch.norm(
-        conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 0]], dim=1
-    )
+    _, distances = compute_bond_vectors(conformer, atom_indices)
 
     return (0.5 * parameters[:, 0] * (distances - parameters[:, 1]) ** 2).sum()
 
@@ -64,17 +63,7 @@ def evaluate_harmonic_angle_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    vector_ab = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 0]]
-    vector_ab = vector_ab / torch.norm(vector_ab, dim=1).unsqueeze(1)
-
-    vector_ac = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 2]]
-    vector_ac = vector_ac / torch.norm(vector_ac, dim=1).unsqueeze(1)
-
-    cos_angle = (vector_ab * vector_ac).sum(dim=1)
-    # TODO: properly handle the acos singularity.
-    cos_angle = torch.clamp(cos_angle, -1.0 + _EPSILON, 1.0 - _EPSILON)
-
-    angles = torch.rad2deg(torch.acos(cos_angle))
+    angles = torch.rad2deg(compute_angles(conformer, atom_indices))
 
     return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum()
 
@@ -105,25 +94,7 @@ def _evaluate_cosine_torsion_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    # Based on the OpenMM formalism.
-    vector_ab = conformer[atom_indices[:, 0]] - conformer[atom_indices[:, 1]]
-    vector_cb = conformer[atom_indices[:, 2]] - conformer[atom_indices[:, 1]]
-    vector_cd = conformer[atom_indices[:, 2]] - conformer[atom_indices[:, 3]]
-
-    vector_ab_cross_cb = torch.cross(vector_ab, vector_cb, dim=1)
-    vector_cb_cross_cd = torch.cross(vector_cb, vector_cd, dim=1)
-
-    vector_cb_norm = torch.norm(vector_cb, dim=1).unsqueeze(1)
-
-    y = (
-        torch.cross(vector_ab_cross_cb, vector_cb_cross_cd, dim=1)
-        * vector_cb
-        / vector_cb_norm
-    ).sum(axis=-1)
-
-    x = (vector_ab_cross_cb * vector_cb_cross_cd).sum(axis=-1)
-
-    phi = torch.atan2(y, x)
+    phi = compute_dihedrals(conformer, atom_indices)
 
     return (
         parameters[:, 0]
