@@ -1,0 +1,22 @@
+name: fragmenter
+channels:
+  - conda-forge
+
+dependencies:
+
+  # Base depends
+  - python
+  - pip
+  - setuptools
+
+  # Sphinx specific
+  - sphinx ==4.0.2
+  - nbsphinx
+  - nbsphinx-link
+  - sphinx_rtd_theme
+  - pandoc
+  - ipython
+
+  - pytorch-cpu
+  - openff-interchange ==0.1.0
+  - openff-toolkit-base >=0.9.2

@@ -1,3 +1,5 @@
+"""Common functions for computing the internal coordinates (e.g. bond lengths)."""
+
 from typing import Tuple
 
 import torch

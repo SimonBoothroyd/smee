@@ -1,3 +1,5 @@
+"""Functions for vectorizing SMIRNOFF force fields ready for energy evaluation."""
+
 import inspect
 import itertools
 from typing import Dict, List, Tuple, Union

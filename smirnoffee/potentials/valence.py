@@ -1,3 +1,5 @@
+"""Functions for evaluating valence potential energy functions."""
+
 import torch
 
 from smirnoffee.geometry import compute_angles, compute_bond_vectors, compute_dihedrals

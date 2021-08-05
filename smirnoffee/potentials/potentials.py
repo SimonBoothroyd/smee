@@ -1,3 +1,4 @@
+"""Functions for evaluating the energies of parameterized molecules."""
 from typing import Dict, List, Optional, Tuple
 
 import torch

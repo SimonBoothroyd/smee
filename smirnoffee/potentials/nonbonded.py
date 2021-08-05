@@ -1,3 +1,5 @@
+"""Functions for evaluating non-bonded potential energy functions."""
+
 import torch
 from openff.units import unit
 
