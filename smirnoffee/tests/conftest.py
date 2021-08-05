@@ -49,8 +49,7 @@ def ethanol_system(ethanol, default_force_field) -> Interchange:
 def formaldehyde() -> Molecule:
     """Returns an OpenFF formaldehyde molecule with a fixed atom order.."""
 
-    molecule: Molecule = Molecule.from_smiles("C=O")
-    return molecule.canonical_order_atoms()
+    return Molecule.from_mapped_smiles("[H:3][C:1](=[O:2])[H:4]")
 
 
 @pytest.fixture(scope="module")
