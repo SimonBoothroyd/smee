@@ -11,7 +11,7 @@ dependencies:
 
   - openff-toolkit-base >=0.9.2
   - openff-units
-  - openff-interchange ==0.1.0  # hard pin until API stabilizes
+  - openff-interchange ==0.1.0  # Hard pin until API stabilizes
 
   - pytorch-cpu
   - pydantic
