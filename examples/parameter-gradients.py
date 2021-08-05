@@ -1,5 +1,5 @@
 import torch
-from openff.system.components.system import System
+from openff.interchange.components.interchange import Interchange
 from openff.toolkit.topology import Molecule
 from openff.toolkit.typing.engines.smirnoff import ForceField
 from simtk import unit
@@ -17,7 +17,7 @@ def main():
     conformer = torch.tensor(molecule.conformers[0].value_in_unit(unit.angstrom)) * 1.10
 
     # Parameterize the molecule
-    openff_system = System.from_smirnoff(
+    openff_system = Interchange.from_smirnoff(
         ForceField("openff_unconstrained-1.0.0.offxml"), molecule.to_topology()
     )
 
