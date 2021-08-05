@@ -1,7 +1,11 @@
+from collections import defaultdict
+from typing import Dict, List, Set, Tuple
+
 import numpy
 import pytest
-from openff.system.components.smirnoff import SMIRNOFFConstraintHandler
-from openff.system.models import PotentialKey
+import torch
+from openff.interchange.components.smirnoff import SMIRNOFFConstraintHandler
+from openff.interchange.models import PotentialKey
 
 from smirnoffee.smirnoff import (
     _HANDLER_TO_VECTORIZER,
@@ -15,6 +19,32 @@ from smirnoffee.smirnoff import (
     vectorize_system,
     vectorize_vdw_handler,
 )
+
+
+def _indices_and_ids_to_dict(
+    slot_indices: torch.Tensor,
+    parameter_ids: List[Tuple[PotentialKey, Tuple[str, ...]]],
+) -> Dict[Tuple[int, ...], Set[PotentialKey]]:
+    """A helper utility that condenses a set of slot indices and associated parameter
+    ids into a single dictionary for easy comparison.
+    """
+
+    return_value = defaultdict(set)
+
+    for slot_index, parameter_id in zip(slot_indices.numpy(), parameter_ids):
+
+        if len(slot_index) == 2:
+            slot_index = tuple(sorted(slot_index))
+        else:
+            slot_index = (
+                tuple(slot_index)
+                if slot_index[-1] > slot_index[0]
+                else tuple(reversed(slot_index))
+            )
+
+        return_value[slot_index].add(parameter_id)
+
+    return {**return_value}
 
 
 def test_handler_vectorizer_decorator():
@@ -37,134 +67,125 @@ def test_vectorize_handler_error():
 def test_vectorize_bond_handler(ethanol, ethanol_system):
 
     bond_handler = ethanol_system.handlers["Bonds"]
-
     bond_indices, parameters, parameter_ids = vectorize_bond_handler(bond_handler)
 
-    expected_bond_indices = [
-        sorted((bond.atom1_index, bond.atom2_index)) for bond in ethanol.bonds
-    ]
-    assert (
-        sorted(sorted(bond_tuple) for bond_tuple in bond_indices)
-        == expected_bond_indices
-    )
+    actual_parameters = _indices_and_ids_to_dict(bond_indices, parameter_ids)
 
-    expected_parameter_ids = [
-        (PotentialKey(id="[#6:1]-[#8:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#8:1]-[#1:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#6X4:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#1:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#1:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#1:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#1:2]", mult=None), ("k", "length")),
-        (PotentialKey(id="[#6X4:1]-[#1:2]", mult=None), ("k", "length")),
-    ]
-    assert parameter_ids == expected_parameter_ids
+    kwargs = {"mult": None, "associated_handler": "Bonds"}
+    attrs = ("k", "length")
+
+    expected_parameters = {
+        (0, 2): {(PotentialKey(id="[#6:1]-[#8:2]", **kwargs), attrs)},
+        (0, 3): {(PotentialKey(id="[#8:1]-[#1:2]", **kwargs), attrs)},
+        (1, 2): {(PotentialKey(id="[#6X4:1]-[#6X4:2]", **kwargs), attrs)},
+        (1, 4): {(PotentialKey(id="[#6X4:1]-[#1:2]", **kwargs), attrs)},
+        (1, 5): {(PotentialKey(id="[#6X4:1]-[#1:2]", **kwargs), attrs)},
+        (1, 6): {(PotentialKey(id="[#6X4:1]-[#1:2]", **kwargs), attrs)},
+        (2, 7): {(PotentialKey(id="[#6X4:1]-[#1:2]", **kwargs), attrs)},
+        (2, 8): {(PotentialKey(id="[#6X4:1]-[#1:2]", **kwargs), attrs)},
+    }
+
+    assert actual_parameters == expected_parameters
     assert parameters.shape == (ethanol.n_bonds, 2)
 
 
 def test_vectorize_angle_handler(ethanol, ethanol_system):
 
     angle_handler = ethanol_system.handlers["Angles"]
-
     angle_indices, parameters, parameter_ids = vectorize_angle_handler(angle_handler)
 
-    expected_angle_indices = sorted(
-        tuple(atom.molecule_atom_index for atom in angle) for angle in ethanol.angles
-    )
-    assert (
-        sorted(tuple(i.item() for i in angle_tuple) for angle_tuple in angle_indices)
-        == expected_angle_indices
-    )
+    actual_parameters = _indices_and_ids_to_dict(angle_indices, parameter_ids)
 
-    expected_parameter_ids = [
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]-[#8:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", mult=None), ("k", "angle")),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", mult=None), ("k", "angle")),
-    ]
+    kwargs = {"mult": None, "associated_handler": "Angles"}
+    attrs = ("k", "angle")
 
-    assert parameter_ids == expected_parameter_ids
+    expected_parameters = {
+        (0, 2, 1): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (7, 2, 8): {(PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", **kwargs), attrs)},
+        (2, 0, 3): {(PotentialKey(id="[*:1]-[#8:2]-[*:3]", **kwargs), attrs)},
+        (1, 2, 7): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (2, 1, 4): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (5, 1, 6): {(PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", **kwargs), attrs)},
+        (2, 1, 6): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (2, 1, 5): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (0, 2, 8): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (4, 1, 5): {(PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", **kwargs), attrs)},
+        (0, 2, 7): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (1, 2, 8): {(PotentialKey(id="[*:1]~[#6X4:2]-[*:3]", **kwargs), attrs)},
+        (4, 1, 6): {(PotentialKey(id="[#1:1]-[#6X4:2]-[#1:3]", **kwargs), attrs)},
+    }
+
+    assert actual_parameters == expected_parameters
     assert parameters.shape == (ethanol.n_angles, 2)
 
 
 def test_vectorize_proper_handler(ethanol, ethanol_system):
 
     proper_handler = ethanol_system.handlers["ProperTorsions"]
-
     proper_indices, parameters, parameter_ids = vectorize_proper_handler(proper_handler)
 
-    expected_proper_indices = sorted(
-        tuple(atom.molecule_atom_index for atom in proper) for proper in ethanol.propers
-    )
-    actual_proper_indices = sorted(
-        {tuple(i.item() for i in proper_tuple) for proper_tuple in proper_indices}
-    )
+    actual_parameters = _indices_and_ids_to_dict(proper_indices, parameter_ids)
 
-    assert actual_proper_indices == expected_proper_indices
+    kwargs = {"associated_handler": "ProperTorsions"}
+    attrs = ("k", "periodicity", "phase", "idivf")
 
-    expected_attrs = ("k", "periodicity", "phase", "idivf")
-    expected_parameter_ids = [
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=1), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=1), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]", mult=1), expected_attrs),
-        (
-            PotentialKey(id="[#6X4:1]-[#6X4:2]-[#8X2H1:3]-[#1:4]", mult=0),
-            expected_attrs,
-        ),
-        (
-            PotentialKey(id="[#6X4:1]-[#6X4:2]-[#8X2H1:3]-[#1:4]", mult=1),
-            expected_attrs,
-        ),
-        (PotentialKey(id="[*:1]-[#6X4:2]-[#8X2:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[*:1]-[#6X4:2]-[#8X2:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-        (PotentialKey(id="[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]", mult=0), expected_attrs),
-    ]
+    hcco_smirks = "[#1:1]-[#6X4:2]-[#6X4:3]-[#8X2:4]"
+    ccoh_smirks = "[#6X4:1]-[#6X4:2]-[#8X2H1:3]-[#1:4]"
+    xcoh_smirks = "[*:1]-[#6X4:2]-[#8X2:3]-[#1:4]"
+    hcch_smirks = "[#1:1]-[#6X4:2]-[#6X4:3]-[#1:4]"
 
-    assert parameter_ids == expected_parameter_ids
+    expected_parameters = {
+        (0, 2, 1, 4): {
+            (PotentialKey(id=hcco_smirks, mult=1, **kwargs), attrs),
+            (PotentialKey(id=hcco_smirks, mult=0, **kwargs), attrs),
+        },
+        (0, 2, 1, 5): {
+            (PotentialKey(id=hcco_smirks, mult=1, **kwargs), attrs),
+            (PotentialKey(id=hcco_smirks, mult=0, **kwargs), attrs),
+        },
+        (0, 2, 1, 6): {
+            (PotentialKey(id=hcco_smirks, mult=1, **kwargs), attrs),
+            (PotentialKey(id=hcco_smirks, mult=0, **kwargs), attrs),
+        },
+        (1, 2, 0, 3): {
+            (PotentialKey(id=ccoh_smirks, mult=1, **kwargs), attrs),
+            (PotentialKey(id=ccoh_smirks, mult=0, **kwargs), attrs),
+        },
+        (3, 0, 2, 7): {(PotentialKey(id=xcoh_smirks, mult=0, **kwargs), attrs)},
+        (3, 0, 2, 8): {(PotentialKey(id=xcoh_smirks, mult=0, **kwargs), attrs)},
+        (4, 1, 2, 7): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+        (4, 1, 2, 8): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+        (5, 1, 2, 7): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+        (5, 1, 2, 8): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+        (6, 1, 2, 7): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+        (6, 1, 2, 8): {(PotentialKey(id=hcch_smirks, mult=0, **kwargs), attrs)},
+    }
+
+    assert actual_parameters == expected_parameters
     assert parameters.shape[1] == 4
 
 
 def test_vectorize_improper_handler(formaldehyde, formaldehyde_system):
 
     improper_handler = formaldehyde_system.handlers["ImproperTorsions"]
-
     improper_indices, parameters, parameter_ids = vectorize_improper_handler(
         improper_handler
     )
 
-    expected_improper_indices = sorted([(1, 0, 2, 3), (1, 2, 3, 0), (1, 3, 0, 2)])
+    actual_parameters = _indices_and_ids_to_dict(improper_indices, parameter_ids)
 
-    actual_improper_indices = sorted(
-        tuple(i.item() for i in improper_tuple) for improper_tuple in improper_indices
-    )
+    kwargs = {"mult": 0, "associated_handler": "ImproperTorsions"}
+    args = ("k", "periodicity", "phase", "idivf")
 
-    assert actual_improper_indices == expected_improper_indices
+    xcxx_smirks = "[*:1]~[#6X3:2](~[*:3])~[*:4]"
 
-    expected_parameter_ids = [
-        (
-            PotentialKey(id="[*:1]~[#6X3:2](~[*:3])~[*:4]", mult=0),
-            ("k", "periodicity", "phase", "idivf"),
-        )
-    ] * 3
+    expected_parameters = {
+        (0, 1, 2, 3): {(PotentialKey(id=xcxx_smirks, **kwargs), args)},
+        (0, 2, 3, 1): {(PotentialKey(id=xcxx_smirks, **kwargs), args)},
+        (0, 3, 1, 2): {(PotentialKey(id=xcxx_smirks, **kwargs), args)},
+    }
 
-    assert parameter_ids == expected_parameter_ids
+    assert actual_parameters == expected_parameters
     assert parameters.shape == (3, 4)
 
 

@@ -4,18 +4,18 @@ from typing import Dict, List, Tuple, Union
 
 import numpy
 import torch
-from openff.system.components.potentials import Potential, PotentialHandler
-from openff.system.components.smirnoff import (
-    ElectrostaticsMetaHandler,
+from openff.interchange.components.interchange import Interchange
+from openff.interchange.components.potentials import Potential, PotentialHandler
+from openff.interchange.components.smirnoff import (
     SMIRNOFFAngleHandler,
     SMIRNOFFBondHandler,
+    SMIRNOFFElectrostaticsHandler,
     SMIRNOFFImproperTorsionHandler,
     SMIRNOFFPotentialHandler,
     SMIRNOFFProperTorsionHandler,
     SMIRNOFFvdWHandler,
 )
-from openff.system.components.system import System
-from openff.system.models import PotentialKey, TopologyKey
+from openff.interchange.models import PotentialKey, TopologyKey
 from openff.toolkit.topology import Molecule
 from openff.units import unit
 
@@ -236,7 +236,8 @@ def vectorize_improper_handler(
 
 
 def _vectorize_nonbonded_scales(
-    handler: Union[SMIRNOFFvdWHandler, ElectrostaticsMetaHandler], molecule: Molecule
+    handler: Union[SMIRNOFFvdWHandler, SMIRNOFFElectrostaticsHandler],
+    molecule: Molecule,
 ) -> Tuple[Tuple[Tuple[int, int], ...], Tuple[float, ...], Tuple[str, ...]]:
     """Vectorizes the 1-n scale factors associated with a set of nonbonded interaction
     pairs.
@@ -383,7 +384,7 @@ def vectorize_vdw_handler(
 
 @handler_vectorizer("Electrostatics")
 def vectorize_electrostatics_handler(
-    handler: ElectrostaticsMetaHandler, molecule: Molecule
+    handler: SMIRNOFFElectrostaticsHandler, molecule: Molecule
 ) -> Tuple[
     torch.Tensor,
     torch.Tensor,
@@ -476,7 +477,7 @@ def vectorize_handler(
     return vectorizer(handler)
 
 
-def vectorize_system(system: System) -> Dict[Tuple[str, str], VectorizedHandler]:
+def vectorize_system(system: Interchange) -> Dict[Tuple[str, str], VectorizedHandler]:
     """Maps a SMIRNOFF parameterized system object into a collection of tensor
     representations.
 

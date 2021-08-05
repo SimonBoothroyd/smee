@@ -1,9 +1,9 @@
 from typing import Dict, List, Optional, Tuple
 
 import torch
-from openff.system.components.smirnoff import SMIRNOFFPotentialHandler
-from openff.system.components.system import System
-from openff.system.models import PotentialKey
+from openff.interchange.components.interchange import Interchange
+from openff.interchange.components.smirnoff import SMIRNOFFPotentialHandler
+from openff.interchange.models import PotentialKey
 from openff.toolkit.topology import Molecule
 
 from smirnoffee.exceptions import MissingArgumentsError
@@ -183,7 +183,7 @@ def evaluate_vectorized_handler_energy(
 
 
 def evaluate_system_energy(
-    system: System,
+    system: Interchange,
     conformer: torch.Tensor,
     parameter_delta: Optional[torch.Tensor] = None,
     parameter_delta_ids: Optional[List[Tuple[str, PotentialKey, str]]] = None,

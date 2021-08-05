@@ -3,8 +3,8 @@ import copy
 import numpy
 import pytest
 import torch
-from openff.system.components.system import System
-from openff.system.models import PotentialKey
+from openff.interchange.components.interchange import Interchange
+from openff.interchange.models import PotentialKey
 from simtk import unit
 
 from smirnoffee.exceptions import MissingArgumentsError
@@ -127,7 +127,7 @@ def test_evaluate_handler_energy(request, handler, molecule_name, default_force_
 
     force_field = reduce_and_perturb_force_field(default_force_field, handler)
 
-    openff_system = System.from_smirnoff(force_field, molecule.to_topology())
+    openff_system = Interchange.from_smirnoff(force_field, molecule.to_topology())
 
     openff_energy = evaluate_handler_energy(
         openff_system.handlers[handler], molecule, conformer
@@ -156,7 +156,7 @@ def test_evaluate_handler_energy_delta(
     conformer = request.getfixturevalue(f"{molecule_name}_conformer")
 
     force_field = reduce_and_perturb_force_field(default_force_field, handler)
-    openff_system = System.from_smirnoff(force_field, molecule.to_topology())
+    openff_system = Interchange.from_smirnoff(force_field, molecule.to_topology())
 
     deltas = {
         (key, parameter): _get_parameter_value(potential, handler, parameter) * 0.01

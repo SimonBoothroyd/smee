@@ -2,7 +2,7 @@ import copy
 from typing import Dict, Tuple
 
 import numpy
-from openff.system.models import PotentialKey
+from openff.interchange.models import PotentialKey
 from openff.toolkit.topology import Molecule
 from openff.toolkit.typing.engines.smirnoff import ForceField
 from simtk import unit

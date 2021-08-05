@@ -1,8 +1,8 @@
 import pytest
 import torch
-from openff.system.components.system import System
-from openff.system.stubs import ForceField
+from openff.interchange.components.interchange import Interchange
 from openff.toolkit.topology import Molecule
+from openff.toolkit.typing.engines.smirnoff import ForceField
 
 
 @pytest.fixture(scope="module")
@@ -18,10 +18,11 @@ def default_force_field() -> ForceField:
 
 @pytest.fixture(scope="module")
 def ethanol() -> Molecule:
-    """Returns an OpenFF ethanol molecule."""
+    """Returns an OpenFF ethanol molecule with a fixed atom order."""
 
-    molecule: Molecule = Molecule.from_smiles("CCO")
-    return molecule.canonical_order_atoms()
+    return Molecule.from_mapped_smiles(
+        "[H:5][C:2]([H:6])([H:7])[C:3]([H:8])([H:9])[O:1][H:4]"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -38,15 +39,15 @@ def ethanol_conformer(ethanol) -> torch.Tensor:
 
 
 @pytest.fixture(scope="module")
-def ethanol_system(ethanol, default_force_field) -> System:
+def ethanol_system(ethanol, default_force_field) -> Interchange:
     """Returns a parametermized system of ethanol."""
 
-    return System.from_smirnoff(default_force_field, ethanol.to_topology())
+    return Interchange.from_smirnoff(default_force_field, ethanol.to_topology())
 
 
 @pytest.fixture(scope="module")
 def formaldehyde() -> Molecule:
-    """Returns an OpenFF formaldehyde molecule."""
+    """Returns an OpenFF formaldehyde molecule with a fixed atom order.."""
 
     molecule: Molecule = Molecule.from_smiles("C=O")
     return molecule.canonical_order_atoms()
@@ -66,7 +67,7 @@ def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
 
 
 @pytest.fixture(scope="module")
-def formaldehyde_system(formaldehyde, default_force_field) -> System:
+def formaldehyde_system(formaldehyde, default_force_field) -> Interchange:
     """Returns a parametermized system of formaldehyde."""
 
-    return System.from_smirnoff(default_force_field, formaldehyde.to_topology())
+    return Interchange.from_smirnoff(default_force_field, formaldehyde.to_topology())
