@@ -1,3 +1,4 @@
+"""Functions for evaluating energies using specific potential energy functions."""
 from smirnoffee.potentials.potentials import (
     _POTENTIAL_ENERGY_FUNCTIONS,
     add_parameter_delta,
