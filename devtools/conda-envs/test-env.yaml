@@ -20,6 +20,8 @@ dependencies:
   - rdkit
   - ambertools
 
+  - geometric  # internal coordinate tests
+
     # Testing
   - pytest
   - pytest-cov
