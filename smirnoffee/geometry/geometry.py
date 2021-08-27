@@ -89,3 +89,60 @@ def compute_dihedrals(
 
     phi = torch.atan2(y, x)
     return phi
+
+
+def compute_linear_displacement(
+    conformer: torch.Tensor, atom_indices: torch.Tensor
+) -> torch.Tensor:
+    """Computes the the displacement [Å] of the BA and BC unit vectors in the linear
+    angle "ABC". The displacements are measured along two axes that are perpendicular to
+    the AC unit vector.
+
+    Notes:
+        * This function is a port of the geomeTRIC ``LinearAngle.value`` function. See
+          the main ``smirnoffee`` README for license information.
+
+    Args:
+        conformer: The cartesian coordinates of a conformer with shape=(n_atoms, 3) and
+            units of [Å].
+        atom_indices: A tensor containing the indices of the atoms in each linear angle
+            (first three columns) and the index of the axis to compute the displacement
+            along (last column) with shape=(n_linear_angles, 4).
+
+    Returns:
+        A tensor of the linear displacements.
+    """
+
+    vector_ab = conformer[atom_indices[:, 0]] - conformer[atom_indices[:, 1]]
+    vector_ab = vector_ab / torch.norm(vector_ab, dim=1).unsqueeze(1)
+
+    vector_cb = conformer[atom_indices[:, 2]] - conformer[atom_indices[:, 1]]
+    vector_cb = vector_cb / torch.norm(vector_cb, dim=1).unsqueeze(1)
+
+    vector_ca = conformer[atom_indices[:, 2]] - conformer[atom_indices[:, 0]]
+    vector_ca = vector_ca / torch.norm(vector_ca, dim=1).unsqueeze(1)
+
+    # Take the dot product of each row of ``vector_ca`` with the x, y and z axis
+    # and find the index (0 = x, 1 = y, 2 = z) of the axis that is most perpendicular
+    # to each row. This ensures we don't try and take the cross-product of two
+    # co-linear vectors.
+    #
+    # This is the same approach taken by geomeTRIC albeit more-so vectorized.
+    basis = torch.tensor(
+        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=conformer.dtype
+    )
+    basis_index = torch.argmin((vector_ca @ basis).square(), dim=-1)
+
+    axis_0 = basis[basis_index]
+
+    axis_1 = torch.cross(vector_ca, axis_0)
+    axis_1 = axis_1 / torch.norm(axis_1, dim=1).unsqueeze(1)
+
+    axis_2 = torch.cross(vector_ca, axis_1)
+    axis_2 = axis_2 / torch.norm(axis_2, dim=1).unsqueeze(1)
+
+    return torch.where(
+        atom_indices[:, 3] == 0,
+        (vector_ab * axis_1).sum(dim=-1) + (vector_cb * axis_1).sum(dim=-1),
+        (vector_ab * axis_2).sum(dim=-1) + (vector_cb * axis_2).sum(dim=-1),
+    )

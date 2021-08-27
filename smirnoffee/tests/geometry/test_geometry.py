@@ -2,7 +2,12 @@ import numpy
 import pytest
 import torch
 
-from smirnoffee.geometry import compute_angles, compute_bond_vectors, compute_dihedrals
+from smirnoffee.geometry import (
+    compute_angles,
+    compute_bond_vectors,
+    compute_dihedrals,
+    compute_linear_displacement,
+)
 
 
 @pytest.mark.parametrize(
@@ -53,3 +58,24 @@ def test_compute_dihedrals(phi_sign):
     dihedrals = compute_dihedrals(conformer, atom_indices)
 
     assert torch.allclose(dihedrals, torch.tensor([phi_sign * numpy.pi / 4.0]))
+
+
+def test_compute_linear_displacement():
+
+    conformer = torch.tensor([[-1.0, 0.1, 0.0], [+0.0, 0.0, 0.0], [+1.0, 0.1, 0.0]])
+    atom_indices = torch.tensor([[0, 1, 2, 0], [0, 1, 2, 1]])
+
+    actual_value = compute_linear_displacement(conformer, atom_indices)
+
+    # Displacement along axis 0 (in this case will be the +z axis) should be 0
+    # as the angle between A->C and the +z axis is 90 degrees (i.e. dot product=0.0)
+    #
+    # Displacement along axis 1 (in this case will be the -y axis) will equal the
+    # -y . a->c + -y . a->c
+    a = 0.1 / float(numpy.sqrt(1.0 * 1.0 + 0.1 * 0.1))
+    h = 1.0
+
+    expected_value = torch.tensor([0.0, -2.0 * a / h])  # (cos θ = a / h)
+
+    assert expected_value.shape == actual_value.shape
+    assert torch.allclose(expected_value, actual_value)
