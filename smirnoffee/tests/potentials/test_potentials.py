@@ -15,7 +15,7 @@ from smirnoffee.potentials.potentials import (
     evaluate_system_energy,
 )
 from smirnoffee.smirnoff import _get_parameter_value
-from smirnoffee.tests.utilities import (
+from smirnoffee.tests.utilities.energies import (
     evaluate_openmm_energy,
     reduce_and_perturb_force_field,
 )
