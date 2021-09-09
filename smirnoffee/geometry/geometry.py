@@ -4,8 +4,6 @@ from typing import Tuple
 
 import torch
 
-_EPSILON = 1.0e-8
-
 
 def compute_bond_vectors(
     conformer: torch.Tensor,
@@ -42,16 +40,19 @@ def compute_angles(
         return torch.tensor([])
 
     vector_ab = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 0]]
-    vector_ab = vector_ab / torch.norm(vector_ab, dim=1).unsqueeze(1)
-
     vector_ac = conformer[atom_indices[:, 1]] - conformer[atom_indices[:, 2]]
-    vector_ac = vector_ac / torch.norm(vector_ac, dim=1).unsqueeze(1)
 
-    cos_angle = (vector_ab * vector_ac).sum(dim=1)
-    # TODO: properly handle the acos singularity.
-    cos_angle = torch.clamp(cos_angle, -1.0 + _EPSILON, 1.0 - _EPSILON)
+    # tan theta = sin theta / cos theta
+    #
+    # ||a x b|| = ||a|| ||b|| sin theta
+    #   a . b   = ||a|| ||b|| cos theta
+    #
+    # => tan theta = (a x b) / (a . b)
+    angles = torch.atan2(
+        torch.norm(torch.cross(vector_ab, vector_ac, dim=-1), dim=-1),
+        (vector_ab * vector_ac).sum(dim=-1),
+    )
 
-    angles = torch.acos(cos_angle)
     return angles
 
 

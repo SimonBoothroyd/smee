@@ -1,6 +1,7 @@
 import numpy
 import pytest
 import torch
+import torch.autograd.functional
 
 from smirnoffee.geometry import (
     compute_angles,
@@ -46,6 +47,12 @@ def test_compute_angles():
 
     assert torch.allclose(angles, torch.tensor([numpy.pi / 2, numpy.pi / 4, numpy.pi]))
 
+    # Make sure there are no singularities in the gradients.
+    gradients = torch.autograd.functional.jacobian(
+        lambda x: compute_angles(x, atom_indices), conformer
+    )
+    assert not torch.isnan(gradients).any() and not torch.isinf(gradients).any()
+
 
 @pytest.mark.parametrize("phi_sign", [-1.0, 1.0])
 def test_compute_dihedrals(phi_sign):
@@ -58,6 +65,12 @@ def test_compute_dihedrals(phi_sign):
     dihedrals = compute_dihedrals(conformer, atom_indices)
 
     assert torch.allclose(dihedrals, torch.tensor([phi_sign * numpy.pi / 4.0]))
+
+    # Make sure there are no singularities in the gradients.
+    gradients = torch.autograd.functional.jacobian(
+        lambda x: compute_dihedrals(x, atom_indices), conformer
+    )
+    assert not torch.isnan(gradients).any() and not torch.isinf(gradients).any()
 
 
 def test_compute_linear_displacement():
