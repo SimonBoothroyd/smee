@@ -1,137 +1,105 @@
 SMIRNOFF Energy Evaluations
 ===========================
 [![Test Status](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/SimonBoothroyd/smirnoffee.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/SimonBoothroyd/smirnoffee/context:python)
 [![codecov](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main/graph/badge.svg)](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-The `smirnoffee` framework aims to offer a simple API for differentiably evaluating the energy of [SMIRNOFF](
-https://openforcefield.github.io/standards/standards/smirnoff/) force fields applied to **single** molecules using
-``pytorch``.
+The `smirnoffee` framework aims to offer a simple API for differentiably evaluating the energy of [SMIRNOFF](https://openforcefield.github.io/standards/standards/smirnoff/) 
+force fields applied to molecules using `pytorch`.
 
 The package currently supports evaluating the energy of force fields that contain: 
 
 * `Bonds`, `Angles`, `ProperTorsions` and `ImproperTorsions` 
-* `vdW`, `Electrostatics`, `LibraryCharges`, `ChargeIncrementModel`, and `ToolkitAM1BCC`
+* `vdW`, `Electrostatics`, `ToolkitAM1BCC`
 
 parameter handlers.
 
-Force fields that apply virtual sites will likely be supported once the [`openff-interchange`](
-https://github.com/openforcefield/openff-interchange) framework, which `smirnoffee` is currently built on top of, 
-supports such particles.
+Force fields that apply virtual sites will likely be supported soon.
 
 ***Warning**: This code is currently experimental and under active development. If you are using this it, please be 
-aware that it is not guaranteed to provide correct results, the documentation and testing is incomplete, and the
+aware that it is not guaranteed to provide correct results, the documentation and testing maybe be incomplete, and the
 API can change without notice.*
 
 ## Installation
 
-The core dependencies can be installed using the [`conda`](https://docs.conda.io/en/latest/miniconda.html) 
-package manager:
+A development conda environment can be created and activated by running:
 
 ```shell
-conda env create --name smirnoffee --file devtools/conda-envs/test-env.yaml
-python setup.py develop
+make env
+conda activate smirnoffee
 ```
+
+The environment will include all development dependencies, including linters and testing apparatus.
 
 ## Getting Started
 
-To get started, we will show how the energy of paracetamol in a particular conformer can be evaluated using 
-`smirnoffee` framework. We will then use ``pytorch`` to perform an energy minimization. 
+To get started, we will show how the energy of paracetamol in a particular conformer can be evaluated using `smirnoffee` 
+framework. 
 
 We start by loading in the molecule of interest, in this case paracetamol as defined by its SMILES representation,
 using the [`openff-toolkit`](https://github.com/openforcefield/openff-toolkit) and generating a single conformer for it:
 
 ```python
-from openff.toolkit.topology import Molecule
-
-molecule: Molecule = Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
-molecule.generate_conformers(n_conformers=1)
-
-from simtk import unit
+import openff.toolkit
+import openff.units
 import torch
 
-conformer = torch.tensor(molecule.conformers[0].value_in_unit(unit.angstrom))
+molecule = openff.toolkit.Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
+molecule.generate_conformers(n_conformers=1)
+
+conformer = torch.tensor(molecule.conformers[0].m_as(openff.units.unit.angstrom))
 ```
 
 Next we will load in the force field that encodes the potential energy function we wish to evaluate
+and apply it to our molecule.
 
 ```python
-from openff.toolkit.typing.engines.smirnoff import ForceField
-force_field = ForceField("openff_unconstrained-1.0.0.offxml")
+import openff.interchange
+
+force_field = openff.toolkit.ForceField(
+    "openff_unconstrained-2.0.0.offxml"
+)
+interchange = openff.interchange.Interchange.from_smirnoff(
+    force_field, molecule.to_topology()
+)
 ```
 
-The force field is applied to the molecule of interest using the `Interchange` object
+In order to use an interchange object with this framework, we need to map it into a collection of tensors:
 
 ```python
-from openff.interchange.components.interchange import Interchange
-openff_system = Interchange.from_smirnoff(force_field, molecule.to_topology())
+from smirnoffee.ff.smirnoff import convert_interchange
+force_field, [applied_parameters] = convert_interchange(interchange)
 ```
 
-The returned ``openff_system`` will contain the full set of parameters that have been applied to our molecule
-in a format that is independant of any particular molecular simulation engine.
+**Note:** The `convert_interchange` function can take either a single interchange object, or a list of multiple.
 
-The energy of the molecule can then be directly be evaluated using the parameterized system and the confomrer of 
-interest
+These tensors are returned as::
+
+* a `smirnoffee.ff.TensorForceField`: this object stores the original values of the force field parameters.
+* a list of ``smirnoffee.ff.AppliedParameters``: each object will store a map for every handler, that specifies which 
+  parameters were assigned to which element (e.g. bond, angle, etc).
+
+Storing the parameter values separately from how they should be applied allows us to easily modify the values of the
+parameters and re-evaluate the energy using those parameters.
+
+The energy of the molecule can then be directly be evaluated:
 
 ```python
-from smirnoffee.potentials import evaluate_system_energy
-energy = evaluate_system_energy(openff_system, conformer)
+from smirnoffee.potentials import evaluate_energy
+energy = evaluate_energy(applied_parameters, conformer, force_field)
 
 print(f"Energy = {energy.item():.3f} kJ / mol")
 ```
 
 > Energy = 137.622 kJ / mol
 
-Because the ``evaluate_system_energy`` function will evaluate the system in a fully differentiable manner, we can
-use to as part of an energy minimization loop
-
-```python
-from torch import optim
-
-# Specify that we would like to compute the gradient of the energy with
-# respect to this conformer.
-conformer.requires_grad = True
-
-# Minimize the conformer using the standard pytorch optimization loop.
-optimizer = optim.Adam([conformer], lr=0.02)
-
-for epoch in range(75):
-
-    energy = evaluate_system_energy(openff_system, conformer)
-    energy.backward()
-
-    optimizer.step()
-    optimizer.zero_grad()
-
-    print(f"Epoch {epoch}: E={energy.item()} kJ / mol")
-
-# Store the final conformer and save the molecule to file.
-molecule.add_conformer(conformer.detach().numpy() * unit.angstrom)
-molecule.to_file("molecule.xyz", "XYZ")
-```
-
-> Epoch 0:  E=137.62181091308594 kJ / mol
-> 
-> Epoch 25: E=112.00886535644531 kJ / mol
-> 
-> Epoch 50: E=110.65577697753906 kJ / mol
-> 
-> Epoch 74: E=110.43109130859375 kJ / mol
-
-For more examples of using this framework, including how to compute the gradient of the energy with respect to a 
-set of force field parameters, see the [examples](examples) directory.
+Here we have provided a single conformer, but multiple can be batched together by stacking them along the first axis for
+faster evaluation.
 
 ## License
 
-The main package is release under the [MIT license](LICENSE). Parts of the package are inspired by a number
-of third party packages whose licenses are included in the [3rd party license file](LICENSE-3RD-PARTY).
-
-#### Geometric
-
-(BSD 3-clause) The internal coordinate code is heavily based off of the ``internal`` module of the 
-[``geomeTRIC`` package](https://github.com/leeping/geomeTRIC).
+The main package is release under the [MIT license](LICENSE). 
 
 ## Copyright
 
-Copyright (c) 2021, Simon Boothroyd
+Copyright (c) 2023, Simon Boothroyd

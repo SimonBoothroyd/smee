@@ -1,51 +1,46 @@
+import openff.interchange
+import openff.toolkit
 import torch
-from openff.interchange.components.interchange import Interchange
-from openff.toolkit.topology import Molecule
-from openff.toolkit.typing.engines.smirnoff import ForceField
-from simtk import unit
+from openff.units import unit
 
-from smirnoffee.potentials.potentials import evaluate_system_energy
+from smirnoffee.ff.smirnoff import convert_interchange
+from smirnoffee.potentials import evaluate_energy
 
 
 def main():
-
     # Load in a paracetamol molecule and generate a conformer for it.
-    molecule: Molecule = Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
+    molecule = openff.toolkit.Molecule.from_smiles("CC(=O)NC1=CC=C(C=C1)O")
     molecule.generate_conformers(n_conformers=1)
-    molecule.to_file("initial.xyz", "XYZ")
 
-    conformer = torch.tensor(molecule.conformers[0].value_in_unit(unit.angstrom)) * 1.10
+    conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
 
     # Parameterize the molecule
-    openff_system = Interchange.from_smirnoff(
-        ForceField("openff_unconstrained-1.0.0.offxml"), molecule.to_topology()
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        openff.toolkit.ForceField("openff_unconstrained-2.0.0.offxml"),
+        molecule.to_topology(),
     )
+    force_field, [applied_parameters] = convert_interchange(interchange)
 
-    # Specify the parameters that we want to differentiate respect to, as well as a
-    # tensor that the computed gradients will be attached to.
-    parameter_ids = [
-        (handler_type, potential_key, attribute)
-        for handler_type, handler in openff_system.handlers.items()
-        # Computing the gradients w.r.t. nonbonded handlers is not yet supported.
-        if handler_type not in ["Electrostatics", "vdW", "ToolkitAM1BCC"]
-        for potential_key, potential in handler.potentials.items()
-        for attribute in potential.parameters
-    ]
-    parameter_delta = torch.zeros(len(parameter_ids), requires_grad=True)
+    # Specify that we want to compute the gradient of the energy with respect to the
+    # vdW parameters.
+    vdw_potential = force_field.potentials_by_type["vdW"]
+    vdw_potential.parameters.requires_grad = True
 
-    # Compute the energies and backpropagate to get gradient of the energy with respect
-    # to the parameters specified above.
-    energy = evaluate_system_energy(
-        openff_system,
-        conformer,
-        parameter_delta=parameter_delta,
-        parameter_delta_ids=parameter_ids,
-    )
+    # Compute the energies and backpropagate to get gradient of the energy.
+    energy = evaluate_energy(applied_parameters, conformer, force_field)
     energy.backward()
 
     # Print the gradients.
-    for parameter_id, gradient in zip(parameter_ids, parameter_delta.grad.numpy()):
-        print(f"{parameter_id} - {gradient}")
+    for parameter_key, gradient in zip(
+        vdw_potential.parameter_keys, vdw_potential.parameters.grad.numpy()
+    ):
+        parameter_cols = vdw_potential.parameter_cols
+
+        parameter_grads = ", ".join(
+            f"dU/d{parameter_col} = {parameter_grad: 8.3f}"
+            for parameter_col, parameter_grad in zip(parameter_cols, gradient)
+        )
+        print(f"{parameter_key.id.ljust(15)} - {parameter_grads}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,37 @@
+name: smirnoffee
+
+channels:
+  - conda-forge
+
+dependencies:
+
+  - python >=3.10
+  - pip
+
+  # Core packages
+  - openff-units
+  - openff-toolkit-base >=0.9.2
+  - openff-interchange-base
+
+  - pytorch-cpu
+  - pydantic
+
+  # Dev / Testing
+  - rdkit
+  - ambertools
+
+  - openmm  # regression testing energies
+
+  - versioningit
+
+  - pre-commit
+  - isort
+  - black
+  - flake8
+  - flake8-pyproject
+
+  - pytest
+  - pytest-cov
+  - pytest-mock
+
+  - codecov
