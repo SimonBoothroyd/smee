@@ -15,7 +15,7 @@ jobs:
     container: condaforge/mambaforge:latest
 
     steps:
-    - uses: actions/checkout@v2.3.4
+    - uses: actions/checkout@v3.3.0
 
     - name: Setup Conda Environment
       run: |
@@ -26,7 +26,7 @@ jobs:
         make test
 
     - name: CodeCov
-      uses: codecov/codecov-action@v2.0.3
+      uses: codecov/codecov-action@v3.1.1
       with:
         file: ./coverage.xml
         flags: unittests
