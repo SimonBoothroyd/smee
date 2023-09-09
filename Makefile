@@ -7,7 +7,7 @@ env:
 	mamba create     --name $(PACKAGE_NAME)
 	mamba env update --name $(PACKAGE_NAME) --file devtools/envs/base.yaml
 	$(CONDA_ENV_RUN) pip install --no-deps -e .
-	$(CONDA_ENV_RUN) pre-commit install
+	$(CONDA_ENV_RUN) pre-commit install || true
 
 lint:
 	$(CONDA_ENV_RUN) isort --check-only $(PACKAGE_NAME) examples
