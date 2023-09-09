@@ -19,7 +19,7 @@ jobs:
 
     - name: Setup Conda Environment
       run: |
-        apt update -y apt install -y make
+        apt update && apt install -y make
         
         make env
         make lint
