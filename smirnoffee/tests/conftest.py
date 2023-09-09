@@ -1,72 +1,73 @@
+import openff.interchange
+import openff.toolkit
+import openff.units
 import pytest
 import torch
-from openff.interchange.components.interchange import Interchange
-from openff.toolkit.topology import Molecule
-from openff.toolkit.typing.engines.smirnoff import ForceField
 
 
 @pytest.fixture(scope="module")
-def default_force_field() -> ForceField:
+def default_force_field() -> openff.toolkit.ForceField:
     """Returns the OpenFF 1.3.0 force field with constraints removed."""
 
-    force_field = ForceField("openff-1.0.0.offxml")
-    # force_field.deregister_parameter_handler("ToolkitAM1BCC")
+    force_field = openff.toolkit.ForceField("openff-1.3.0.offxml")
     force_field.deregister_parameter_handler("Constraints")
 
     return force_field
 
 
 @pytest.fixture(scope="module")
-def ethanol() -> Molecule:
+def ethanol() -> openff.toolkit.Molecule:
     """Returns an OpenFF ethanol molecule with a fixed atom order."""
 
-    return Molecule.from_mapped_smiles(
+    return openff.toolkit.Molecule.from_mapped_smiles(
         "[H:5][C:2]([H:6])([H:7])[C:3]([H:8])([H:9])[O:1][H:4]"
     )
 
 
 @pytest.fixture(scope="module")
 def ethanol_conformer(ethanol) -> torch.Tensor:
-    """Returns a conformer [A] of ethanol with an ordering which matches the
+    """Returns a conformer [Å] of ethanol with an ordering which matches the
     ``ethanol`` fixture."""
 
-    from simtk import unit as simtk_unit
-
     ethanol.generate_conformers(n_conformers=1)
-    conformer = ethanol.conformers[0].value_in_unit(simtk_unit.angstrom)
+    conformer = ethanol.conformers[0].to(openff.units.unit.angstrom)
 
     return torch.from_numpy(conformer)
 
 
 @pytest.fixture(scope="module")
-def ethanol_system(ethanol, default_force_field) -> Interchange:
-    """Returns a parametermized system of ethanol."""
+def ethanol_interchange(ethanol, default_force_field) -> openff.interchange.Interchange:
+    """Returns a parameterized system of ethanol."""
 
-    return Interchange.from_smirnoff(default_force_field, ethanol.to_topology())
+    return openff.interchange.Interchange.from_smirnoff(
+        default_force_field, ethanol.to_topology()
+    )
 
 
 @pytest.fixture(scope="module")
-def formaldehyde() -> Molecule:
+def formaldehyde() -> openff.toolkit.Molecule:
     """Returns an OpenFF formaldehyde molecule with a fixed atom order.."""
 
-    return Molecule.from_mapped_smiles("[H:3][C:1](=[O:2])[H:4]")
+    return openff.toolkit.Molecule.from_mapped_smiles("[H:3][C:1](=[O:2])[H:4]")
 
 
 @pytest.fixture(scope="module")
 def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
-    """Returns a conformer [A] of formaldehyde with an ordering which matches the
+    """Returns a conformer [Å] of formaldehyde with an ordering which matches the
     ``formaldehyde`` fixture."""
 
-    from simtk import unit as simtk_unit
-
     formaldehyde.generate_conformers(n_conformers=1)
-    conformer = formaldehyde.conformers[0].value_in_unit(simtk_unit.angstrom)
+    conformer = formaldehyde.conformers[0].to(openff.units.unit.angstrom)
 
     return torch.from_numpy(conformer)
 
 
 @pytest.fixture(scope="module")
-def formaldehyde_system(formaldehyde, default_force_field) -> Interchange:
-    """Returns a parametermized system of formaldehyde."""
+def formaldehyde_interchange(
+    formaldehyde, default_force_field
+) -> openff.interchange.Interchange:
+    """Returns a parameterized system of formaldehyde."""
 
-    return Interchange.from_smirnoff(default_force_field, formaldehyde.to_topology())
+    return openff.interchange.Interchange.from_smirnoff(
+        default_force_field, formaldehyde.to_topology()
+    )

@@ -1,7 +1,0 @@
-include LICENSE
-include LICENSE-3RD-PARTY
-include MANIFEST.in
-include versioneer.py
-
-graft smirnoffee
-global-exclude *.py[cod] __pycache__ *.so

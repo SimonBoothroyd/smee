@@ -1,14 +1,14 @@
-"""Functions for evaluating valence potential energy functions."""
+"""Valence potential energy functions."""
 
 import torch
 
-from smirnoffee.geometry import compute_angles, compute_bond_vectors, compute_dihedrals
-from smirnoffee.potentials import potential_energy_function
+import smirnoffee.geometry
+import smirnoffee.potentials
 
 _EPSILON = 1.0e-8
 
 
-@potential_energy_function("Bonds", "k/2*(r-length)**2")
+@smirnoffee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
 def evaluate_harmonic_bond_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -22,10 +22,10 @@ def evaluate_harmonic_bond_energy(
     Args:
         conformer: The conformer to evaluate the potential at.
         atom_indices: The indices of the atoms involved in each bond with
-            shape=(n_bonds, 4).
+            shape=(n_bonds, 2).
         parameters: A tensor with shape=(n_bonds, 2) where there first column
-            contains the force constants ``k``, and the second the equilibrium
-            bond ``length``.
+            contains the force constants ``k`` [kJ / mol / Å^2], and the second the
+            equilibrium bond ``length`` [Å].
 
     Returns:
         The evaluated potential energy [kJ / mol].
@@ -34,12 +34,12 @@ def evaluate_harmonic_bond_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    _, distances = compute_bond_vectors(conformer, atom_indices)
+    _, distances = smirnoffee.geometry.compute_bond_vectors(conformer, atom_indices)
 
-    return (0.5 * parameters[:, 0] * (distances - parameters[:, 1]) ** 2).sum()
+    return (0.5 * parameters[:, 0] * (distances - parameters[:, 1]) ** 2).sum(-1)
 
 
-@potential_energy_function("Angles", "k/2*(theta-angle)**2")
+@smirnoffee.potentials.potential_energy_fn("Angles", "k/2*(theta-angle)**2")
 def evaluate_harmonic_angle_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -53,10 +53,10 @@ def evaluate_harmonic_angle_energy(
     Args:
         conformer: The conformer to evaluate the potential at.
         atom_indices: The indices of the atoms involved in each valence angle with
-            shape=(n_angles, 4).
+            shape=(n_angles, 3).
         parameters: A tensor with shape=(n_angles, 2) where there first column
-            contains the force constants ``k``, and the second the equilibrium
-            ``angle``.
+            contains the force constants ``k`` [kJ / mol / deg^2], and the second the
+            equilibrium ``angle`` [deg].
 
     Returns:
         The evaluated potential energy [kJ / mol].
@@ -65,9 +65,9 @@ def evaluate_harmonic_angle_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    angles = torch.rad2deg(compute_angles(conformer, atom_indices))
+    angles = torch.rad2deg(smirnoffee.geometry.compute_angles(conformer, atom_indices))
 
-    return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum()
+    return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum(-1)
 
 
 def _evaluate_cosine_torsion_energy(
@@ -96,16 +96,18 @@ def _evaluate_cosine_torsion_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1)
 
-    phi = compute_dihedrals(conformer, atom_indices)
+    phi = smirnoffee.geometry.compute_dihedrals(conformer, atom_indices)
 
     return (
         parameters[:, 0]
         / parameters[:, 3]
         * (1.0 + torch.cos(parameters[:, 1] * phi - torch.deg2rad(parameters[:, 2])))
-    ).sum()
+    ).sum(-1)
 
 
-@potential_energy_function("ProperTorsions", "k*(1+cos(periodicity*theta-phase))")
+@smirnoffee.potentials.potential_energy_fn(
+    "ProperTorsions", "k*(1+cos(periodicity*theta-phase))"
+)
 def evaluate_cosine_proper_torsion_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -131,7 +133,9 @@ def evaluate_cosine_proper_torsion_energy(
     return _evaluate_cosine_torsion_energy(conformer, atom_indices, parameters)
 
 
-@potential_energy_function("ImproperTorsions", "k*(1+cos(periodicity*theta-phase))")
+@smirnoffee.potentials.potential_energy_fn(
+    "ImproperTorsions", "k*(1+cos(periodicity*theta-phase))"
+)
 def evaluate_cosine_improper_torsion_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
