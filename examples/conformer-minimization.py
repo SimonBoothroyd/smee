@@ -4,8 +4,8 @@ import openff.units
 import torch
 import torch.optim
 
-from smirnoffee.ff.smirnoff import convert_interchange
-from smirnoffee.potentials import evaluate_energy
+from smirnoffee.ff import convert_interchange
+from smirnoffee.potentials import compute_energy
 
 
 def main():
@@ -27,13 +27,13 @@ def main():
     )
 
     # Convert the interchange object into a pytorch tensor representation
-    force_field, [applied_parameters] = convert_interchange(interchange)
+    force_field, [topology] = convert_interchange(interchange)
 
     # Minimize the conformer
     optimizer = torch.optim.Adam([conformer], lr=0.02)
 
     for epoch in range(75):
-        energy = evaluate_energy(applied_parameters, conformer, force_field)
+        energy = compute_energy(topology.parameters, conformer, force_field)
         energy.backward()
 
         optimizer.step()

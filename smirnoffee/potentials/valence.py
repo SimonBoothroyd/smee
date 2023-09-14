@@ -9,7 +9,7 @@ _EPSILON = 1.0e-8
 
 
 @smirnoffee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
-def evaluate_harmonic_bond_energy(
+def compute_harmonic_bond_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
@@ -40,7 +40,7 @@ def evaluate_harmonic_bond_energy(
 
 
 @smirnoffee.potentials.potential_energy_fn("Angles", "k/2*(theta-angle)**2")
-def evaluate_harmonic_angle_energy(
+def compute_harmonic_angle_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
@@ -70,7 +70,7 @@ def evaluate_harmonic_angle_energy(
     return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum(-1)
 
 
-def _evaluate_cosine_torsion_energy(
+def _compute_cosine_torsion_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
@@ -108,7 +108,7 @@ def _evaluate_cosine_torsion_energy(
 @smirnoffee.potentials.potential_energy_fn(
     "ProperTorsions", "k*(1+cos(periodicity*theta-phase))"
 )
-def evaluate_cosine_proper_torsion_energy(
+def compute_cosine_proper_torsion_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
@@ -130,13 +130,13 @@ def evaluate_cosine_proper_torsion_energy(
     Returns:
         The evaluated potential energy [kJ / mol].
     """
-    return _evaluate_cosine_torsion_energy(conformer, atom_indices, parameters)
+    return _compute_cosine_torsion_energy(conformer, atom_indices, parameters)
 
 
 @smirnoffee.potentials.potential_energy_fn(
     "ImproperTorsions", "k*(1+cos(periodicity*theta-phase))"
 )
-def evaluate_cosine_improper_torsion_energy(
+def compute_cosine_improper_torsion_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
     parameters: torch.Tensor,
@@ -158,4 +158,4 @@ def evaluate_cosine_improper_torsion_energy(
     Returns:
         The evaluated potential energy [kJ / mol].
     """
-    return _evaluate_cosine_torsion_energy(conformer, atom_indices, parameters)
+    return _compute_cosine_torsion_energy(conformer, atom_indices, parameters)

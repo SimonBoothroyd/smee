@@ -1,13 +1,27 @@
 from smirnoffee.ff._ff import (
-    AppliedParameters,
+    NonbondedParameterMap,
     ParameterMap,
     TensorForceField,
     TensorPotential,
+    TensorTopology,
+    TensorVSites,
+    ValenceParameterMap,
+    VSiteMap,
+    convert_handlers,
+    convert_interchange,
+    parameter_converter,
 )
 
 __all__ = [
+    "NonbondedParameterMap",
     "ParameterMap",
-    "AppliedParameters",
     "TensorForceField",
     "TensorPotential",
+    "TensorTopology",
+    "TensorVSites",
+    "ValenceParameterMap",
+    "VSiteMap",
+    "convert_handlers",
+    "convert_interchange",
+    "parameter_converter",
 ]

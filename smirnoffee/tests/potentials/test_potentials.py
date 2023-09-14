@@ -1,14 +1,36 @@
+import copy
+
+import numpy
 import openff.interchange
 import openff.toolkit
 import openff.units
+import openmm
+import openmm.unit
 import pytest
 import torch
 
-from smirnoffee.ff.smirnoff import convert_interchange
-from smirnoffee.potentials import evaluate_energy
+from smirnoffee.ff import convert_interchange
+from smirnoffee.potentials import compute_energy, compute_energy_potential
 
 
-def evaluate_openmm_energy(
+def place_v_sites(
+    conformer: torch.Tensor, interchange: openff.interchange.Interchange
+) -> torch.Tensor:
+    conformer = conformer.numpy() * openmm.unit.angstrom
+
+    openmm_system = interchange.to_openmm()
+    openmm_context = openmm.Context(
+        openmm_system,
+        openmm.VerletIntegrator(0.1),
+        openmm.Platform.getPlatformByName("Reference"),
+    )
+    openmm_context.setPositions(conformer)
+    openmm_context.computeVirtualSites()
+    conformer = openmm_context.getState(getPositions=True).getPositions(asNumpy=True)
+    return torch.tensor(conformer.value_in_unit(openmm.unit.angstrom))
+
+
+def compute_openmm_energy(
     interchange: openff.interchange.Interchange,
     conformer: torch.Tensor,
 ) -> torch.Tensor:
@@ -28,14 +50,24 @@ def evaluate_openmm_energy(
 
     openmm_system = interchange.to_openmm()
 
+    # force: openmm.NonbondedForce
+    # (force,) = openmm_system.getForces()
+    #
+    # for i in range(force.getNumParticles()):
+    #     q, sig, eps = force.getParticleParameters(i)
+    #     force.setParticleParameters(i, q, sig, eps)
+
+    if openmm_system.getNumParticles() != interchange.topology.n_atoms:
+        for _ in range(interchange.topology.n_atoms - openmm_system.getNumParticles()):
+            openmm_system.addParticle(1.0)
+
     openmm_context = openmm.Context(
         openmm_system,
         openmm.VerletIntegrator(0.1),
         openmm.Platform.getPlatformByName("Reference"),
     )
-    openmm_context.setPositions(
-        (conformer.numpy() * openmm.unit.angstrom).value_in_unit(openmm.unit.nanometers)
-    )
+    openmm_context.setPositions(conformer.numpy() * openmm.unit.angstrom)
+    openmm_context.computeVirtualSites()
 
     state = openmm_context.getState(getEnergy=True)
     energy = state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoules_per_mole)
@@ -56,7 +88,7 @@ def evaluate_openmm_energy(
         "CC(=O)NC1=CC=C(C=C1)O",
     ],
 )
-def test_evaluate_energy(smiles: str):
+def test_compute_energy(smiles: str):
     molecule = openff.toolkit.Molecule.from_smiles(smiles, allow_undefined_stereo=True)
     molecule.generate_conformers(n_conformers=1)
 
@@ -70,9 +102,70 @@ def test_evaluate_energy(smiles: str):
 
     force_field, parameters_per_topology = convert_interchange(interchange)
 
-    energy_smirnoffee = evaluate_energy(
-        parameters_per_topology[0], conformer, force_field
+    for handler_type in force_field.potentials_by_type:
+        interchange_copy = copy.deepcopy(interchange)
+        interchange_copy.collections = {
+            handler_type: interchange_copy.collections[handler_type]
+        }
+
+        energy_smirnoffee = compute_energy_potential(
+            parameters_per_topology[0].parameters[handler_type],
+            conformer,
+            force_field.potentials_by_type[handler_type],
+        )
+        energy_openmm = compute_openmm_energy(interchange_copy, conformer)
+
+        print(
+            handler_type.ljust(20),
+            f"{energy_smirnoffee.item():.4f}",
+            f"{energy_openmm.item():.4f}",
+            flush=True,
+        )
+
+    #     assert torch.isclose(energy_smirnoffee.float(), energy_openmm.float())
+
+    energy_smirnoffee = compute_energy(
+        parameters_per_topology[0].parameters, conformer, force_field
     )
-    energy_openmm = evaluate_openmm_energy(interchange, conformer)
+    energy_openmm = compute_openmm_energy(interchange, conformer)
+
+    assert torch.isclose(energy_smirnoffee, energy_openmm)
+
+
+def test_compute_energy_v_sites():
+    molecule_a = openff.toolkit.Molecule.from_smiles("O")
+    molecule_a.generate_conformers(n_conformers=1)
+    molecule_b = openff.toolkit.Molecule.from_smiles("O")
+    molecule_b.generate_conformers(n_conformers=1)
+
+    topology = openff.toolkit.Topology()
+    topology.add_molecule(molecule_a)
+    topology.add_molecule(molecule_b)
+
+    conformer_a = molecule_a.conformers[0].m_as(openff.units.unit.angstrom)
+    conformer_b = molecule_b.conformers[0].m_as(openff.units.unit.angstrom)
+
+    conformer = torch.vstack(
+        [
+            torch.tensor(conformer_a),
+            torch.zeros((1, 3)),  # interchange for now interleaves v-sites
+            torch.tensor(conformer_b + numpy.array([[3.0, 0.0, 0.0]])),
+            torch.zeros((1, 3)),
+        ]
+    )
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        openff.toolkit.ForceField("tip4p_fb.offxml"), topology
+    )
+    conformer = place_v_sites(conformer, interchange)
+
+    force_field, topologies = convert_interchange(interchange)
+
+    energy_openmm = compute_openmm_energy(interchange, conformer)
+    energy_smirnoffee = compute_energy(
+        topologies[0].parameters,
+        conformer[[0, 1, 2, 4, 5, 6, 3, 7], :],
+        force_field,
+    )
 
     assert torch.isclose(energy_smirnoffee, energy_openmm)

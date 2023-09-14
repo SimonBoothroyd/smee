@@ -21,3 +21,6 @@ format:
 
 test:
 	$(CONDA_ENV_RUN) pytest -v --cov=$(PACKAGE_NAME) --cov-report=xml --color=yes $(PACKAGE_NAME)/tests/
+
+test-examples:
+	$(CONDA_ENV_RUN) jupyter nbconvert --to notebook --execute examples/*.ipynb

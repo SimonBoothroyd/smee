@@ -1,4 +1,4 @@
-"""Evaluate the potential energy of parameterized topolgies."""
+"""Evaluate the potential energy of parameterized topologies."""
 import importlib
 import inspect
 
@@ -26,7 +26,7 @@ def potential_energy_fn(handler_type: str, energy_expression: str):
     return _potential_function_inner
 
 
-def evaluate_energy_potential(
+def compute_energy_potential(
     parameters: smirnoffee.ff.ParameterMap,
     conformer: torch.Tensor,
     potential: smirnoffee.ff.TensorPotential,
@@ -48,11 +48,8 @@ def evaluate_energy_potential(
     if len(conformer.shape) == 2:
         conformer = torch.unsqueeze(conformer, 0)
 
-    parameter_values = potential.parameters[parameters.parameter_idxs]
-    global_parameter_values = (
-        None
-        if potential.global_parameters is None
-        else potential.global_parameters[parameters.global_parameter_idxs]
+    parameter_values = (
+        parameters.assignment_matrix.float() @ potential.parameters.float()
     )
 
     importlib.import_module("smirnoffee.potentials.nonbonded")
@@ -63,29 +60,41 @@ def evaluate_energy_potential(
 
     energy_fn_kwargs = {}
 
-    if "global_parameters" in energy_fn_spec.parameters:
-        energy_fn_kwargs["global_parameters"] = global_parameter_values
+    if "attributes" in energy_fn_spec.parameters:
+        energy_fn_kwargs["attributes"] = potential.attributes
 
-    energy = energy_fn(
-        conformer, parameters.atom_idxs, parameter_values, **energy_fn_kwargs
-    )
+    if isinstance(parameters, smirnoffee.ff.NonbondedParameterMap):
+        energy = energy_fn(
+            conformer,
+            parameter_values,
+            parameters.exclusions,
+            potential.attributes[parameters.exclusion_scale_idxs],
+            **energy_fn_kwargs,
+        )
+    elif isinstance(parameters, smirnoffee.ff.ValenceParameterMap):
+        energy = energy_fn(
+            conformer, parameters.particle_idxs, parameter_values, **energy_fn_kwargs
+        )
+    else:
+        raise NotImplementedError
+
     return energy
 
 
-def evaluate_energy(
-    parameters: smirnoffee.ff.AppliedParameters,
+def compute_energy(
+    parameters: dict[str, smirnoffee.ff.ParameterMap],
     conformer: torch.Tensor,
     force_field: smirnoffee.ff.TensorForceField,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kJ / mol] of a topology / molecule in a given
+    """Compute the potential energy [kJ / mol] of a topology in a given
     conformation(s).
 
     Args:
-        parameters: The parameters that were applied to the molecule. This should be
+        parameters: The parameters that were applied to the topology. This should be
             a dictionary with keys corresponding to a SMIRNOFF handler, and values
             of maps from interactions to corresponding parameters.
         conformer: The conformer(s) to evaluate the potential at with
-            ``shape=(n_atoms, 3)`` or ``shape=(n_confs, n_atoms, 3)``.
+            ``shape=(n_atoms + n_v_sites, 3)`` or ``shape=(n_confs, n_atoms, 3)``.
         force_field: The values of the force field parameters.
 
     Returns:
@@ -99,6 +108,6 @@ def evaluate_energy(
 
     for potential in force_field.potentials:
         parameter_map = parameters[potential.type]
-        energy += evaluate_energy_potential(parameter_map, conformer, potential)
+        energy += compute_energy_potential(parameter_map, conformer, potential)
 
     return energy
