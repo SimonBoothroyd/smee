@@ -24,6 +24,7 @@ jobs:
         make env
         make lint
         make test
+        make test-examples
 
     - name: CodeCov
       uses: codecov/codecov-action@v3.1.1

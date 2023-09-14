@@ -27,8 +27,12 @@ dependencies:
   - pre-commit
   - isort
   - black
+  - black-jupyter
   - flake8
   - flake8-pyproject
+
+  - jupyter
+  - nbconvert
 
   - pytest
   - pytest-cov
