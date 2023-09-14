@@ -16,22 +16,61 @@ _COULOMB_POTENTIAL = "coul"
 _LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
 
 
-def _lorentz_berthelot(parameters: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    epsilon_a = parameters[:, 0, 0]
-    epsilon_b = parameters[:, 1, 0]
-
-    sigma_a = parameters[:, 0, 1]
-    sigma_b = parameters[:, 1, 1]
-
+def _lorentz_berthelot(
+    epsilon_a: torch.Tensor,
+    epsilon_b: torch.Tensor,
+    sigma_a: torch.Tensor,
+    sigma_b: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
     return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
 
 
-@smirnoffee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
-def evaluate_lj_energy(
+def compute_pairwise(
     conformer: torch.Tensor,
-    atom_indices: torch.Tensor,
+    exclusions: torch.Tensor,
+    exclusion_scales: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Computes the pairwise squared distance between all pairs of particles, and the
+    corresponding scale factor based off any exclusions.
+
+    Args:
+        conformer: The conformer(s).
+        exclusions: A tensor containing pairs of atom indices whose interaction should
+            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
+        exclusion_scales: A tensor containing the scale factor for each exclusion pair
+            with ``shape=(n_exclusions, 1)``.
+
+    Returns:
+        The particle indices of each pair with ``shape=(n_pairs, 2)``, the squared
+        distance between each pair with ``shape=(B, n_pairs)``, and the scale factor
+        for each pair with ``shape=(n_pairs,)``.
+    """
+
+    n_particles = conformer.shape[-2]
+
+    pair_idxs = torch.triu_indices(n_particles, n_particles, 1).T
+    pair_scales = torch.ones(len(pair_idxs))
+
+    if len(exclusions) > 0:
+        exclusions, _ = exclusions.sort(dim=1)
+
+        i, j = exclusions[:, 0], exclusions[:, 1]
+        exclusions_1d = ((i * (2 * n_particles - i - 1)) / 2 + j - i - 1).int()
+
+        pair_scales[exclusions_1d] = exclusion_scales.squeeze(-1)
+
+    directions = conformer[:, pair_idxs[:, 1], :] - conformer[:, pair_idxs[:, 0], :]
+    distances_sqr = (directions * directions).sum(dim=-1)
+
+    return pair_idxs, distances_sqr, pair_scales
+
+
+@smirnoffee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
+def compute_lj_energy(
+    conformer: torch.Tensor,
     parameters: torch.Tensor,
-    global_parameters: torch.Tensor,
+    exclusions: torch.Tensor,
+    exclusion_scales: torch.Tensor,
 ) -> torch.Tensor:
     """Evaluates the potential energy [kJ / mol] of the vdW interactions using the
     standard Lennard-Jones potential.
@@ -41,47 +80,36 @@ def evaluate_lj_energy(
 
     Args:
         conformer: The conformer to evaluate the potential at.
-        atom_indices: The pairs of atom indices of the atoms involved in each
-            interaction with shape=(n_pairs, 2).
         parameters: A tensor containing the epsilon [kJ / mol] and sigma [Å] values
-            of each interaction pair, with ``shape=(n_pairs, 2, 2)``. Here
-            ``parameters[pair_idx][atom_idx][0] = epsilon``,
-            ``parameters[pair_idx][atom_idx][1] = sigma``.
-        global_parameters: A tensor containing the scale factor for each pair, with
-            ``shape=(n_pairs, 1)``.
+            of each particle, with ``shape=(n_particles, 2)``.
+        exclusions: A tensor containing pairs of atom indices whose interaction should
+            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
+        exclusion_scales: A tensor containing the scale factor for each exclusion pair
+            with ``shape=(n_exclusions, 1)``.
 
     Returns:
         The evaluated potential energy [kJ / mol].
     """
-
-    if len(atom_indices) == 0:
-        return torch.zeros(1)
 
     is_batched = conformer.ndim == 3
 
     if not is_batched:
         conformer = torch.unsqueeze(conformer, 0)
 
-    directions = conformer[:, atom_indices[:, 1]] - conformer[:, atom_indices[:, 0]]
-    distances_sqr = (directions * directions).sum(dim=-1)
-
-    inverse_distances_6 = torch.rsqrt(distances_sqr) ** 6
-    inverse_distances_12 = inverse_distances_6 * inverse_distances_6
-
-    epsilon, sigma = _lorentz_berthelot(parameters)
-
-    sigma_6 = sigma**6
-    sigma_12 = sigma_6 * sigma_6
-
-    energy = (
-        4.0
-        * epsilon
-        * (sigma_12 * inverse_distances_12 - sigma_6 * inverse_distances_6)
+    pair_idxs, distances_sqr, pair_scales = compute_pairwise(
+        conformer, exclusions, exclusion_scales
     )
-    # 1-n scale factors
-    energy *= global_parameters
 
-    energy = energy.sum(-1)
+    epsilon, sigma = _lorentz_berthelot(
+        parameters[pair_idxs[:, 0], 0],
+        parameters[pair_idxs[:, 1], 0],
+        parameters[pair_idxs[:, 0], 1],
+        parameters[pair_idxs[:, 1], 1],
+    )
+
+    x = sigma**6 / (distances_sqr**3)
+
+    energy = (pair_scales * 4.0 * epsilon * (x * (x - 1.0))).sum(-1)
 
     if not is_batched:
         energy = torch.squeeze(energy, 0)
@@ -90,11 +118,11 @@ def evaluate_lj_energy(
 
 
 @smirnoffee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)
-def evaluate_coulomb_energy(
+def compute_coulomb_energy(
     conformer: torch.Tensor,
-    atom_indices: torch.Tensor,
     parameters: torch.Tensor,
-    global_parameters: torch.Tensor,
+    exclusions: torch.Tensor,
+    exclusion_scales: torch.Tensor,
 ) -> torch.Tensor:
     """Evaluates the potential energy [kJ / mol] of the electrostatic interactions
     using the standard Coulomb potential.
@@ -104,35 +132,32 @@ def evaluate_coulomb_energy(
 
     Args:
         conformer: The conformer to evaluate the potential at.
-        atom_indices: The pairs of atom indices of the atoms involved in each
-            interaction with shape=(n_pairs, 2).
-        parameters: A tensor containing the charges [e] on each atom in each interaction
-            pair, with ``shape=(n_pairs, 2, 1)``.
-        global_parameters: A tensor containing the scale factor for each pair, with
-            ``shape=(n_pairs, 1)``.
+        parameters: A tensor containing the charge [e] of each particle, with
+            ``shape=(n_particles, 1)``.
+        exclusions: A tensor containing pairs of atom indices whose interaction should
+            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
+        exclusion_scales: A tensor containing the scale factor for each exclusion pair
+            with ``shape=(n_exclusions, 1)``.
 
     Returns:
         The evaluated potential energy [kJ / mol].
     """
-
-    if len(atom_indices) == 0:
-        return torch.zeros(1)
 
     is_batched = conformer.ndim == 3
 
     if not is_batched:
         conformer = torch.unsqueeze(conformer, 0)
 
-    directions = conformer[:, atom_indices[:, 1]] - conformer[:, atom_indices[:, 0]]
-    distances_sqr = (directions * directions).sum(dim=-1)
-
+    pair_idxs, distances_sqr, pair_scales = compute_pairwise(
+        conformer, exclusions, exclusion_scales
+    )
     inverse_distances = torch.rsqrt(distances_sqr)
 
     energy = (
         _COULOMB_PRE_FACTOR
-        * parameters[:, 0, 0]
-        * parameters[:, 1, 0]
-        * global_parameters
+        * pair_scales
+        * parameters[pair_idxs[:, 0], 0]
+        * parameters[pair_idxs[:, 1], 0]
         * inverse_distances
     ).sum(-1)
 

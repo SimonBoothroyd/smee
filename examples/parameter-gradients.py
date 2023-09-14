@@ -3,8 +3,8 @@ import openff.toolkit
 import torch
 from openff.units import unit
 
-from smirnoffee.ff.smirnoff import convert_interchange
-from smirnoffee.potentials import evaluate_energy
+from smirnoffee.ff import convert_interchange
+from smirnoffee.potentials import compute_energy
 
 
 def main():
@@ -19,7 +19,7 @@ def main():
         openff.toolkit.ForceField("openff_unconstrained-2.0.0.offxml"),
         molecule.to_topology(),
     )
-    force_field, [applied_parameters] = convert_interchange(interchange)
+    force_field, [topology] = convert_interchange(interchange)
 
     # Specify that we want to compute the gradient of the energy with respect to the
     # vdW parameters.
@@ -27,7 +27,7 @@ def main():
     vdw_potential.parameters.requires_grad = True
 
     # Compute the energies and backpropagate to get gradient of the energy.
-    energy = evaluate_energy(applied_parameters, conformer, force_field)
+    energy = compute_energy(topology.parameters, conformer, force_field)
     energy.backward()
 
     # Print the gradients.
