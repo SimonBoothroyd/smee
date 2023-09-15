@@ -16,6 +16,11 @@ dependencies:
   - pytorch-cpu
   - pydantic
 
+  # Examples
+  - jupyter
+  - nbconvert
+  - nglview
+
   # Dev / Testing
   - rdkit
   - ambertools
@@ -27,12 +32,9 @@ dependencies:
   - pre-commit
   - isort
   - black
-  - black-jupyter
   - flake8
   - flake8-pyproject
-
-  - jupyter
-  - nbconvert
+  - nbqa
 
   - pytest
   - pytest-cov
