@@ -30,7 +30,7 @@ def ethanol_conformer(ethanol) -> torch.Tensor:
     ``ethanol`` fixture."""
 
     ethanol.generate_conformers(n_conformers=1)
-    conformer = ethanol.conformers[0].to(openff.units.unit.angstrom)
+    conformer = ethanol.conformers[0].m_as(openff.units.unit.angstrom)
 
     return torch.from_numpy(conformer)
 
@@ -57,7 +57,7 @@ def formaldehyde_conformer(formaldehyde) -> torch.Tensor:
     ``formaldehyde`` fixture."""
 
     formaldehyde.generate_conformers(n_conformers=1)
-    conformer = formaldehyde.conformers[0].to(openff.units.unit.angstrom)
+    conformer = formaldehyde.conformers[0].m_as(openff.units.unit.angstrom)
 
     return torch.from_numpy(conformer)
 

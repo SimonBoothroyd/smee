@@ -104,3 +104,54 @@ def test_convert_interchange():
     assert len(tensor_topology.v_sites.keys) == 1
     assert tensor_topology.v_sites.keys[0].type == "BondCharge"
     assert tensor_topology.v_sites.keys[0].orientation_atom_indices == (1, 0)
+
+
+def test_convert_interchange_multiple(
+    ethanol_conformer,
+    ethanol_interchange,
+    formaldehyde_conformer,
+    formaldehyde_interchange,
+):
+    force_field, topologies = convert_interchange(
+        [ethanol_interchange, formaldehyde_interchange]
+    )
+    assert len(topologies) == 2
+
+    expected_potentials = {
+        "Angles",
+        "Bonds",
+        "Electrostatics",
+        "ImproperTorsions",
+        "ProperTorsions",
+        "vdW",
+    }
+    assert {*force_field.potentials_by_type} == expected_potentials
+
+    expected_charge_keys = [
+        openff.interchange.models.PotentialKey(
+            id="[O:1]([C:3]([C:2]([H:5])([H:6])[H:7])([H:8])[H:9])[H:4]",
+            mult=0,
+            associated_handler="ToolkitAM1BCCHandler",
+        ),
+        openff.interchange.models.PotentialKey(
+            id="[C:1](=[O:2])([H:3])[H:4]",
+            mult=0,
+            associated_handler="ToolkitAM1BCCHandler",
+        ),
+    ]
+    assert all(
+        key in force_field.potentials_by_type["Electrostatics"].parameter_keys
+        for key in expected_charge_keys
+    )
+
+    expected_improper_keys = [
+        openff.interchange.models.PotentialKey(
+            id="[*:1]~[#6X3:2](~[*:3])~[*:4]",
+            mult=0,
+            associated_handler="ImproperTorsions",
+        ),
+    ]
+    assert (
+        force_field.potentials_by_type["ImproperTorsions"].parameter_keys
+        == expected_improper_keys
+    )
