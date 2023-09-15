@@ -1,6 +1,30 @@
 """Compute internal coordinates (e.g. bond lengths)."""
+import typing
 
 import torch
+
+if typing.TYPE_CHECKING:
+    import smirnoffee.ff
+
+_DEGREES_TO_RADIANS = torch.pi / 180.0
+
+
+V_SITE_TYPE_TO_FRAME = {
+    "BondCharge": torch.tensor([[1.0, 0.0], [-1.0, 1.0], [-1.0, 1.0]]),
+    "MonovalentLonePair": torch.tensor(
+        [[1.0, 0.0, 0.0], [-1.0, 1.0, 0.0], [-1.0, 0.0, 1.0]]
+    ),
+    "DivalentLonePair": torch.tensor(
+        [[1.0, 0.0, 0.0], [-1.0, 0.5, 0.5], [-1.0, 1.0, 0.0]]
+    ),
+    "TrivalentLonePair": torch.tensor(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [-1.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
+            [-1.0, 1.0, 0.0, 0.0],
+        ]
+    ),
+}
 
 
 def compute_bond_vectors(
@@ -127,3 +151,179 @@ def compute_dihedrals(
         phi = torch.squeeze(phi, dim=0)
 
     return phi
+
+
+def _build_v_site_coord_frames(
+    v_sites: "smirnoffee.ff.VSiteMap",
+    conformer: torch.Tensor,
+    force_field: "smirnoffee.ff.TensorForceField",
+) -> torch.Tensor:
+    """Builds an orthonormal coordinate frame for each virtual particle
+    based on the type of virtual site and the coordinates of the parent atoms.
+
+    Notes:
+        * See `the OpenMM documentation for further information
+          <http://docs.openmm.org/7.0.0/userguide/theory.html#virtual-sites>`_.
+
+    Args:
+        v_sites: A mapping between the virtual sites to add and their corresponding
+            force field parameters.
+        conformer: The conformer to add the virtual sites to with
+            ``shape=(n_batches, n_atoms, 3)`` and units of [Å].
+        force_field: The force field containing the virtual site parameters.
+
+    Returns:
+        A tensor storing the local coordinate frames of all virtual sites with
+        ``shape=(n_batches, 4, n_v_sites, 3)`` where ``local_frames[0]`` is the origin
+        of each frame, ``local_frames[1]`` the x-direction, ``local_frames[2]`` the
+        y-directions, and ``local_frames[2]`` the z-direction.
+    """
+
+    weights = [force_field.v_sites.weights[idx] for idx in v_sites.parameter_idxs]
+
+    stacked_frames = [[], [], [], []]
+
+    for key, weight in zip(v_sites.keys, weights):
+        parent_coords = conformer[:, key.orientation_atom_indices, :]
+        weighted_coords = torch.transpose(
+            (torch.transpose(parent_coords.float(), 1, 2) @ weight.T), 1, 2
+        )
+
+        origin = weighted_coords[:, 0, :]
+
+        xy_plane = weighted_coords[:, 1:, :]
+        xy_plane /= torch.norm(xy_plane, dim=-1).unsqueeze(-1)
+
+        x_hat = xy_plane[:, 0, :]
+
+        z_hat = torch.cross(x_hat, xy_plane[:, 1, :])
+        z_hat_norm = torch.norm(z_hat, dim=-1).unsqueeze(-1)
+        z_hat_norm = torch.where(
+            torch.isclose(z_hat_norm, torch.tensor(0.0)), torch.tensor(1.0), z_hat_norm
+        )
+        z_hat /= z_hat_norm
+
+        y_hat = torch.cross(z_hat, x_hat)
+        y_hat_norm = torch.norm(y_hat, dim=-1).unsqueeze(-1)
+        y_hat_norm = torch.where(
+            torch.isclose(y_hat_norm, torch.tensor(0.0)), torch.tensor(1.0), y_hat_norm
+        )
+        y_hat /= y_hat_norm
+
+        stacked_frames[0].append(origin)
+        stacked_frames[1].append(x_hat)
+        stacked_frames[2].append(y_hat)
+        stacked_frames[3].append(z_hat)
+
+    local_frames = torch.stack(
+        [torch.stack(weights, dim=1) for weights in stacked_frames], dim=1
+    )
+
+    return local_frames
+
+
+def _convert_v_site_coords(
+    local_frame_coords: torch.Tensor, local_coord_frames: torch.Tensor
+) -> torch.Tensor:
+    """Converts a set of local virtual site coordinates defined in a spherical
+    coordinate system into a full set of cartesian coordinates.
+
+    Args:
+        local_frame_coords: The local coordinates with ``shape=(n_v_sites, 3)`` and
+            with columns of distance [Å], 'in plane angle' [deg] and 'out of plane'
+            angle [deg].
+        local_coord_frames: The orthonormal basis associated with each of the
+            virtual sites with ``shape=(n_batches, 4, n_v_sites, 3)``.
+
+    Returns:
+        An array of the cartesian coordinates of the virtual sites with
+        ``shape=(n_batches, n_v_sites, 3)`` and units of [Å].
+    """
+
+    d = local_frame_coords[:, 0].reshape(-1, 1)
+
+    theta = (local_frame_coords[:, 1] * _DEGREES_TO_RADIANS).reshape(-1, 1)
+    phi = (local_frame_coords[:, 2] * _DEGREES_TO_RADIANS).reshape(-1, 1)
+
+    cos_theta = torch.cos(theta)
+    sin_theta = torch.sin(theta)
+
+    cos_phi = torch.cos(phi)
+    sin_phi = torch.sin(phi)
+
+    # Here we use cos(phi) in place of sin(phi) and sin(phi) in place of cos(phi)
+    # this is because we want phi=0 to represent a 0 degree angle from the x-y plane
+    # rather than 0 degrees from the z-axis.
+    vsite_positions = (
+        local_coord_frames[:, 0]
+        + d * cos_theta * cos_phi * local_coord_frames[:, 1]
+        + d * sin_theta * cos_phi * local_coord_frames[:, 2]
+        + d * sin_phi * local_coord_frames[:, 3]
+    )
+
+    return vsite_positions
+
+
+def compute_v_site_coords(
+    v_sites: "smirnoffee.ff.VSiteMap",
+    conformer: torch.Tensor,
+    force_field: "smirnoffee.ff.TensorForceField",
+) -> torch.Tensor:
+    """Computes the positions of a set of virtual sites relative to a specified
+    conformer or batch of conformers.
+
+    Args:
+        v_sites: A mapping between the virtual sites to add and their corresponding
+            force field parameters.
+        conformer: The conformer(s) to add the virtual sites to with ``shape=(n_atoms, 3)``
+            or ``shape=(n_batches, n_atoms, 3)`` and units of [Å].
+        force_field: The force field containing the virtual site parameters.
+
+    Returns:
+        A tensor of virtual site positions [Å] with ``shape=(n_v_sites, 3)`` or
+        ``shape=(n_batches, n_v_sites, 3)``.
+    """
+
+    is_batched = conformer.ndim == 3
+
+    if not is_batched:
+        conformer = torch.unsqueeze(conformer, 0)
+
+    local_frame_coords = force_field.v_sites.parameters[v_sites.parameter_idxs]
+    local_coord_frames = _build_v_site_coord_frames(v_sites, conformer, force_field)
+
+    v_site_coords = _convert_v_site_coords(local_frame_coords, local_coord_frames)
+
+    if not is_batched:
+        v_site_coords = torch.squeeze(v_site_coords, 0)
+
+    return v_site_coords
+
+
+def add_v_site_coords(
+    v_sites: "smirnoffee.ff.VSiteMap",
+    conformer: torch.Tensor,
+    force_field: "smirnoffee.ff.TensorForceField",
+):
+    """Appends the coordinates of any virtual sites to a conformer (or batch of
+    conformers) containing only atomic coordinates.
+
+    Notes:
+        * This function only supports appending v-sites to the end of the list of
+          coordinates, and not interleaving them between existing atomic coordinates.
+
+    Args:
+        v_sites: A mapping between the virtual sites to add and their corresponding
+            force field parameters.
+        conformer: The conformer(s) to add the virtual sites to with
+        ``shape=(n_atoms, 3)`` or ``shape=(n_batches, n_atoms, 3)`` and units of [Å].
+        force_field: The force field containing the virtual site parameters.
+
+    Returns:
+        The full conformer(s) with both atomic and virtual site coordinates [Å] with
+        ``shape=(n_atoms+n_v_sites, 3)`` or ``shape=(n_batches, n_atoms+n_v_sites, 3)``.
+    """
+
+    v_site_coords = compute_v_site_coords(v_sites, conformer, force_field)
+
+    return torch.cat([conformer, v_site_coords], dim=(1 if conformer.ndim == 3 else 0))

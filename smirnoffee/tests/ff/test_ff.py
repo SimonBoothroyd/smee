@@ -96,7 +96,7 @@ def test_convert_interchange():
     assert tensor_force_field.v_sites.keys[0].id == "[Cl:1]-[H:2] EP all_permutations"
     expected_parameters = torch.tensor([[2.0, 180.0, 0.0]])
     assert torch.allclose(tensor_force_field.v_sites.parameters, expected_parameters)
-    assert len(tensor_force_field.v_sites.frames) == 1
+    assert len(tensor_force_field.v_sites.weights) == 1
 
     assert len(tensor_topologies) == 1
     tensor_topology = tensor_topologies[0]

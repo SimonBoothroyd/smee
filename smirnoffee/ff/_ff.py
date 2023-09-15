@@ -11,6 +11,8 @@ import openff.toolkit
 import openff.units
 import torch
 
+import smirnoffee.geometry
+
 _VSiteParameters = (
     openff.interchange.smirnoff._virtual_sites.SMIRNOFFVirtualSiteCollection
 )
@@ -32,22 +34,6 @@ _V_SITE_DEFAULT_VALUES = {
     "distance": 0.0 * _ANGSTROM,
     "inPlaneAngle": 180.0 * _DEGREES,
     "outOfPlaneAngle": 0.0 * _DEGREES,
-}
-_V_SITE_TYPE_TO_FRAME = {
-    "BondCharge": torch.tensor([[1.0, 0.0], [-1.0, 1.0], [-1.0, 1.0]]),
-    "MonovalentLonePair": torch.tensor(
-        [[1.0, 0.0, 0.0], [-1.0, 1.0, 0.0], [-1.0, 0.0, 1.0]]
-    ),
-    "DivalentLonePair": torch.tensor(
-        [[1.0, 0.0, 0.0], [-1.0, 0.5, 0.5], [-1.0, 1.0, 0.0]]
-    ),
-    "TrivalentLonePair": torch.tensor(
-        [
-            [1.0, 0.0, 0.0, 0.0],
-            [-1.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
-            [-1.0, 1.0, 0.0, 0.0],
-        ]
-    ),
 }
 
 
@@ -147,8 +133,10 @@ class TensorVSites:
 
     keys: typing.List[openff.interchange.models.VirtualSiteKey]
     """The unique keys associated with each v-site with ``length=(n_v_sites)``"""
-    frames: list[torch.Tensor]
-    """The coordinate basis vectors of each v-site with ``shape=(n_v_sites, 3, 3)``"""
+    weights: list[torch.Tensor]
+    """A matrix of weights that, when applied to the 'orientiational' atoms, yields a
+    basis that the virtual site coordinate parameters can be projected onto with
+    ``shape=(n_v_sites, 3, 3)``"""
     parameters: torch.Tensor
     """The distance, in-plane and out-of-plane angles with ``shape=(n_v_sites, 3)``"""
 
@@ -308,11 +296,11 @@ def _convert_v_sites(
     ]
 
     v_site_frames = [
-        _V_SITE_TYPE_TO_FRAME[parameter_key_to_type[parameter_key]]
+        smirnoffee.geometry.V_SITE_TYPE_TO_FRAME[parameter_key_to_type[parameter_key]]
         for parameter_key in parameter_keys
     ]
     v_sites = TensorVSites(
-        keys=parameter_keys, frames=v_site_frames, parameters=torch.tensor(parameters)
+        keys=parameter_keys, weights=v_site_frames, parameters=torch.tensor(parameters)
     )
 
     v_site_maps = []
@@ -331,12 +319,13 @@ def _convert_v_sites(
             for v_site_key in v_site_keys
         ]
 
-        topology_indices = sorted(
-            idx - topology.n_atoms
-            for idx in handler.virtual_site_key_topology_index_map.values()
-        )
         # check v-sites aren't interleaved between atoms, which isn't supported yet
-        assert topology_indices == list(range(len(topology_indices)))
+        # TODO: interchange (#812) means we can't safely do this check currently
+        # topology_indices = sorted(
+        #     idx - topology.n_atoms
+        #     for idx in handler.virtual_site_key_topology_index_map.values()
+        # )
+        # assert topology_indices == list(range(len(topology_indices)))
 
         v_site_map = VSiteMap(
             keys=v_site_keys,
