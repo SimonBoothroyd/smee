@@ -1,19 +1,38 @@
-files: \.py$
 repos:
+  - repo: local
+    hooks:
+      - id: isort
+        name: "[Package] Import formatting"
+        language: system
+        entry: isort
+        files: \.py$
 
-- repo: local
-  hooks:
-    - id: isort
-      name: Import formatting
-      language: system
-      entry: isort
+      - id: black
+        name: "[Package] Code formatting"
+        language: system
+        entry: black
+        files: \.py$
 
-    - id: black
-      name: Code formatting
-      language: system
-      entry: black
+      - id: flake8
+        name: "[Package] Linting"
+        language: system
+        entry: flake8
+        files: \.py$
 
-    - id: flake8
-      name: Linting
-      language: system
-      entry: flake8
+      - id: isort-examples
+        name: "[Examples] Import formatting"
+        language: system
+        entry: nbqa isort
+        files: examples/.+\.ipynb$
+
+      - id: black-examples
+        name: "[Examples] Code formatting"
+        language: system
+        entry: nbqa black
+        files: examples/.+\.ipynb$
+
+      - id: flake8-examples
+        name: "[Examples] Linting"
+        language: system
+        entry: nbqa flake8 --ignore=E402
+        files: examples/.+\.ipynb$
