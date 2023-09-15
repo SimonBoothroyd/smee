@@ -1,3 +1,4 @@
+"""Tensor representations of SMIRNOFF force fields."""
 from smirnoffee.ff._ff import (
     NonbondedParameterMap,
     ParameterMap,

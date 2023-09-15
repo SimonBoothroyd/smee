@@ -1,4 +1,4 @@
-"""Common functions for computing internal coordinates (e.g. bond lengths)."""
+"""Compute internal coordinates (e.g. bond lengths)."""
 
 import torch
 

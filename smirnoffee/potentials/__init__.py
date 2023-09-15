@@ -1,4 +1,4 @@
-"""Functions for evaluating energies using specific potential energy functions."""
+"""Evaluate the potential energy of parameterized topologies."""
 
 from smirnoffee.potentials._potentials import (
     compute_energy,

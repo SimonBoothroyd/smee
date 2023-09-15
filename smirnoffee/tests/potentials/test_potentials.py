@@ -1,5 +1,3 @@
-import copy
-
 import numpy
 import openff.interchange
 import openff.toolkit
@@ -10,7 +8,7 @@ import pytest
 import torch
 
 from smirnoffee.ff import convert_interchange
-from smirnoffee.potentials import compute_energy, compute_energy_potential
+from smirnoffee.potentials import compute_energy
 
 
 def place_v_sites(
@@ -101,28 +99,6 @@ def test_compute_energy(smiles: str):
     )
 
     force_field, parameters_per_topology = convert_interchange(interchange)
-
-    for handler_type in force_field.potentials_by_type:
-        interchange_copy = copy.deepcopy(interchange)
-        interchange_copy.collections = {
-            handler_type: interchange_copy.collections[handler_type]
-        }
-
-        energy_smirnoffee = compute_energy_potential(
-            parameters_per_topology[0].parameters[handler_type],
-            conformer,
-            force_field.potentials_by_type[handler_type],
-        )
-        energy_openmm = compute_openmm_energy(interchange_copy, conformer)
-
-        print(
-            handler_type.ljust(20),
-            f"{energy_smirnoffee.item():.4f}",
-            f"{energy_openmm.item():.4f}",
-            flush=True,
-        )
-
-    #     assert torch.isclose(energy_smirnoffee.float(), energy_openmm.float())
 
     energy_smirnoffee = compute_energy(
         parameters_per_topology[0].parameters, conformer, force_field

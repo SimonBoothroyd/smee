@@ -32,7 +32,7 @@ def compute_harmonic_bond_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1)
+        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
     _, distances = smirnoffee.geometry.compute_bond_vectors(conformer, atom_indices)
 
@@ -63,7 +63,7 @@ def compute_harmonic_angle_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1)
+        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
     angles = torch.rad2deg(smirnoffee.geometry.compute_angles(conformer, atom_indices))
 
@@ -94,7 +94,7 @@ def _compute_cosine_torsion_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1)
+        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
     phi = smirnoffee.geometry.compute_dihedrals(conformer, atom_indices)
 
