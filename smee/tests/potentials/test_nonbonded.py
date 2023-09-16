@@ -1,7 +1,7 @@
 import numpy
 import torch
 
-from smirnoffee.potentials.nonbonded import (
+from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
     compute_coulomb_energy,
     compute_lj_energy,

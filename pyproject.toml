@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel", "versioningit~=2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "smirnoffee"
+name = "smee"
 description = "Differentiably compute energies of molecules using SMIRNOFF force fields."
 authors = [ {name = "Simon Boothroyd"} ]
 license = { text = "MIT" }
@@ -34,7 +34,7 @@ match = ["*"]
 default-tag = "0.0.0"
 
 [tool.versioningit.write]
-file = "smirnoffee/_version.py"
+file = "smee/_version.py"
 
 [tool.black]
 line-length = 88

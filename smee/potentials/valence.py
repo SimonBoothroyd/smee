@@ -2,13 +2,13 @@
 
 import torch
 
-import smirnoffee.geometry
-import smirnoffee.potentials
+import smee.geometry
+import smee.potentials
 
 _EPSILON = 1.0e-8
 
 
-@smirnoffee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
+@smee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
 def compute_harmonic_bond_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -34,12 +34,12 @@ def compute_harmonic_bond_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
-    _, distances = smirnoffee.geometry.compute_bond_vectors(conformer, atom_indices)
+    _, distances = smee.geometry.compute_bond_vectors(conformer, atom_indices)
 
     return (0.5 * parameters[:, 0] * (distances - parameters[:, 1]) ** 2).sum(-1)
 
 
-@smirnoffee.potentials.potential_energy_fn("Angles", "k/2*(theta-angle)**2")
+@smee.potentials.potential_energy_fn("Angles", "k/2*(theta-angle)**2")
 def compute_harmonic_angle_energy(
     conformer: torch.Tensor,
     atom_indices: torch.Tensor,
@@ -65,7 +65,7 @@ def compute_harmonic_angle_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
-    angles = smirnoffee.geometry.compute_angles(conformer, atom_indices)
+    angles = smee.geometry.compute_angles(conformer, atom_indices)
 
     return (0.5 * parameters[:, 0] * (angles - parameters[:, 1]) ** 2).sum(-1)
 
@@ -96,7 +96,7 @@ def _compute_cosine_torsion_energy(
     if len(atom_indices) == 0:
         return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
 
-    phi = smirnoffee.geometry.compute_dihedrals(conformer, atom_indices)
+    phi = smee.geometry.compute_dihedrals(conformer, atom_indices)
 
     return (
         parameters[:, 0]
@@ -105,7 +105,7 @@ def _compute_cosine_torsion_energy(
     ).sum(-1)
 
 
-@smirnoffee.potentials.potential_energy_fn(
+@smee.potentials.potential_energy_fn(
     "ProperTorsions", "k*(1+cos(periodicity*theta-phase))"
 )
 def compute_cosine_proper_torsion_energy(
@@ -133,7 +133,7 @@ def compute_cosine_proper_torsion_energy(
     return _compute_cosine_torsion_energy(conformer, atom_indices, parameters)
 
 
-@smirnoffee.potentials.potential_energy_fn(
+@smee.potentials.potential_energy_fn(
     "ImproperTorsions", "k*(1+cos(periodicity*theta-phase))"
 )
 def compute_cosine_improper_torsion_energy(

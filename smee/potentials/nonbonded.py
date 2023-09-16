@@ -3,7 +3,7 @@
 import openff.units
 import torch
 
-import smirnoffee.potentials
+import smee.potentials
 
 _UNIT = openff.units.unit
 
@@ -67,7 +67,7 @@ def compute_pairwise(
     return pair_idxs, distances_sqr, pair_scales
 
 
-@smirnoffee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
+@smee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
 def compute_lj_energy(
     conformer: torch.Tensor,
     parameters: torch.Tensor,
@@ -119,7 +119,7 @@ def compute_lj_energy(
     return energy
 
 
-@smirnoffee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)
+@smee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)
 def compute_coulomb_energy(
     conformer: torch.Tensor,
     parameters: torch.Tensor,

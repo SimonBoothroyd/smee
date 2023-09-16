@@ -1,6 +1,6 @@
 # Examples
 
-This directory contains a number of examples of how to use `smirnoffee`. They currently include:
+This directory contains a number of examples of how to use `smee`. They currently include:
 
 * [Evaluating the energy of a water dimer with virtual sites](compute-energy.ipynb)
 * [Minimizing the conformer of a molecule](conformer-minimization.ipynb)

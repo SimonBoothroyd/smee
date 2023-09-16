@@ -4,8 +4,8 @@ import openff.toolkit
 import openff.units
 import torch
 
-import smirnoffee.ff
-from smirnoffee.ff.nonbonded import convert_electrostatics, convert_vdw
+import smee.ff
+from smee.ff.nonbonded import convert_electrostatics, convert_vdw
 
 
 def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
@@ -85,7 +85,7 @@ def test_convert_electrostatics_v_site():
         [charge_collection],
         [molecule.to_topology()],
         [
-            smirnoffee.ff.VSiteMap(
+            smee.ff.VSiteMap(
                 keys=[*interchange.collections["VirtualSites"].key_map],
                 key_to_idx=interchange.collections[
                     "VirtualSites"

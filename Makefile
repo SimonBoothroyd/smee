@@ -1,4 +1,4 @@
-PACKAGE_NAME  := smirnoffee
+PACKAGE_NAME  := smee
 CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 
 .PHONY: env lint format test test-examples
