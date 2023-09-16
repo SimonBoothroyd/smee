@@ -34,6 +34,36 @@ The environment will include all development dependencies, including linters and
 
 To get started, see the [examples](examples).
 
+## Development
+
+A development conda environment can be created and activated by running:
+
+```shell
+make env
+conda activate smirnoffee
+```
+
+The environment will include all development dependencies, including linters and testing apparatus.
+
+Unit / example tests can be run using:
+
+```shell
+make test
+make test-examples
+```
+
+The codebase can be formatted by running:
+
+```shell
+make format
+```
+
+or checked for lint with:
+
+```shell
+make lint
+```
+
 ## License
 
 The main package is release under the [MIT license](LICENSE). 
