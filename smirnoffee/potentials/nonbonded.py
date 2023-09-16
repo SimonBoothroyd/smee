@@ -7,7 +7,9 @@ import smirnoffee.potentials
 
 _UNIT = openff.units.unit
 
-_COULOMB_PRE_FACTOR_UNITS = _UNIT.kilojoule / _UNIT.mole * _UNIT.angstrom / _UNIT.e**2
+_COULOMB_PRE_FACTOR_UNITS = (
+    _UNIT.kilocalorie / _UNIT.mole * _UNIT.angstrom / _UNIT.e**2
+)
 _COULOMB_PRE_FACTOR = (_UNIT.avogadro_constant / (4.0 * _UNIT.pi * _UNIT.eps0)).m_as(
     _COULOMB_PRE_FACTOR_UNITS
 )
@@ -72,15 +74,15 @@ def compute_lj_energy(
     exclusions: torch.Tensor,
     exclusion_scales: torch.Tensor,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kJ / mol] of the vdW interactions using the
+    """Evaluates the potential energy [kcal / mol] of the vdW interactions using the
     standard Lennard-Jones potential.
 
     Notes:
         * No cutoff will be applied.
 
     Args:
-        conformer: The conformer to evaluate the potential at.
-        parameters: A tensor containing the epsilon [kJ / mol] and sigma [Å] values
+        conformer: The conformer [Å] to evaluate the potential at.
+        parameters: A tensor containing the epsilon [kcal / mol] and sigma [Å] values
             of each particle, with ``shape=(n_particles, 2)``.
         exclusions: A tensor containing pairs of atom indices whose interaction should
             be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
@@ -88,7 +90,7 @@ def compute_lj_energy(
             with ``shape=(n_exclusions, 1)``.
 
     Returns:
-        The evaluated potential energy [kJ / mol].
+        The evaluated potential energy [kcal / mol].
     """
 
     is_batched = conformer.ndim == 3
@@ -124,14 +126,14 @@ def compute_coulomb_energy(
     exclusions: torch.Tensor,
     exclusion_scales: torch.Tensor,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kJ / mol] of the electrostatic interactions
+    """Evaluates the potential energy [kcal / mol] of the electrostatic interactions
     using the standard Coulomb potential.
 
     Notes:
         * No cutoff will be applied.
 
     Args:
-        conformer: The conformer to evaluate the potential at.
+        conformer: The conformer [Å] to evaluate the potential at.
         parameters: A tensor containing the charge [e] of each particle, with
             ``shape=(n_particles, 1)``.
         exclusions: A tensor containing pairs of atom indices whose interaction should
@@ -140,7 +142,7 @@ def compute_coulomb_energy(
             with ``shape=(n_exclusions, 1)``.
 
     Returns:
-        The evaluated potential energy [kJ / mol].
+        The evaluated potential energy [kcal / mol].
     """
 
     is_batched = conformer.ndim == 3

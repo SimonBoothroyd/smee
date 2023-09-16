@@ -31,7 +31,7 @@ def compute_energy_potential(
     conformer: torch.Tensor,
     potential: smirnoffee.ff.TensorPotential,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kJ / mol] due to a SMIRNOFF potential
+    """Evaluates the potential energy [kcal / mol] due to a SMIRNOFF potential
     handler for a given conformer(s).
 
     Args:
@@ -42,7 +42,7 @@ def compute_energy_potential(
         potential: The potential to evaluate.
 
     Returns:
-        The potential energy of the conformer(s) [kJ / mol].
+        The potential energy of the conformer(s) [kcal / mol].
     """
 
     if len(conformer.shape) == 2:
@@ -86,7 +86,7 @@ def compute_energy(
     conformer: torch.Tensor,
     force_field: smirnoffee.ff.TensorForceField,
 ) -> torch.Tensor:
-    """Compute the potential energy [kJ / mol] of a topology in a given
+    """Compute the potential energy [kcal / mol] of a topology in a given
     conformation(s).
 
     Args:
@@ -98,7 +98,7 @@ def compute_energy(
         force_field: The values of the force field parameters.
 
     Returns:
-        The potential energy of the conformer(s) [kJ / mol].
+        The potential energy of the conformer(s) [kcal / mol].
     """
 
     if conformer.ndim == 2:

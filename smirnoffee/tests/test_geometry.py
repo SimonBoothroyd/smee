@@ -346,7 +346,7 @@ def test_build_v_site_coordinate_frames():
 
 
 def test_convert_v_site_coords():
-    local_frame_coords = torch.tensor([[1.0, 45.0, 45.0]])
+    local_frame_coords = torch.tensor([[1.0, torch.pi / 4.0, torch.pi / 4.0]])
     local_coord_frames = torch.tensor(
         [
             [[+0.0, +0.0, +0.0]],

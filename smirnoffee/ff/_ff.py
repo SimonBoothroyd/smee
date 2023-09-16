@@ -23,17 +23,17 @@ _DEFAULT_UNITS = {}
 _IGNORED_HANDLERS = {"Constraints"}
 
 _ANGSTROM = openff.units.unit.angstrom
-_DEGREES = openff.units.unit.degrees
+_RADIANS = openff.units.unit.radians
 
 _V_SITE_DEFAULT_UNITS = {
     "distance": _ANGSTROM,
-    "inPlaneAngle": _DEGREES,
-    "outOfPlaneAngle": _DEGREES,
+    "inPlaneAngle": _RADIANS,
+    "outOfPlaneAngle": _RADIANS,
 }
 _V_SITE_DEFAULT_VALUES = {
     "distance": 0.0 * _ANGSTROM,
-    "inPlaneAngle": 180.0 * _DEGREES,
-    "outOfPlaneAngle": 0.0 * _DEGREES,
+    "inPlaneAngle": torch.pi * _RADIANS,
+    "outOfPlaneAngle": 0.0 * _RADIANS,
 }
 
 
@@ -119,12 +119,16 @@ class TensorPotential:
     """Unique keys associated with each parameter with ``length=(n_parameters)``"""
     parameter_cols: tuple[str, ...]
     """The names of each column of ``parameters``."""
+    parameter_units: tuple[openff.units.Unit, ...]
+    """The units of each parameter in ``parameters``."""
 
     attributes: torch.Tensor | None = None
     """The attributes defined on a handler such as 1-4 scaling factors with
     ``shape=(n_attributes, n_attribute_cols)``"""
     attribute_cols: tuple[str, ...] | None = None
     """The names of each column of ``attributes``."""
+    attribute_units: tuple[openff.units.Unit, ...] = None
+    """The units of each attribute in ``attributes``."""
 
 
 @dataclasses.dataclass
@@ -139,6 +143,11 @@ class TensorVSites:
     ``shape=(n_v_sites, 3, 3)``"""
     parameters: torch.Tensor
     """The distance, in-plane and out-of-plane angles with ``shape=(n_v_sites, 3)``"""
+
+    @property
+    def parameter_units(self) -> dict[str, openff.units.Unit]:
+        """The units of each v-site parameter."""
+        return {**_V_SITE_DEFAULT_UNITS}
 
 
 @dataclasses.dataclass
@@ -248,8 +257,14 @@ def _handlers_to_potential(
         parameters=parameters,
         parameter_keys=parameter_keys,
         parameter_cols=parameter_cols,
+        parameter_units=tuple(
+            _DEFAULT_UNITS[handler_type][column] for column in parameter_cols
+        ),
         attributes=attributes,
         attribute_cols=attribute_cols,
+        attribute_units=None
+        if attribute_cols is None
+        else tuple(_DEFAULT_UNITS[handler_type][column] for column in attribute_cols),
     )
     return potential
 
