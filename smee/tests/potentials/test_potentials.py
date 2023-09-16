@@ -7,8 +7,8 @@ import openmm.unit
 import pytest
 import torch
 
-from smirnoffee.ff import convert_interchange
-from smirnoffee.potentials import compute_energy
+from smee.ff import convert_interchange
+from smee.potentials import compute_energy
 
 
 def place_v_sites(
@@ -93,12 +93,12 @@ def test_compute_energy(smiles: str):
 
     force_field, parameters_per_topology = convert_interchange(interchange)
 
-    energy_smirnoffee = compute_energy(
+    energy_smee = compute_energy(
         parameters_per_topology[0].parameters, conformer, force_field
     )
     energy_openmm = compute_openmm_energy(interchange, conformer)
 
-    assert torch.isclose(energy_smirnoffee, energy_openmm)
+    assert torch.isclose(energy_smee, energy_openmm)
 
 
 def test_compute_energy_v_sites():
@@ -131,10 +131,10 @@ def test_compute_energy_v_sites():
     force_field, topologies = convert_interchange(interchange)
 
     energy_openmm = compute_openmm_energy(interchange, conformer)
-    energy_smirnoffee = compute_energy(
+    energy_smee = compute_energy(
         topologies[0].parameters,
         conformer[[0, 1, 2, 4, 5, 6, 3, 7], :],
         force_field,
     )
 
-    assert torch.isclose(energy_smirnoffee, energy_openmm)
+    assert torch.isclose(energy_smee, energy_openmm)

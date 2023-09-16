@@ -4,7 +4,7 @@ import openff.units
 import pytest
 import torch
 
-from smirnoffee.ff._ff import (
+from smee.ff._ff import (
     _CONVERTERS,
     _DEFAULT_UNITS,
     VSiteMap,
@@ -30,7 +30,7 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
     mock_result = mocker.MagicMock()
 
     mock_vectorize = mocker.patch(
-        "smirnoffee.ff.nonbonded.convert_vdw",
+        "smee.ff.nonbonded.convert_vdw",
         autospec=True,
         return_value=mock_result,
     )

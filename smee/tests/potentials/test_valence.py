@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from smirnoffee.potentials.valence import (
+from smee.potentials.valence import (
     _compute_cosine_torsion_energy,
     compute_cosine_improper_torsion_energy,
     compute_cosine_proper_torsion_energy,

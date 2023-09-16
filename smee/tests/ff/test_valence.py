@@ -1,4 +1,4 @@
-from smirnoffee.ff.valence import (
+from smee.ff.valence import (
     convert_angles,
     convert_bonds,
     convert_impropers,

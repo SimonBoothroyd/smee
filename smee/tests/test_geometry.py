@@ -9,8 +9,8 @@ import torch
 import torch.autograd.functional
 from openff.units import unit
 
-import smirnoffee.ff
-from smirnoffee.geometry import (
+import smee.ff
+from smee.geometry import (
     V_SITE_TYPE_TO_FRAME,
     _build_v_site_coord_frames,
     _convert_v_site_coords,
@@ -306,9 +306,9 @@ def test_build_v_site_coordinate_frames():
         ]
     ).unsqueeze(0)
 
-    force_field = smirnoffee.ff.TensorForceField(
+    force_field = smee.ff.TensorForceField(
         potentials=[],
-        v_sites=smirnoffee.ff.TensorVSites(
+        v_sites=smee.ff.TensorVSites(
             keys=[openff.interchange.models.PotentialKey(id="[O:1]=[C:2]-[H:3]")],
             weights=[V_SITE_TYPE_TO_FRAME["MonovalentLonePair"]],
             parameters=torch.Tensor([[1.0, 180.0, 45.0]]),
@@ -324,7 +324,7 @@ def test_build_v_site_coordinate_frames():
         )
         for atom_idxs in [(0, 1, 2), (0, 1, 3)]
     ]
-    v_site_map = smirnoffee.ff.VSiteMap(
+    v_site_map = smee.ff.VSiteMap(
         keys=v_sites,
         key_to_idx={v_sites[0]: 4, v_sites[1]: 5},
         parameter_idxs=torch.tensor([[0], [0]]),
@@ -381,7 +381,7 @@ def test_compute_v_site_coords(smiles, v_site_force_field):
     conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
 
     interchange = _apply_v_site_force_field(molecule, conformer, v_site_force_field)
-    force_field, [topology] = smirnoffee.ff.convert_interchange(interchange)
+    force_field, [topology] = smee.ff.convert_interchange(interchange)
 
     assert topology.v_sites is not None
     assert len(topology.v_sites.keys) > 0
@@ -404,7 +404,7 @@ def test_compute_v_site_coords_batched(v_site_force_field):
     )
 
     interchange = _apply_v_site_force_field(molecule, conformers[0], v_site_force_field)
-    force_field, [topology] = smirnoffee.ff.convert_interchange(interchange)
+    force_field, [topology] = smee.ff.convert_interchange(interchange)
 
     assert topology.v_sites is not None
     assert len(topology.v_sites.keys) > 0
@@ -434,7 +434,7 @@ def test_add_v_site_coords(conformer, v_site_coords, cat_dim, mocker):
     force_field = mocker.MagicMock()
 
     mock_compute_coords_fn = mocker.patch(
-        "smirnoffee.geometry.compute_v_site_coords", return_value=v_site_coords
+        "smee.geometry.compute_v_site_coords", return_value=v_site_coords
     )
 
     coordinates = add_v_site_coords(v_sites, conformer, force_field)

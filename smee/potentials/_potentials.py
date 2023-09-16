@@ -4,7 +4,7 @@ import inspect
 
 import torch
 
-import smirnoffee.ff
+import smee.ff
 
 _POTENTIAL_ENERGY_FUNCTIONS = {}
 
@@ -27,9 +27,9 @@ def potential_energy_fn(handler_type: str, energy_expression: str):
 
 
 def compute_energy_potential(
-    parameters: smirnoffee.ff.ParameterMap,
+    parameters: smee.ff.ParameterMap,
     conformer: torch.Tensor,
-    potential: smirnoffee.ff.TensorPotential,
+    potential: smee.ff.TensorPotential,
 ) -> torch.Tensor:
     """Evaluates the potential energy [kcal / mol] due to a SMIRNOFF potential
     handler for a given conformer(s).
@@ -52,8 +52,8 @@ def compute_energy_potential(
         parameters.assignment_matrix.float() @ potential.parameters.float()
     )
 
-    importlib.import_module("smirnoffee.potentials.nonbonded")
-    importlib.import_module("smirnoffee.potentials.valence")
+    importlib.import_module("smee.potentials.nonbonded")
+    importlib.import_module("smee.potentials.valence")
 
     energy_fn = _POTENTIAL_ENERGY_FUNCTIONS[(potential.type, potential.fn)]
     energy_fn_spec = inspect.signature(energy_fn)
@@ -63,7 +63,7 @@ def compute_energy_potential(
     if "attributes" in energy_fn_spec.parameters:
         energy_fn_kwargs["attributes"] = potential.attributes
 
-    if isinstance(parameters, smirnoffee.ff.NonbondedParameterMap):
+    if isinstance(parameters, smee.ff.NonbondedParameterMap):
         energy = energy_fn(
             conformer,
             parameter_values,
@@ -71,7 +71,7 @@ def compute_energy_potential(
             potential.attributes[parameters.exclusion_scale_idxs],
             **energy_fn_kwargs,
         )
-    elif isinstance(parameters, smirnoffee.ff.ValenceParameterMap):
+    elif isinstance(parameters, smee.ff.ValenceParameterMap):
         energy = energy_fn(
             conformer, parameters.particle_idxs, parameter_values, **energy_fn_kwargs
         )
@@ -82,9 +82,9 @@ def compute_energy_potential(
 
 
 def compute_energy(
-    parameters: dict[str, smirnoffee.ff.ParameterMap],
+    parameters: dict[str, smee.ff.ParameterMap],
     conformer: torch.Tensor,
-    force_field: smirnoffee.ff.TensorForceField,
+    force_field: smee.ff.TensorForceField,
 ) -> torch.Tensor:
     """Compute the potential energy [kcal / mol] of a topology in a given
     conformation(s).

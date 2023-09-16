@@ -11,7 +11,7 @@ import openff.toolkit
 import openff.units
 import torch
 
-import smirnoffee.geometry
+import smee.geometry
 
 _VSiteParameters = (
     openff.interchange.smirnoff._virtual_sites.SMIRNOFFVirtualSiteCollection
@@ -311,7 +311,7 @@ def _convert_v_sites(
     ]
 
     v_site_frames = [
-        smirnoffee.geometry.V_SITE_TYPE_TO_FRAME[parameter_key_to_type[parameter_key]]
+        smee.geometry.V_SITE_TYPE_TO_FRAME[parameter_key_to_type[parameter_key]]
         for parameter_key in parameter_keys
     ]
     v_sites = TensorVSites(
@@ -395,8 +395,8 @@ def convert_handlers(
 
     assert len(handlers) == len(topologies), "mismatched number of topologies"
 
-    importlib.import_module("smirnoffee.ff.nonbonded")
-    importlib.import_module("smirnoffee.ff.valence")
+    importlib.import_module("smee.ff.nonbonded")
+    importlib.import_module("smee.ff.valence")
 
     if handler_type not in _CONVERTERS:
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")

@@ -1,10 +1,10 @@
 SMIRNOFF Energy Evaluations
 ===========================
-[![Test Status](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/simonboothroyd/smirnoffee/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main/graph/badge.svg)](https://codecov.io/gh/simonboothroyd/smirnoffee/branch/main)
+[![Test Status](https://github.com/simonboothroyd/smee/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/simonboothroyd/smee/actions/workflows/ci.yaml)
+[![codecov](https://codecov.io/gh/simonboothroyd/smee/branch/main/graph/badge.svg)](https://codecov.io/gh/simonboothroyd/smee/branch/main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-The `smirnoffee` framework aims to offer a simple API for differentiably evaluating the energy of [SMIRNOFF](https://openforcefield.github.io/standards/standards/smirnoff/) 
+The `smee` framework aims to offer a simple API for differentiably evaluating the energy of [SMIRNOFF](https://openforcefield.github.io/standards/standards/smirnoff/) 
 force fields applied to molecules using `pytorch`.
 
 The package currently supports evaluating the energy of force fields that contain: 
@@ -25,7 +25,7 @@ A development conda environment can be created and activated by running:
 
 ```shell
 make env
-conda activate smirnoffee
+conda activate smee
 ```
 
 The environment will include all development dependencies, including linters and testing apparatus.
@@ -40,7 +40,7 @@ A development conda environment can be created and activated by running:
 
 ```shell
 make env
-conda activate smirnoffee
+conda activate smee
 ```
 
 The environment will include all development dependencies, including linters and testing apparatus.

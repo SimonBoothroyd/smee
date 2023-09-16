@@ -2,8 +2,8 @@ import openff.interchange.models
 import openff.toolkit
 import torch
 
-import smirnoffee.ff
-from smirnoffee.utils import find_exclusions
+import smee.ff
+from smee.utils import find_exclusions
 
 
 def test_find_exclusions_simple():
@@ -121,7 +121,7 @@ def test_find_exclusions_v_sites():
         ),
     ]
 
-    v_sites = smirnoffee.ff.VSiteMap(
+    v_sites = smee.ff.VSiteMap(
         keys=v_site_keys,
         key_to_idx={v_site_keys[0]: 4, v_site_keys[1]: 5},
         parameter_idxs=torch.zeros((2, 1)),

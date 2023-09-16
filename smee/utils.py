@@ -5,12 +5,12 @@ import networkx
 import openff.toolkit
 
 if typing.TYPE_CHECKING:
-    import smirnoffee.ff
+    import smee.ff
 
 
 def find_exclusions(
     topology: openff.toolkit.Topology,
-    v_sites: typing.Optional["smirnoffee.ff.VSiteMap"] = None,
+    v_sites: typing.Optional["smee.ff.VSiteMap"] = None,
 ) -> dict[
     tuple[int, int], typing.Literal["scale_12", "scale_13", "scale_14", "scale_15"]
 ]:
