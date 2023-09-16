@@ -20,6 +20,7 @@ dependencies:
   - jupyter
   - nbconvert
   - nglview
+  - smirnoff-plugins >=0.0.4
 
   # Dev / Testing
   - rdkit

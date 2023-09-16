@@ -18,12 +18,28 @@ _COULOMB_POTENTIAL = "coul"
 _LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
 
 
-def _lorentz_berthelot(
+def lorentz_berthelot(
     epsilon_a: torch.Tensor,
     epsilon_b: torch.Tensor,
     sigma_a: torch.Tensor,
     sigma_b: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """Computes the Lorentz-Berthelot combination rules for the given parameters.
+
+    Args:
+        epsilon_a: The epsilon [kcal / mol] values of the first particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        epsilon_b: The epsilon [kcal / mol] values of the second particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        sigma_a: The sigma [kcal / mol] values of the first particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        sigma_b: The sigma [kcal / mol] values of the second particle in each pair
+            with ``shape=(n_pairs, 1)``.
+
+    Returns:
+        The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
+        ``shape=(n_pairs, 1)``.
+    """
     return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
 
 
@@ -102,7 +118,7 @@ def compute_lj_energy(
         conformer, exclusions, exclusion_scales
     )
 
-    epsilon, sigma = _lorentz_berthelot(
+    epsilon, sigma = lorentz_berthelot(
         parameters[pair_idxs[:, 0], 0],
         parameters[pair_idxs[:, 1], 0],
         parameters[pair_idxs[:, 0], 1],

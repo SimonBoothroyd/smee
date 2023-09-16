@@ -31,6 +31,7 @@ def convert_nonbonded_handlers(
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.ff.VSiteMap | None],
     parameter_cols: tuple[str, ...],
+    attribute_cols: tuple[str, ...] | None = None,
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:
     """Convert a list of SMIRNOFF non-bonded handlers into a tensor potential and
     associated parameter maps.
@@ -44,16 +45,23 @@ def convert_nonbonded_handlers(
         topologies: The topologies associated with each handler.
         v_site_maps: The virtual site maps associated with each handler.
         parameter_cols: The ordering of the parameter array columns.
+        attribute_cols: The handler attributes to include in the potential *in addition*
+            to the intr-amolecular scaling factors.
 
     Returns:
         The potential containing tensors of the parameter values, and a list of
         parameter maps which map the parameters to the interactions they apply to.
     """
+    attribute_cols = attribute_cols if attribute_cols is not None else []
+
     assert len(topologies) == len(handlers), "topologies and handlers must match"
     assert len(v_site_maps) == len(handlers), "v-site maps and handlers must match"
 
     potential = smee.ff._ff._handlers_to_potential(
-        handlers, handler_type, parameter_cols, ("scale_13", "scale_14", "scale_15")
+        handlers,
+        handler_type,
+        parameter_cols,
+        ("scale_13", "scale_14", "scale_15", *attribute_cols),
     )
 
     potential.attribute_cols = ("scale_12", *potential.attribute_cols)
