@@ -13,7 +13,7 @@ The package currently supports evaluating the energy of force fields that contai
 * `vdW`, `Electrostatics`, `ToolkitAM1BCC`, `LibraryCharges`
 * `VirtualSites`
 
-parameter handlers.
+parameter handlers in addition to limited support for registering custom handlers.
 
 ***Warning**: This code is currently experimental and under active development. If you are using this it, please be 
 aware that it is not guaranteed to provide correct results, the documentation and testing maybe be incomplete, and the
