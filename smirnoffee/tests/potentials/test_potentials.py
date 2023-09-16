@@ -48,13 +48,6 @@ def compute_openmm_energy(
 
     openmm_system = interchange.to_openmm()
 
-    # force: openmm.NonbondedForce
-    # (force,) = openmm_system.getForces()
-    #
-    # for i in range(force.getNumParticles()):
-    #     q, sig, eps = force.getParticleParameters(i)
-    #     force.setParticleParameters(i, q, sig, eps)
-
     if openmm_system.getNumParticles() != interchange.topology.n_atoms:
         for _ in range(interchange.topology.n_atoms - openmm_system.getNumParticles()):
             openmm_system.addParticle(1.0)
