@@ -52,11 +52,11 @@ def test_compute_harmonic_angle_energy(conformer, expected_shape):
 
     assert energy.shape == expected_shape
 
-    expected_energy = 0.5 * parameters[0, 0] * (90.0 - parameters[0, 1]) ** 2
+    expected_energy = 0.5 * parameters[0, 0] * (torch.pi / 2.0 - parameters[0, 1]) ** 2
     expected_gradient = torch.tensor(
         [
-            0.5 * (90.0 - parameters[0, 1]) ** 2,
-            parameters[0, 0] * (parameters[0, 1] - 90.0),
+            0.5 * (torch.pi / 2.0 - parameters[0, 1]) ** 2,
+            parameters[0, 0] * (parameters[0, 1] - torch.pi / 2.0),
         ]
     )
 
@@ -96,8 +96,8 @@ def test_compute_cosine_torsion_energy(expected_shape, energy_function, phi_sign
             + torch.cos(
                 torch.tensor(
                     [
-                        parameters[0, 1] * torch.deg2rad(torch.tensor(phi_sign * 45.0))
-                        - torch.deg2rad(parameters[0, 2])
+                        parameters[0, 1] * torch.tensor(phi_sign * torch.pi / 4.0)
+                        - parameters[0, 2]
                     ]
                 )
             )

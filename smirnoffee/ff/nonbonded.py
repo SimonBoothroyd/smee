@@ -20,8 +20,8 @@ _ElectrostaticParameters = (
 
 _UNITLESS = openff.units.unit.dimensionless
 _ANGSTROM = openff.units.unit.angstrom
-_DEGREES = openff.units.unit.degrees
-_KJ_PER_MOL = openff.units.unit.kilojoules / openff.units.unit.mole
+_RADIANS = openff.units.unit.radians
+_KCAL_PER_MOL = openff.units.unit.kilocalories / openff.units.unit.mole
 _ELEMENTARY_CHARGE = openff.units.unit.elementary_charge
 
 
@@ -121,7 +121,7 @@ def convert_nonbonded_handlers(
 @smirnoffee.ff.parameter_converter(
     "vdW",
     {
-        "epsilon": _KJ_PER_MOL,
+        "epsilon": _KCAL_PER_MOL,
         "sigma": _ANGSTROM,
         "scale_12": _UNITLESS,
         "scale_13": _UNITLESS,

@@ -11,7 +11,9 @@ from smirnoffee.potentials.nonbonded import (
 def test_coulomb_pre_factor():
     # Compare against a value computed directly from C++ using the OpenMM 7.5.1
     # ONE_4PI_EPS0 define constant multiplied by 10 for nm -> A
-    assert numpy.isclose(_COULOMB_PRE_FACTOR, 1389.3545764, atol=1.0e-7)
+    _KCAL_TO_KJ = 4.184
+
+    assert numpy.isclose(_COULOMB_PRE_FACTOR * _KCAL_TO_KJ, 1389.3545764, atol=1.0e-7)
 
 
 def test_compute_coulomb_energy_two_particle():

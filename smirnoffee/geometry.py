@@ -6,8 +6,6 @@ import torch
 if typing.TYPE_CHECKING:
     import smirnoffee.ff
 
-_DEGREES_TO_RADIANS = torch.pi / 180.0
-
 
 V_SITE_TYPE_TO_FRAME = {
     "BondCharge": torch.tensor([[1.0, 0.0], [-1.0, 1.0], [-1.0, 1.0]]),
@@ -163,7 +161,7 @@ def _build_v_site_coord_frames(
 
     Notes:
         * See `the OpenMM documentation for further information
-          <http://docs.openmm.org/7.0.0/userguide/theory.html#virtual-sites>`_.
+          <https://docs.openmm.org/7.0.0/userguide/theory.html#virtual-sites>`_.
 
     Args:
         v_sites: A mapping between the virtual sites to add and their corresponding
@@ -230,8 +228,8 @@ def _convert_v_site_coords(
 
     Args:
         local_frame_coords: The local coordinates with ``shape=(n_v_sites, 3)`` and
-            with columns of distance [Å], 'in plane angle' [deg] and 'out of plane'
-            angle [deg].
+            with columns of distance [Å], 'in plane angle' [rad] and 'out of plane'
+            angle [rad].
         local_coord_frames: The orthonormal basis associated with each of the
             virtual sites with ``shape=(n_batches, 4, n_v_sites, 3)``.
 
@@ -242,8 +240,8 @@ def _convert_v_site_coords(
 
     d = local_frame_coords[:, 0].reshape(-1, 1)
 
-    theta = (local_frame_coords[:, 1] * _DEGREES_TO_RADIANS).reshape(-1, 1)
-    phi = (local_frame_coords[:, 2] * _DEGREES_TO_RADIANS).reshape(-1, 1)
+    theta = (local_frame_coords[:, 1]).reshape(-1, 1)
+    phi = (local_frame_coords[:, 2]).reshape(-1, 1)
 
     cos_theta = torch.cos(theta)
     sin_theta = torch.sin(theta)
@@ -275,8 +273,9 @@ def compute_v_site_coords(
     Args:
         v_sites: A mapping between the virtual sites to add and their corresponding
             force field parameters.
-        conformer: The conformer(s) to add the virtual sites to with ``shape=(n_atoms, 3)``
-            or ``shape=(n_batches, n_atoms, 3)`` and units of [Å].
+        conformer: The conformer(s) to add the virtual sites to with
+            ``shape=(n_atoms, 3)`` or ``shape=(n_batches, n_atoms, 3)`` and units of
+            [Å].
         force_field: The force field containing the virtual site parameters.
 
     Returns:
@@ -316,7 +315,8 @@ def add_v_site_coords(
         v_sites: A mapping between the virtual sites to add and their corresponding
             force field parameters.
         conformer: The conformer(s) to add the virtual sites to with
-        ``shape=(n_atoms, 3)`` or ``shape=(n_batches, n_atoms, 3)`` and units of [Å].
+            ``shape=(n_atoms, 3)`` or ``shape=(n_batches, n_atoms, 3)`` and units of
+            [Å].
         force_field: The force field containing the virtual site parameters.
 
     Returns:

@@ -41,7 +41,7 @@ def compute_openmm_energy(
         conformer: The conformer [Å] of the molecule.
 
     Returns:
-        The energy in units of [kJ / mol].
+        The energy in units of [kcal / mol].
     """
 
     import openmm.unit
@@ -61,7 +61,7 @@ def compute_openmm_energy(
     openmm_context.computeVirtualSites()
 
     state = openmm_context.getState(getEnergy=True)
-    energy = state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoules_per_mole)
+    energy = state.getPotentialEnergy().value_in_unit(openmm.unit.kilocalorie_per_mole)
 
     return torch.tensor(energy)
 

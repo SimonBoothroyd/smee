@@ -13,8 +13,8 @@ _ImproperTorsionParameters = openff.interchange.smirnoff._base.SMIRNOFFCollectio
 
 _UNITLESS = openff.units.unit.dimensionless
 _ANGSTROM = openff.units.unit.angstrom
-_DEGREES = openff.units.unit.degrees
-_KJ_PER_MOL = openff.units.unit.kilojoules / openff.units.unit.mole
+_RADIANS = openff.units.unit.radians
+_KCAL_PER_MOL = openff.units.unit.kilocalories / openff.units.unit.mole
 
 
 def convert_valence_handlers(
@@ -63,7 +63,7 @@ def convert_valence_handlers(
 
 
 @smirnoffee.ff.parameter_converter(
-    "Bonds", {"k": _KJ_PER_MOL / _ANGSTROM**2, "length": _ANGSTROM}
+    "Bonds", {"k": _KCAL_PER_MOL / _ANGSTROM**2, "length": _ANGSTROM}
 )
 def convert_bonds(
     handlers: list[openff.interchange.smirnoff._valence.SMIRNOFFBondCollection],
@@ -72,7 +72,7 @@ def convert_bonds(
 
 
 @smirnoffee.ff.parameter_converter(
-    "Angles", {"k": _KJ_PER_MOL / _DEGREES**2, "angle": _DEGREES}
+    "Angles", {"k": _KCAL_PER_MOL / _RADIANS**2, "angle": _RADIANS}
 )
 def convert_angles(
     handlers: list[_AngleParameters],
@@ -82,7 +82,12 @@ def convert_angles(
 
 @smirnoffee.ff.parameter_converter(
     "ProperTorsions",
-    {"k": _KJ_PER_MOL, "periodicity": _UNITLESS, "phase": _DEGREES, "idivf": _UNITLESS},
+    {
+        "k": _KCAL_PER_MOL,
+        "periodicity": _UNITLESS,
+        "phase": _RADIANS,
+        "idivf": _UNITLESS,
+    },
 )
 def convert_propers(
     handlers: list[_ProperTorsionParameters],
@@ -94,7 +99,12 @@ def convert_propers(
 
 @smirnoffee.ff.parameter_converter(
     "ImproperTorsions",
-    {"k": _KJ_PER_MOL, "periodicity": _UNITLESS, "phase": _DEGREES, "idivf": _UNITLESS},
+    {
+        "k": _KCAL_PER_MOL,
+        "periodicity": _UNITLESS,
+        "phase": _RADIANS,
+        "idivf": _UNITLESS,
+    },
 )
 def convert_impropers(
     handlers: list[_ImproperTorsionParameters],
