@@ -98,6 +98,9 @@ class TensorTopology:
     """A tensor representation of a molecular topology that has been assigned force
     field parameters."""
 
+    n_atoms: int
+    """The number of atoms in the topology."""
+
     parameters: dict[str, ParameterMap]
     """The parameters that have been assigned to the topology."""
     v_sites: VSiteMap | None = None
@@ -494,11 +497,12 @@ def convert_interchange(
 
     tensor_topologies = [
         TensorTopology(
-            {
+            n_atoms=topologies[i].n_atoms,
+            parameters={
                 potential.type: parameter_maps_by_handler[potential.type][i]
                 for potential in potentials
             },
-            v_site_maps[i],
+            v_sites=v_site_maps[i],
         )
         for i in range(len(topologies))
     ]

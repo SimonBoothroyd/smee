@@ -40,7 +40,11 @@ def lorentz_berthelot(
         The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
         ``shape=(n_pairs, 1)``.
     """
-    return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
+
+    epsilon_sqr = epsilon_a * epsilon_b
+    epsilon = torch.where(epsilon_sqr > 0.0, epsilon_sqr.sqrt(), 0.0)
+
+    return epsilon, 0.5 * (sigma_a + sigma_b)
 
 
 def compute_pairwise(
