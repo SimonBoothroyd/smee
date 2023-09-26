@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "versioningit~=2.0"]
+requires = ["setuptools>=61.0", "wheel", "versioneer"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,25 +16,20 @@ classifiers = ["Programming Language :: Python :: 3"]
 zip-safe = false
 include-package-data = true
 
+[tool.setuptools.dynamic]
+version = {attr = "smee.__version__"}
+
 [tool.setuptools.packages.find]
 namespaces = true
 where = ["."]
 
-[tool.versioningit]
-default-version = "1+unknown"
-
-[tool.versioningit.format]
-distance = "{base_version}+{distance}.{vcs}{rev}"
-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-distance-dirty = "{base_version}+{distance}.{vcs}{rev}.dirty"
-
-[tool.versioningit.vcs]
-method = "git"
-match = ["*"]
-default-tag = "0.0.0"
-
-[tool.versioningit.write]
-file = "smee/_version.py"
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "smee/_version.py"
+versionfile_build = "smee/_version.py"
+tag_prefix = ""
+parentdir_prefix = "smee-"
 
 [tool.black]
 line-length = 88

@@ -28,7 +28,7 @@ dependencies:
 
   - openmm  # regression testing energies
 
-  - versioningit
+  - versioneer
 
   - pre-commit
   - isort
