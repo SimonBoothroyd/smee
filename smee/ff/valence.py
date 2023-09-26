@@ -49,13 +49,15 @@ def convert_valence_handlers(
     for handler in handlers:
         particle_idxs = [topology_key.atom_indices for topology_key in handler.key_map]
 
-        assignment_matrix = torch.zeros((len(particle_idxs), len(potential.parameters)))
+        assignment_matrix = torch.zeros(
+            (len(particle_idxs), len(potential.parameters)), dtype=torch.float64
+        )
 
         for i, parameter_key in enumerate(handler.key_map.values()):
             assignment_matrix[i, parameter_key_to_idx[parameter_key]] += 1.0
 
         parameter_map = smee.ff.ValenceParameterMap(
-            torch.tensor(particle_idxs), assignment_matrix.float().to_sparse()
+            torch.tensor(particle_idxs), assignment_matrix.to_sparse()
         )
         parameter_maps.append(parameter_map)
 

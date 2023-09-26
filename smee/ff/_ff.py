@@ -235,7 +235,8 @@ def _handlers_to_potential(
                 for column in parameter_cols
             ]
             for parameter_key in parameter_keys
-        ]
+        ],
+        dtype=torch.float64,
     )
 
     attributes = None
@@ -251,7 +252,8 @@ def _handlers_to_potential(
             for k, v in attributes_by_column.items()
         }
         attributes = torch.tensor(
-            [attributes_by_column[column] for column in attribute_cols]
+            [attributes_by_column[column] for column in attribute_cols],
+            dtype=torch.float64,
         )
 
     potential = TensorPotential(

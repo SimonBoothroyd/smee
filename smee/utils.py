@@ -3,9 +3,13 @@ import typing
 
 import networkx
 import openff.toolkit
+import torch
 
 if typing.TYPE_CHECKING:
     import smee.ff
+
+
+_size = torch.Size | list[int] | tuple[int, ...]
 
 
 def find_exclusions(
@@ -68,3 +72,18 @@ def find_exclusions(
                 v_site_exclusions[(pair[0], v_site_idx)] = scale
 
     return {**exclusions, **v_site_exclusions}
+
+
+def ones_like(size: _size, other: torch.Tensor) -> torch.Tensor:
+    """Create a tensor of ones with the same device and type as another tensor."""
+    return torch.ones(size, dtype=other.dtype, device=other.device)
+
+
+def zeros_like(size: _size, other: torch.Tensor) -> torch.Tensor:
+    """Create a tensor of zeros with the same device and type as another tensor."""
+    return torch.zeros(size, dtype=other.dtype, device=other.device)
+
+
+def tensor_like(data: typing.Any, other: torch.Tensor) -> torch.Tensor:
+    """Create a tensor with the same device and type as another tensor."""
+    return torch.tensor(data, dtype=other.dtype, device=other.device)

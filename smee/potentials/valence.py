@@ -4,6 +4,7 @@ import torch
 
 import smee.geometry
 import smee.potentials
+import smee.utils
 
 _EPSILON = 1.0e-8
 
@@ -32,7 +33,9 @@ def compute_harmonic_bond_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
+        return smee.utils.zeros_like(
+            1 if conformer.ndim == 2 else (conformer.shape[0],), other=parameters
+        )
 
     _, distances = smee.geometry.compute_bond_vectors(conformer, atom_indices)
 
@@ -63,7 +66,9 @@ def compute_harmonic_angle_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
+        return smee.utils.zeros_like(
+            1 if conformer.ndim == 2 else (conformer.shape[0],), other=parameters
+        )
 
     angles = smee.geometry.compute_angles(conformer, atom_indices)
 
@@ -94,7 +99,9 @@ def _compute_cosine_torsion_energy(
     """
 
     if len(atom_indices) == 0:
-        return torch.zeros(1 if conformer.ndim == 2 else (conformer.shape[0],))
+        return smee.utils.zeros_like(
+            1 if conformer.ndim == 2 else (conformer.shape[0],), other=parameters
+        )
 
     phi = smee.geometry.compute_dihedrals(conformer, atom_indices)
 

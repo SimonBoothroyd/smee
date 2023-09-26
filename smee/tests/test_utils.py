@@ -144,3 +144,38 @@ def test_find_exclusions_v_sites():
         (4, 3): "scale_14",
         (5, 3): "scale_12",
     }
+
+
+def test_ones_like():
+    expected_size = (4, 5)
+    expected_type = torch.float16
+
+    other = torch.tensor([1, 2, 3], dtype=expected_type, device="cpu")
+    tensor = smee.utils.ones_like(expected_size, other)
+
+    assert tensor.dtype == expected_type
+    assert tensor.shape == expected_size
+    assert torch.allclose(tensor, torch.tensor(1.0, dtype=expected_type))
+
+
+def test_zeros_like():
+    expected_size = (4, 5)
+    expected_type = torch.float16
+
+    other = torch.tensor([1, 2, 3], dtype=expected_type, device="cpu")
+    tensor = smee.utils.zeros_like(expected_size, other)
+
+    assert tensor.dtype == expected_type
+    assert tensor.shape == expected_size
+    assert torch.allclose(tensor, torch.tensor(0.0, dtype=expected_type))
+
+
+def test_tensor_like():
+    expected_type = torch.float16
+    expected_data = [[3.0], [2.0], [1.0]]
+
+    other = torch.tensor([], dtype=expected_type, device="cpu")
+    tensor = smee.utils.tensor_like(expected_data, other)
+
+    assert tensor.dtype == expected_type
+    assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))

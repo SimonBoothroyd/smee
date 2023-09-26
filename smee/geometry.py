@@ -3,24 +3,29 @@ import typing
 
 import torch
 
+import smee.utils
+
 if typing.TYPE_CHECKING:
     import smee.ff
 
 
 V_SITE_TYPE_TO_FRAME = {
-    "BondCharge": torch.tensor([[1.0, 0.0], [-1.0, 1.0], [-1.0, 1.0]]),
+    "BondCharge": torch.tensor(
+        [[1.0, 0.0], [-1.0, 1.0], [-1.0, 1.0]], dtype=torch.float64
+    ),
     "MonovalentLonePair": torch.tensor(
-        [[1.0, 0.0, 0.0], [-1.0, 1.0, 0.0], [-1.0, 0.0, 1.0]]
+        [[1.0, 0.0, 0.0], [-1.0, 1.0, 0.0], [-1.0, 0.0, 1.0]], dtype=torch.float64
     ),
     "DivalentLonePair": torch.tensor(
-        [[1.0, 0.0, 0.0], [-1.0, 0.5, 0.5], [-1.0, 1.0, 0.0]]
+        [[1.0, 0.0, 0.0], [-1.0, 0.5, 0.5], [-1.0, 1.0, 0.0]], dtype=torch.float64
     ),
     "TrivalentLonePair": torch.tensor(
         [
             [1.0, 0.0, 0.0, 0.0],
             [-1.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
             [-1.0, 1.0, 0.0, 0.0],
-        ]
+        ],
+        dtype=torch.float64,
     ),
 }
 
@@ -42,7 +47,10 @@ def compute_bond_vectors(
     """
 
     if len(atom_indices) == 0:
-        return torch.tensor([]), torch.tensor([])
+        return (
+            smee.utils.tensor_like([], other=conformer),
+            smee.utils.tensor_like([], other=conformer),
+        )
 
     is_batched = conformer.ndim == 3
 
@@ -74,7 +82,7 @@ def compute_angles(conformer: torch.Tensor, atom_indices: torch.Tensor) -> torch
     """
 
     if len(atom_indices) == 0:
-        return torch.tensor([])
+        return smee.utils.tensor_like([], other=conformer)
 
     is_batched = conformer.ndim == 3
 
@@ -118,7 +126,7 @@ def compute_dihedrals(
     """
 
     if len(atom_indices) == 0:
-        return torch.tensor([])
+        return smee.utils.tensor_like([], other=conformer)
 
     is_batched = conformer.ndim == 3
 
@@ -184,7 +192,7 @@ def _build_v_site_coord_frames(
     for key, weight in zip(v_sites.keys, weights):
         parent_coords = conformer[:, key.orientation_atom_indices, :]
         weighted_coords = torch.transpose(
-            (torch.transpose(parent_coords.float(), 1, 2) @ weight.T), 1, 2
+            (torch.transpose(parent_coords, 1, 2) @ weight.T), 1, 2
         )
 
         origin = weighted_coords[:, 0, :]
@@ -197,14 +205,18 @@ def _build_v_site_coord_frames(
         z_hat = torch.cross(x_hat, xy_plane[:, 1, :])
         z_hat_norm = torch.norm(z_hat, dim=-1).unsqueeze(-1)
         z_hat_norm = torch.where(
-            torch.isclose(z_hat_norm, torch.tensor(0.0)), torch.tensor(1.0), z_hat_norm
+            torch.isclose(z_hat_norm, smee.utils.tensor_like(0.0, other=z_hat_norm)),
+            smee.utils.tensor_like(1.0, other=z_hat_norm),
+            z_hat_norm,
         )
         z_hat /= z_hat_norm
 
         y_hat = torch.cross(z_hat, x_hat)
         y_hat_norm = torch.norm(y_hat, dim=-1).unsqueeze(-1)
         y_hat_norm = torch.where(
-            torch.isclose(y_hat_norm, torch.tensor(0.0)), torch.tensor(1.0), y_hat_norm
+            torch.isclose(y_hat_norm, smee.utils.tensor_like(0.0, other=y_hat_norm)),
+            smee.utils.tensor_like(1.0, other=y_hat_norm),
+            y_hat_norm,
         )
         y_hat /= y_hat_norm
 

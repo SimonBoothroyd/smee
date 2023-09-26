@@ -104,7 +104,9 @@ def convert_nonbonded_handlers(
                     assignment_map[atom_idx][parameter_key_to_idx[mult_key]] += -1.0
                     assignment_map[v_site_idx][parameter_key_to_idx[mult_key]] += 1.0
 
-        assignment_matrix = torch.zeros((n_particles, len(potential.parameters)))
+        assignment_matrix = torch.zeros(
+            (n_particles, len(potential.parameters)), dtype=torch.float64
+        )
 
         for particle_idx in assignment_map:
             for parameter_idx, count in assignment_map[particle_idx].items():
@@ -117,7 +119,7 @@ def convert_nonbonded_handlers(
         )
 
         parameter_map = smee.ff.NonbondedParameterMap(
-            assignment_matrix=assignment_matrix.float().to_sparse(),
+            assignment_matrix=assignment_matrix.to_sparse(),
             exclusions=exclusions,
             exclusion_scale_idxs=exclusion_scale_idxs,
         )
