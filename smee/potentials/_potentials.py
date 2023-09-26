@@ -45,12 +45,12 @@ def compute_energy_potential(
         The potential energy of the conformer(s) [kcal / mol].
     """
 
+    conformer = conformer.float()
+
     if len(conformer.shape) == 2:
         conformer = torch.unsqueeze(conformer, 0)
 
-    parameter_values = (
-        parameters.assignment_matrix.float() @ potential.parameters.float()
-    )
+    parameter_values = parameters.assignment_matrix @ potential.parameters
 
     importlib.import_module("smee.potentials.nonbonded")
     importlib.import_module("smee.potentials.valence")
@@ -100,6 +100,8 @@ def compute_energy(
     Returns:
         The potential energy of the conformer(s) [kcal / mol].
     """
+
+    conformer = conformer.float()
 
     if conformer.ndim == 2:
         conformer = torch.unsqueeze(conformer, 0)

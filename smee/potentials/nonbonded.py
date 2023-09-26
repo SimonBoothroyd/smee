@@ -4,6 +4,7 @@ import openff.units
 import torch
 
 import smee.potentials
+import smee.utils
 
 _UNIT = openff.units.unit
 
@@ -67,13 +68,13 @@ def compute_pairwise(
     n_particles = conformer.shape[-2]
 
     pair_idxs = torch.triu_indices(n_particles, n_particles, 1).T
-    pair_scales = torch.ones(len(pair_idxs))
+    pair_scales = smee.utils.ones_like(len(pair_idxs), other=exclusion_scales)
 
     if len(exclusions) > 0:
         exclusions, _ = exclusions.sort(dim=1)
 
         i, j = exclusions[:, 0], exclusions[:, 1]
-        exclusions_1d = ((i * (2 * n_particles - i - 1)) / 2 + j - i - 1).int()
+        exclusions_1d = ((i * (2 * n_particles - i - 1)) / 2 + j - i - 1).long()
 
         pair_scales[exclusions_1d] = exclusion_scales.squeeze(-1)
 

@@ -18,7 +18,7 @@ def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
     assert potential.type == "Electrostatics"
     assert potential.fn == "coul"
 
-    expected_attributes = torch.tensor([0.0, 0.0, 5.0 / 6.0, 1.0])
+    expected_attributes = torch.tensor([0.0, 0.0, 5.0 / 6.0, 1.0], dtype=torch.float64)
     assert torch.allclose(potential.attributes, expected_attributes)
     assert potential.attribute_cols == (
         "scale_12",
@@ -40,7 +40,8 @@ def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
 
     assert parameter_map.assignment_matrix.shape == (ethanol.n_atoms, ethanol.n_atoms)
     assert torch.allclose(
-        parameter_map.assignment_matrix.to_dense(), torch.eye(ethanol.n_atoms)
+        parameter_map.assignment_matrix.to_dense(),
+        torch.eye(ethanol.n_atoms, dtype=torch.float64),
     )
 
     n_expected_exclusions = 36
@@ -117,8 +118,10 @@ def test_convert_electrostatics_v_site():
     assert potential.parameter_keys == expected_keys
     assert potential.parameters.shape == (4, 1)
 
-    expected_parameters = torch.tensor([[-0.75], [0.25], [-0.25], [0.5]])
-    assert torch.allclose(potential.parameters.float(), expected_parameters)
+    expected_parameters = torch.tensor(
+        [[-0.75], [0.25], [-0.25], [0.5]], dtype=torch.float64
+    )
+    assert torch.allclose(potential.parameters, expected_parameters)
 
     assert len(parameter_maps) == 1
     parameter_map = parameter_maps[0]
@@ -131,7 +134,8 @@ def test_convert_electrostatics_v_site():
             [0.0, 1.0, 0.0, -1.0],
             [1.0, 0.0, -1.0, 0.0],
             [0.0, 0.0, 1.0, 1.0],
-        ]
+        ],
+        dtype=torch.float64,
     )
     assert torch.allclose(
         parameter_map.assignment_matrix.to_dense(), expected_assignment_matrix
@@ -141,7 +145,7 @@ def test_convert_electrostatics_v_site():
     assert parameter_map.exclusions.shape == (n_expected_exclusions, 2)
     assert parameter_map.exclusion_scale_idxs.shape == (n_expected_exclusions, 1)
 
-    expected_exclusions = torch.tensor([[0, 1], [2, 1], [0, 2]])
+    expected_exclusions = torch.tensor([[0, 1], [2, 1], [0, 2]], dtype=torch.long)
     assert torch.allclose(parameter_map.exclusions, expected_exclusions)
 
     expected_scales = torch.zeros((n_expected_exclusions, 1), dtype=torch.long)

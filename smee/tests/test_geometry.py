@@ -303,7 +303,8 @@ def test_build_v_site_coordinate_frames():
             [+0.0, +0.0, +0.0],
             [-1.0, +0.0, +1.0],
             [-1.0, +0.0, -1.0],
-        ]
+        ],
+        dtype=torch.float64,
     ).unsqueeze(0)
 
     force_field = smee.ff.TensorForceField(
@@ -338,7 +339,8 @@ def test_build_v_site_coordinate_frames():
             [[-1.0, +0.0, +0.0], [-1.0, +0.0, +0.0]],
             [[+0.0, +0.0, +1.0], [+0.0, +0.0, -1.0]],
             [[+0.0, +1.0, +0.0], [+0.0, -1.0, +0.0]],
-        ]
+        ],
+        dtype=torch.float64,
     ).unsqueeze(0)
 
     assert actual_coord_frames.shape == expected_coord_frames.shape
@@ -353,12 +355,13 @@ def test_convert_v_site_coords():
             [[+1.0, +0.0, +0.0]],
             [[+0.0, +1.0, +0.0]],
             [[+0.0, +0.0, +1.0]],
-        ]
+        ],
+        dtype=torch.float64,
     ).unsqueeze(0)
 
     actual_coords = _convert_v_site_coords(local_frame_coords, local_coord_frames)
     expected_coords = torch.tensor(
-        [[0.5, 0.5, 1.0 / torch.sqrt(torch.tensor(2.0))]]
+        [[0.5, 0.5, 1.0 / torch.sqrt(torch.tensor(2.0))]], dtype=torch.float64
     ).unsqueeze(0)
 
     assert actual_coords.shape == expected_coords.shape
@@ -390,7 +393,7 @@ def test_compute_v_site_coords(smiles, v_site_force_field):
     v_site_coords = compute_v_site_coords(topology.v_sites, conformer, force_field)
 
     assert v_site_coords.shape == openmm_v_site_coords.shape
-    assert torch.allclose(v_site_coords, openmm_v_site_coords.float(), atol=1e-5)
+    assert torch.allclose(v_site_coords, openmm_v_site_coords, atol=1e-5)
 
 
 def test_compute_v_site_coords_batched(v_site_force_field):
@@ -400,7 +403,8 @@ def test_compute_v_site_coords_batched(v_site_force_field):
         [
             [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]],
             [[0.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
-        ]
+        ],
+        dtype=torch.float64,
     )
 
     interchange = _apply_v_site_force_field(molecule, conformers[0], v_site_force_field)
@@ -419,7 +423,7 @@ def test_compute_v_site_coords_batched(v_site_force_field):
     v_site_coords = compute_v_site_coords(topology.v_sites, conformers, force_field)
 
     assert v_site_coords.shape == openmm_v_site_coords.shape
-    assert torch.allclose(v_site_coords, openmm_v_site_coords.float(), atol=1e-5)
+    assert torch.allclose(v_site_coords, openmm_v_site_coords, atol=1e-5)
 
 
 @pytest.mark.parametrize(
