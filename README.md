@@ -27,10 +27,10 @@ This package can be installed using `conda` (or `mamba`, a faster version of `co
 mamba install -c conda-forge smee
 ```
 
-The example notebooks further require you install `jupyter`, `nglview`, `rdkit`, `ambertools` and `smirnoff-plugins`:
+The example notebooks further require you install `jupyter`, `nglview`, and `smirnoff-plugins`:
 
 ```shell
-mamba install -c conda-forge jupyter nglview rdkit ambertools "smirnoff-plugins >=0.0.4"
+mamba install -c conda-forge jupyter nglview "smirnoff-plugins >=0.0.4"
 ```
 
 ## Getting Started
