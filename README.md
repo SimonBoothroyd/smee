@@ -21,14 +21,17 @@ API can change without notice.*
 
 ## Installation
 
-A development conda environment can be created and activated by running:
+This package can be installed using `conda` (or `mamba`, a faster version of `conda`):
 
 ```shell
-make env
-conda activate smee
+mamba install -c conda-forge smee
 ```
 
-The environment will include all development dependencies, including linters and testing apparatus.
+The example notebooks further require you install `jupyter`, `nglview`, `rdkit`, `ambertools` and `smirnoff-plugins`:
+
+```shell
+mamba install -c conda-forge jupyter nglview rdkit ambertools "smirnoff-plugins >=0.0.4"
+```
 
 ## Getting Started
 
@@ -43,7 +46,7 @@ make env
 conda activate smee
 ```
 
-The environment will include all development dependencies, including linters and testing apparatus.
+The environment will include all example and development dependencies, including linters and testing apparatus.
 
 Unit / example tests can be run using:
 
