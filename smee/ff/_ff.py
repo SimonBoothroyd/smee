@@ -98,13 +98,30 @@ class TensorTopology:
     """A tensor representation of a molecular topology that has been assigned force
     field parameters."""
 
-    n_atoms: int
-    """The number of atoms in the topology."""
+    atomic_nums: torch.Tensor
+    """The atomic numbers of each atom in the topology with ``shape=(n_atoms,)``"""
+    formal_charges: torch.Tensor
+    """The formal charge of each atom in the topology with ``shape=(n_atoms,)``"""
+
+    bond_idxs: torch.Tensor
+    """The indices of the atoms involved in each bond with ``shape=(n_bonds, 2)``"""
+    bond_orders: torch.Tensor
+    """The bond orders of each bond with ``shape=(n_bonds,)``"""
 
     parameters: dict[str, ParameterMap]
     """The parameters that have been assigned to the topology."""
     v_sites: VSiteMap | None = None
     """The v-sites that have been assigned to the topology."""
+
+    @property
+    def n_atoms(self) -> int:
+        """The number of atoms in the topology."""
+        return len(self.atomic_nums)
+
+    @property
+    def n_bonds(self) -> int:
+        """The number of bonds in the topology."""
+        return len(self.bond_idxs)
 
 
 @dataclasses.dataclass
@@ -361,7 +378,7 @@ def convert_handlers(
     handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[VSiteMap | None] | None = None,
-):
+) -> tuple[TensorPotential, list[ParameterMap]]:
     """Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.
 
     Args:
@@ -418,6 +435,43 @@ def convert_handlers(
         converter_kwargs["v_site_maps"] = v_site_maps
 
     return converter(handlers, **converter_kwargs)
+
+
+def _convert_topology(
+    topology: openff.toolkit.Topology,
+    parameters: dict[str, ParameterMap],
+    v_sites: VSiteMap | None,
+) -> TensorTopology:
+    """Convert an OpenFF topology into a tensor topology.
+
+    Args:
+        topology: The topology to convert.
+        parameters: The parameters assigned to the topology.
+        v_sites: The v-sites assigned to the topology.
+
+    Returns:
+        The converted topology.
+    """
+
+    atomic_nums = torch.tensor([atom.atomic_number for atom in topology.atoms])
+
+    formal_charges = torch.tensor(
+        [atom.formal_charge.m_as(openff.units.unit.e) for atom in topology.atoms]
+    )
+
+    bond_idxs = torch.tensor(
+        [[bond.atom1_index, bond.atom2_index] for bond in topology.bonds]
+    )
+    bond_orders = torch.tensor([bond.bond_order for bond in topology.bonds])
+
+    return TensorTopology(
+        atomic_nums=atomic_nums,
+        formal_charges=formal_charges,
+        bond_idxs=bond_idxs,
+        bond_orders=bond_orders,
+        parameters=parameters,
+        v_sites=v_sites,
+    )
 
 
 def convert_interchange(
@@ -498,15 +552,15 @@ def convert_interchange(
         parameter_maps_by_handler[handler_type] = parameter_map
 
     tensor_topologies = [
-        TensorTopology(
-            n_atoms=topologies[i].n_atoms,
-            parameters={
+        _convert_topology(
+            topology,
+            {
                 potential.type: parameter_maps_by_handler[potential.type][i]
                 for potential in potentials
             },
-            v_sites=v_site_maps[i],
+            v_site_maps[i],
         )
-        for i in range(len(topologies))
+        for i, topology in enumerate(topologies)
     ]
 
     tensor_force_field = TensorForceField(potentials, v_sites)
