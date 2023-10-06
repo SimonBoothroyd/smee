@@ -8,6 +8,7 @@ from smee.ff._ff import (
     _CONVERTERS,
     _DEFAULT_UNITS,
     VSiteMap,
+    _convert_topology,
     convert_handlers,
     convert_interchange,
     parameter_converter,
@@ -53,6 +54,35 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
         handlers, topologies=topologies, v_site_maps=v_site_maps
     )
     assert result == mock_result
+
+
+def test_convert_topology(formaldehyde, mocker):
+    parameters = mocker.MagicMock()
+    v_sites = VSiteMap([], {}, torch.tensor([]))
+
+    topology = _convert_topology(formaldehyde, parameters, v_sites)
+
+    assert topology.n_atoms == 4
+    assert topology.n_bonds == 3
+
+    expected_atomic_nums = torch.tensor([6, 8, 1, 1])
+    expected_formal_charges = torch.tensor([0, 0, 0, 0])
+
+    expected_bond_idxs = torch.tensor([[0, 1], [0, 2], [0, 3]])
+    expected_bond_orders = torch.tensor([2, 1, 1])
+
+    assert topology.atomic_nums.shape == expected_atomic_nums.shape
+    assert torch.allclose(topology.atomic_nums, expected_atomic_nums)
+    assert topology.formal_charges.shape == expected_formal_charges.shape
+    assert torch.allclose(topology.formal_charges, expected_formal_charges)
+
+    assert topology.bond_idxs.shape == expected_bond_idxs.shape
+    assert torch.allclose(topology.bond_idxs, expected_bond_idxs)
+    assert topology.bond_orders.shape == expected_bond_orders.shape
+    assert torch.allclose(topology.bond_orders, expected_bond_orders)
+
+    assert topology.parameters == parameters
+    assert topology.v_sites == v_sites
 
 
 def test_convert_interchange():

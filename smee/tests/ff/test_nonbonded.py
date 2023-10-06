@@ -18,13 +18,16 @@ def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
     assert potential.type == "Electrostatics"
     assert potential.fn == "coul"
 
-    expected_attributes = torch.tensor([0.0, 0.0, 5.0 / 6.0, 1.0], dtype=torch.float64)
+    expected_attributes = torch.tensor(
+        [0.0, 0.0, 5.0 / 6.0, 1.0, 9.0], dtype=torch.float64
+    )
     assert torch.allclose(potential.attributes, expected_attributes)
     assert potential.attribute_cols == (
         "scale_12",
         "scale_13",
         "scale_14",
         "scale_15",
+        "cutoff",
     )
 
     assert potential.parameter_cols == ("charge",)

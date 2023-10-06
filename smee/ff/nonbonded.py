@@ -46,7 +46,7 @@ def convert_nonbonded_handlers(
         v_site_maps: The virtual site maps associated with each handler.
         parameter_cols: The ordering of the parameter array columns.
         attribute_cols: The handler attributes to include in the potential *in addition*
-            to the intr-amolecular scaling factors.
+            to the intra-molecular scaling factors.
 
     Returns:
         The potential containing tensors of the parameter values, and a list of
@@ -115,7 +115,8 @@ def convert_nonbonded_handlers(
         exclusion_to_scale = smee.utils.find_exclusions(topology, v_site_map)
         exclusions = torch.tensor([*exclusion_to_scale])
         exclusion_scale_idxs = torch.tensor(
-            [[attribute_to_idx[scale]] for scale in exclusion_to_scale.values()]
+            [[attribute_to_idx[scale]] for scale in exclusion_to_scale.values()],
+            dtype=torch.int64,
         )
 
         parameter_map = smee.ff.NonbondedParameterMap(
@@ -137,6 +138,8 @@ def convert_nonbonded_handlers(
         "scale_13": _UNITLESS,
         "scale_14": _UNITLESS,
         "scale_15": _UNITLESS,
+        "cutoff": _ANGSTROM,
+        "switch_width": _ANGSTROM,
     },
 )
 def convert_vdw(
@@ -152,7 +155,12 @@ def convert_vdw(
         raise NotImplementedError("only Lorentz-Berthelot mixing rules are supported.")
 
     return convert_nonbonded_handlers(
-        handlers, "vdW", topologies, v_site_maps, ("epsilon", "sigma")
+        handlers,
+        "vdW",
+        topologies,
+        v_site_maps,
+        ("epsilon", "sigma"),
+        ("cutoff", "switch_width"),
     )
 
 
@@ -204,6 +212,7 @@ def _make_v_site_electrostatics_compatible(handlers: list[_ElectrostaticParamete
         "scale_13": _UNITLESS,
         "scale_14": _UNITLESS,
         "scale_15": _UNITLESS,
+        "cutoff": _ANGSTROM,
     },
 )
 def convert_electrostatics(
@@ -215,5 +224,5 @@ def convert_electrostatics(
     _make_v_site_electrostatics_compatible(handlers)
 
     return convert_nonbonded_handlers(
-        handlers, "Electrostatics", topologies, v_site_maps, ("charge",)
+        handlers, "Electrostatics", topologies, v_site_maps, ("charge",), ("cutoff",)
     )
