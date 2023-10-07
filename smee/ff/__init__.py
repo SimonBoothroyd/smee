@@ -2,6 +2,7 @@
 from smee.ff._ff import (
     NonbondedParameterMap,
     ParameterMap,
+    TensorConstraints,
     TensorForceField,
     TensorPotential,
     TensorTopology,
@@ -16,6 +17,7 @@ from smee.ff._ff import (
 __all__ = [
     "NonbondedParameterMap",
     "ParameterMap",
+    "TensorConstraints",
     "TensorForceField",
     "TensorPotential",
     "TensorTopology",
