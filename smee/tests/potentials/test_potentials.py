@@ -117,9 +117,8 @@ def test_compute_energy_v_sites():
     conformer = torch.vstack(
         [
             torch.tensor(conformer_a),
-            torch.zeros((1, 3)),  # interchange for now interleaves v-sites
             torch.tensor(conformer_b + numpy.array([[3.0, 0.0, 0.0]])),
-            torch.zeros((1, 3)),
+            torch.zeros((2, 3)),
         ]
     )
 
@@ -131,10 +130,6 @@ def test_compute_energy_v_sites():
     force_field, topologies = convert_interchange(interchange)
 
     energy_openmm = compute_openmm_energy(interchange, conformer)
-    energy_smee = compute_energy(
-        topologies[0].parameters,
-        conformer[[0, 1, 2, 4, 5, 6, 3, 7], :],
-        force_field,
-    )
+    energy_smee = compute_energy(topologies[0].parameters, conformer, force_field)
 
     assert torch.isclose(energy_smee, energy_openmm)

@@ -4,19 +4,12 @@ import copy
 
 import openff.interchange.components.potentials
 import openff.interchange.models
-import openff.interchange.smirnoff._base
-import openff.interchange.smirnoff._nonbonded
 import openff.toolkit
 import openff.units
 import torch
 
 import smee.ff
 import smee.utils
-
-_VDWParameters = openff.interchange.smirnoff._nonbonded.SMIRNOFFvdWCollection
-_ElectrostaticParameters = (
-    openff.interchange.smirnoff._nonbonded.SMIRNOFFElectrostaticsCollection
-)
 
 _UNITLESS = openff.units.unit.dimensionless
 _ANGSTROM = openff.units.unit.angstrom
@@ -26,7 +19,7 @@ _ELEMENTARY_CHARGE = openff.units.unit.elementary_charge
 
 
 def convert_nonbonded_handlers(
-    handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     handler_type: str,
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.ff.VSiteMap | None],
@@ -61,11 +54,8 @@ def convert_nonbonded_handlers(
         handlers,
         handler_type,
         parameter_cols,
-        ("scale_13", "scale_14", "scale_15", *attribute_cols),
+        ("scale_12", "scale_13", "scale_14", "scale_15", *attribute_cols),
     )
-
-    potential.attribute_cols = ("scale_12", *potential.attribute_cols)
-    potential.attributes = torch.cat([torch.tensor([0.0]), potential.attributes])
 
     parameter_key_to_idx = {
         parameter_key: i for i, parameter_key in enumerate(potential.parameter_keys)
@@ -143,7 +133,7 @@ def convert_nonbonded_handlers(
     },
 )
 def convert_vdw(
-    handlers: list[_VDWParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFvdWCollection],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.ff.VSiteMap | None],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:
@@ -164,7 +154,9 @@ def convert_vdw(
     )
 
 
-def _make_v_site_electrostatics_compatible(handlers: list[_ElectrostaticParameters]):
+def _make_v_site_electrostatics_compatible(
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
+):
     """Attempts to make electrostatic potentials associated with virtual sites more
     consistent with other parameters so that they can be more easily converted to
     tensors.
@@ -216,7 +208,7 @@ def _make_v_site_electrostatics_compatible(handlers: list[_ElectrostaticParamete
     },
 )
 def convert_electrostatics(
-    handlers: list[_ElectrostaticParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.ff.VSiteMap | None],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:

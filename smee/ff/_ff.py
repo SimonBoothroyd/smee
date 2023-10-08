@@ -5,21 +5,12 @@ import typing
 
 import openff.interchange.components.potentials
 import openff.interchange.models
-import openff.interchange.smirnoff._base
-import openff.interchange.smirnoff._valence
-import openff.interchange.smirnoff._virtual_sites
+import openff.interchange.smirnoff
 import openff.toolkit
 import openff.units
 import torch
 
 import smee.geometry
-
-_VSiteParameters = (
-    openff.interchange.smirnoff._virtual_sites.SMIRNOFFVirtualSiteCollection
-)
-_ConstraintParameters = (
-    openff.interchange.smirnoff._valence.SMIRNOFFConstraintCollection
-)
 
 _CONVERTERS = {}
 _DEFAULT_UNITS = {}
@@ -243,7 +234,7 @@ def _get_value(
 
 
 def _handlers_to_potential(
-    handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     handler_type: str,
     parameter_cols: tuple[str, ...],
     attribute_cols: tuple[str, ...] | None,
@@ -310,7 +301,7 @@ def _handlers_to_potential(
 
 
 def _convert_v_sites(
-    handlers: list[_VSiteParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFVirtualSiteCollection],
     topologies: list[openff.toolkit.Topology],
 ) -> tuple[TensorVSites, list[VSiteMap | None]]:
     handler_types = {handler.type for handler in handlers}
@@ -393,7 +384,7 @@ def _convert_v_sites(
 
 
 def _convert_constraints(
-    handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFConstraintCollection],
 ) -> list[TensorConstraints | None]:
     handler_types = {handler.type for handler in handlers}
     assert handler_types == {"Constraints"}, "invalid handler types found"
@@ -426,7 +417,7 @@ def _convert_constraints(
 
 
 def convert_handlers(
-    handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[VSiteMap | None] | None = None,
 ) -> tuple[TensorPotential, list[ParameterMap]]:

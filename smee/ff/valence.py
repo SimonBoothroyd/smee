@@ -1,15 +1,9 @@
 """Convert SMIRNOFF valence parameters into tensors."""
-import openff.interchange.smirnoff._base
-import openff.interchange.smirnoff._valence
+import openff.interchange.smirnoff
 import openff.units
 import torch
 
 import smee.ff
-
-_BondParameters = openff.interchange.smirnoff._base.SMIRNOFFCollection
-_AngleParameters = openff.interchange.smirnoff._base.SMIRNOFFCollection
-_ProperTorsionParameters = openff.interchange.smirnoff._base.SMIRNOFFCollection
-_ImproperTorsionParameters = openff.interchange.smirnoff._base.SMIRNOFFCollection
 
 _UNITLESS = openff.units.unit.dimensionless
 _ANGSTROM = openff.units.unit.angstrom
@@ -18,7 +12,7 @@ _KCAL_PER_MOL = openff.units.unit.kilocalories / openff.units.unit.mole
 
 
 def convert_valence_handlers(
-    handlers: list[_BondParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     handler_type: str,
     parameter_cols: tuple[str, ...],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.ValenceParameterMap]]:
@@ -68,7 +62,7 @@ def convert_valence_handlers(
     "Bonds", {"k": _KCAL_PER_MOL / _ANGSTROM**2, "length": _ANGSTROM}
 )
 def convert_bonds(
-    handlers: list[openff.interchange.smirnoff._valence.SMIRNOFFBondCollection],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFBondCollection],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.ValenceParameterMap]]:
     return convert_valence_handlers(handlers, "Bonds", ("k", "length"))
 
@@ -77,7 +71,7 @@ def convert_bonds(
     "Angles", {"k": _KCAL_PER_MOL / _RADIANS**2, "angle": _RADIANS}
 )
 def convert_angles(
-    handlers: list[_AngleParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFAngleCollection],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.ValenceParameterMap]]:
     return convert_valence_handlers(handlers, "Angles", ("k", "angle"))
 
@@ -92,7 +86,7 @@ def convert_angles(
     },
 )
 def convert_propers(
-    handlers: list[_ProperTorsionParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFProperTorsionCollection],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.ValenceParameterMap]]:
     return convert_valence_handlers(
         handlers, "ProperTorsions", ("k", "periodicity", "phase", "idivf")
@@ -109,7 +103,7 @@ def convert_propers(
     },
 )
 def convert_impropers(
-    handlers: list[_ImproperTorsionParameters],
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFImproperTorsionCollection],
 ) -> tuple[smee.ff.TensorPotential, list[smee.ff.ValenceParameterMap]]:
     return convert_valence_handlers(
         handlers, "ImproperTorsions", ("k", "periodicity", "phase", "idivf")
