@@ -7,6 +7,7 @@ import torch
 from smee.ff._ff import (
     _CONVERTERS,
     _DEFAULT_UNITS,
+    TensorConstraints,
     VSiteMap,
     _convert_topology,
     convert_handlers,
@@ -59,8 +60,9 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
 def test_convert_topology(formaldehyde, mocker):
     parameters = mocker.MagicMock()
     v_sites = VSiteMap([], {}, torch.tensor([]))
+    constraints = TensorConstraints(torch.tensor([1, 2]), torch.tensor([3.0]))
 
-    topology = _convert_topology(formaldehyde, parameters, v_sites)
+    topology = _convert_topology(formaldehyde, parameters, v_sites, constraints)
 
     assert topology.n_atoms == 4
     assert topology.n_bonds == 3
@@ -83,12 +85,18 @@ def test_convert_topology(formaldehyde, mocker):
 
     assert topology.parameters == parameters
     assert topology.v_sites == v_sites
+    assert topology.constraints == constraints
 
 
 def test_convert_interchange():
     force_field = openff.toolkit.ForceField()
     force_field.get_parameter_handler("Electrostatics")
     force_field.get_parameter_handler("vdW")
+
+    constraint_handler = force_field.get_parameter_handler("Constraints")
+    constraint_handler.add_parameter(
+        {"smirks": "[Cl:1]-[H:2]", "distance": 0.2 * openff.units.unit.nanometer}
+    )
 
     charge_handler = force_field.get_parameter_handler("LibraryCharges")
     charge_handler.add_parameter(
@@ -134,6 +142,20 @@ def test_convert_interchange():
     assert len(tensor_topology.v_sites.keys) == 1
     assert tensor_topology.v_sites.keys[0].type == "BondCharge"
     assert tensor_topology.v_sites.keys[0].orientation_atom_indices == (1, 0)
+
+    assert tensor_topology.constraints is not None
+    expected_constraint_idxs = torch.tensor([[0, 1]])
+    assert tensor_topology.constraints.idxs.shape == expected_constraint_idxs.shape
+    assert torch.allclose(tensor_topology.constraints.idxs, expected_constraint_idxs)
+
+    expected_constraint_distances = torch.tensor([2.0])
+    assert (
+        tensor_topology.constraints.distances.shape
+        == expected_constraint_distances.shape
+    )
+    assert torch.allclose(
+        tensor_topology.constraints.distances, expected_constraint_distances
+    )
 
 
 def test_convert_interchange_multiple(

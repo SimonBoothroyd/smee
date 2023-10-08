@@ -6,6 +6,7 @@ import typing
 import openff.interchange.components.potentials
 import openff.interchange.models
 import openff.interchange.smirnoff._base
+import openff.interchange.smirnoff._valence
 import openff.interchange.smirnoff._virtual_sites
 import openff.toolkit
 import openff.units
@@ -16,11 +17,12 @@ import smee.geometry
 _VSiteParameters = (
     openff.interchange.smirnoff._virtual_sites.SMIRNOFFVirtualSiteCollection
 )
+_ConstraintParameters = (
+    openff.interchange.smirnoff._valence.SMIRNOFFConstraintCollection
+)
 
 _CONVERTERS = {}
 _DEFAULT_UNITS = {}
-
-_IGNORED_HANDLERS = {"Constraints"}
 
 _ANGSTROM = openff.units.unit.angstrom
 _RADIANS = openff.units.unit.radians
@@ -94,6 +96,18 @@ class VSiteMap:
 
 
 @dataclasses.dataclass
+class TensorConstraints:
+    """A tensor representation of a set of distance constraints between pairs of
+    atoms."""
+
+    idxs: torch.Tensor
+    """The indices of the atoms involved in each constraint with
+    ``shape=(n_constraints, 2)``"""
+    distances: torch.Tensor
+    """The distance [Å] between each pair of atoms with ``shape=(n_constraints,)``"""
+
+
+@dataclasses.dataclass
 class TensorTopology:
     """A tensor representation of a molecular topology that has been assigned force
     field parameters."""
@@ -112,6 +126,10 @@ class TensorTopology:
     """The parameters that have been assigned to the topology."""
     v_sites: VSiteMap | None = None
     """The v-sites that have been assigned to the topology."""
+
+    constraints: TensorConstraints = None
+    """Distance constraints that should be applied **during MD simulations**. These
+    will not be used outside of MD simulations."""
 
     @property
     def n_atoms(self) -> int:
@@ -374,6 +392,39 @@ def _convert_v_sites(
     return v_sites, v_site_maps
 
 
+def _convert_constraints(
+    handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
+) -> list[TensorConstraints | None]:
+    handler_types = {handler.type for handler in handlers}
+    assert handler_types == {"Constraints"}, "invalid handler types found"
+
+    constraints = []
+
+    for handler in handlers:
+        if handler is None or len(handler.key_map) == 0:
+            constraints.append(None)
+            continue
+
+        topology_keys = [*handler.key_map]
+
+        constraint_idxs = torch.tensor([[*key.atom_indices] for key in topology_keys])
+        assert constraint_idxs.shape[1] == 2, "only distance constraints supported"
+
+        units = {"distance": _ANGSTROM}
+
+        constraint_distances = [
+            _get_value(handler.potentials[handler.key_map[key]], "distance", units)
+            for key in topology_keys
+        ]
+
+        constraint = TensorConstraints(
+            idxs=constraint_idxs, distances=torch.tensor(constraint_distances)
+        )
+        constraints.append(constraint)
+
+    return constraints
+
+
 def convert_handlers(
     handlers: list[openff.interchange.smirnoff._base.SMIRNOFFCollection],
     topologies: list[openff.toolkit.Topology],
@@ -441,6 +492,7 @@ def _convert_topology(
     topology: openff.toolkit.Topology,
     parameters: dict[str, ParameterMap],
     v_sites: VSiteMap | None,
+    constraints: TensorConstraints | None,
 ) -> TensorTopology:
     """Convert an OpenFF topology into a tensor topology.
 
@@ -471,6 +523,7 @@ def _convert_topology(
         bond_orders=bond_orders,
         parameters=parameters,
         v_sites=v_sites,
+        constraints=constraints,
     )
 
 
@@ -514,7 +567,6 @@ def convert_interchange(
         handler_type
         for interchange in interchanges
         for handler_type in interchange.collections
-        if handler_type not in _IGNORED_HANDLERS
     }
     handlers_by_type = {handler_type: [] for handler_type in sorted(handler_types)}
 
@@ -533,9 +585,13 @@ def convert_interchange(
 
     if "VirtualSites" in handlers_by_type:
         v_sites, v_site_maps = _convert_v_sites(
-            handlers_by_type["VirtualSites"], topologies
+            handlers_by_type.pop("VirtualSites"), topologies
         )
-        handlers_by_type.pop("VirtualSites")
+
+    constraints = [None] * len(topologies)
+
+    if "Constraints" in handlers_by_type:
+        constraints = _convert_constraints(handlers_by_type.pop("Constraints"))
 
     potentials, parameter_maps_by_handler = [], {}
 
@@ -559,6 +615,7 @@ def convert_interchange(
                 for potential in potentials
             },
             v_site_maps[i],
+            constraints[i],
         )
         for i, topology in enumerate(topologies)
     ]
