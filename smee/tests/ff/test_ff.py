@@ -7,6 +7,7 @@ import torch
 from smee.ff._ff import (
     _CONVERTERS,
     _DEFAULT_UNITS,
+    TensorConstraints,
     VSiteMap,
     _convert_topology,
     convert_handlers,
@@ -59,8 +60,9 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
 def test_convert_topology(formaldehyde, mocker):
     parameters = mocker.MagicMock()
     v_sites = VSiteMap([], {}, torch.tensor([]))
+    constraints = TensorConstraints(torch.tensor([1, 2]), torch.tensor([3.0]))
 
-    topology = _convert_topology(formaldehyde, parameters, v_sites)
+    topology = _convert_topology(formaldehyde, parameters, v_sites, constraints)
 
     assert topology.n_atoms == 4
     assert topology.n_bonds == 3
@@ -83,6 +85,7 @@ def test_convert_topology(formaldehyde, mocker):
 
     assert topology.parameters == parameters
     assert topology.v_sites == v_sites
+    assert topology.constraints == constraints
 
 
 def test_convert_interchange():
