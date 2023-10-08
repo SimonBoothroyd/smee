@@ -16,6 +16,13 @@ dependencies:
   - pytorch-cpu
   - pydantic
 
+  # Optional packages
+
+  ### MM simulations
+  - openmm
+  - rdkit
+  - packmol
+
   # Examples
   - jupyter
   - nbconvert
@@ -23,10 +30,7 @@ dependencies:
   - smirnoff-plugins >=0.0.4
 
   # Dev / Testing
-  - rdkit
   - ambertools
-
-  - openmm  # regression testing energies
 
   - versioneer
 

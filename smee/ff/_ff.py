@@ -134,6 +134,19 @@ class TensorTopology:
 
 
 @dataclasses.dataclass
+class TensorSystem:
+    """A tensor representation of a 'full' system."""
+
+    topologies: list[TensorTopology]
+    """The topologies of the individual molecules in the system."""
+    n_copies: list[int]
+    """The number of copies of each topology to include in the system."""
+
+    is_periodic: bool
+    """Whether the system is periodic or not."""
+
+
+@dataclasses.dataclass
 class TensorPotential:
     """A tensor representation of a valence SMIRNOFF parameter handler"""
 
