@@ -215,20 +215,15 @@ def _convert_torsion_potential(
 
 
 def _combine_nonbonded(
-    vdw_force: openmm.NonbondedForce | None,
-    electrostatic_force: openmm.NonbondedForce | None,
+    vdw_force: openmm.NonbondedForce, electrostatic_force: openmm.NonbondedForce
 ) -> openmm.NonbondedForce:
-    if electrostatic_force is None:
-        return vdw_force
-    if vdw_force is None:
-        return electrostatic_force
-
     assert vdw_force.getNumParticles() == electrostatic_force.getNumParticles()
     assert vdw_force.getNumExceptions() == electrostatic_force.getNumExceptions()
     assert vdw_force.getNonbondedMethod() == electrostatic_force.getNonbondedMethod()
     assert vdw_force.getCutoffDistance() == electrostatic_force.getCutoffDistance()
 
     force = copy.deepcopy(vdw_force)
+    force.setEwaldErrorTolerance(electrostatic_force.getEwaldErrorTolerance())
 
     for i in range(force.getNumParticles()):
         charge, _, _ = electrostatic_force.getParticleParameters(i)

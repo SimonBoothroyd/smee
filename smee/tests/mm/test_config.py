@@ -29,6 +29,14 @@ def test_openmm_unit_type(input_value):
     model_json = x.model_dump_json()
     assert model_json == '{"value":"1.00000000 angstrom"}'
 
+    model_schema = x.model_json_schema()
+    assert model_schema == {
+        "properties": {"value": {"title": "Value", "type": "string"}},
+        "required": ["value"],
+        "title": "MockModel",
+        "type": "object",
+    }
+
     y = MockModel.model_validate_json(model_json)
     assert isinstance(y.value, openmm.unit.Quantity)
     assert y.value.unit == openmm.unit.angstrom

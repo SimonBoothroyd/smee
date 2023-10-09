@@ -64,3 +64,24 @@ class TestTensorReporter:
             ]
         )
         assert reporter.values == [pytest.approx(expected_values)]
+
+    @pytest.mark.parametrize(
+        "potential, contains", [(numpy.nan, "nan"), (numpy.inf, "inf")]
+    )
+    def test_report_energy_check(self, potential, contains, mocker):
+        total_mass = 5.0 * openmm.unit.daltons
+        pressure = 1.0 * openmm.unit.atmospheres
+
+        reporter = TensorReporter(
+            report_interval=1, total_mass=total_mass, pressure=pressure
+        )
+
+        potential = potential * openmm.unit.kilocalories_per_mole
+        kinetic = 2.0 * openmm.unit.kilocalories_per_mole
+
+        mock_state = mocker.MagicMock()
+        mock_state.getPotentialEnergy.return_value = potential
+        mock_state.getKineticEnergy.return_value = kinetic
+
+        with pytest.raises(ValueError, match=f"total energy is {contains}"):
+            reporter.report(None, mock_state)
