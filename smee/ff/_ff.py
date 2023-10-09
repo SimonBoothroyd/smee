@@ -118,7 +118,7 @@ class TensorTopology:
     v_sites: VSiteMap | None = None
     """The v-sites that have been assigned to the topology."""
 
-    constraints: TensorConstraints = None
+    constraints: TensorConstraints | None = None
     """Distance constraints that should be applied **during MD simulations**. These
     will not be used outside of MD simulations."""
 
@@ -516,7 +516,10 @@ def _convert_topology(
     )
 
     bond_idxs = torch.tensor(
-        [[bond.atom1_index, bond.atom2_index] for bond in topology.bonds]
+        [
+            (topology.atom_index(bond.atom1), topology.atom_index(bond.atom2))
+            for bond in topology.bonds
+        ]
     )
     bond_orders = torch.tensor([bond.bond_order for bond in topology.bonds])
 

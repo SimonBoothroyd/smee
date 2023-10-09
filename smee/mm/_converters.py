@@ -1,4 +1,5 @@
 """Convert tensor representations into OpenMM systems."""
+import collections
 import copy
 
 import openmm
@@ -16,14 +17,30 @@ def _create_nonbonded_force(
 ) -> openmm.NonbondedForce:
     force = openmm.NonbondedForce()
     force.setUseDispersionCorrection(system.is_periodic)
+    force.setEwaldErrorTolerance(1.0e-4)  # TODO: interchange hardcoded value
 
     cutoff_idx = potential.attribute_cols.index("cutoff")
+    switch_idx = (
+        None
+        if "switch_width" not in potential.attribute_cols
+        else potential.attribute_cols.index("switch_width")
+    )
 
     if not system.is_periodic:
         force.setNonbondedMethod(openmm.NonbondedForce.NoCutoff)
     else:
+        cutoff = potential.attributes[cutoff_idx] * _ANGSTROM
+
         force.setNonbondedMethod(openmm.NonbondedForce.PME)
         force.setCutoffDistance(potential.attributes[cutoff_idx] * _ANGSTROM)
+
+        if switch_idx is not None:
+            switch_width = potential.attributes[switch_idx] * _ANGSTROM
+            switch_distance = cutoff - switch_width
+
+            if switch_distance > 0.0 * _ANGSTROM:
+                force.setUseSwitchingFunction(True)
+                force.setSwitchingDistance(switch_distance)
 
     return force
 
@@ -285,7 +302,7 @@ def convert_potential_to_force(
     return force
 
 
-def convert_to_openmm(
+def convert_to_openmm_system(
     force_field: smee.ff.TensorForceField,
     system: smee.ff.TensorSystem | smee.ff.TensorTopology,
 ) -> openmm.System:
@@ -324,3 +341,48 @@ def convert_to_openmm(
     _apply_constraints(omm_system, system)
 
     return omm_system
+
+
+def convert_to_openmm_topology(system: smee.ff.TensorSystem) -> openmm.app.Topology:
+    """Convert a SMEE topology to an OpenMM topology."""
+    omm_topology = openmm.app.Topology()
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        chain = omm_topology.addChain()
+
+        is_water = topology.n_atoms == 3 and sorted(
+            int(v) for v in topology.atomic_nums
+        ) == [1, 1, 8]
+
+        residue_name = "WAT" if is_water else "UNK"
+
+        for _ in range(n_copies):
+            residue = omm_topology.addResidue(residue_name, chain)
+            element_counter = collections.defaultdict(int)
+
+            atoms = {}
+
+            for i, atomic_num in enumerate(topology.atomic_nums):
+                element = openmm.app.Element.getByAtomicNumber(int(atomic_num))
+                element_counter[element.symbol] += 1
+
+                name = element.symbol + (
+                    ""
+                    if element_counter[element.symbol] == 1 and element.symbol != "H"
+                    else f"{element_counter[element.symbol]}"
+                )
+                atoms[i] = omm_topology.addAtom(name, element, residue)
+
+            for bond_idxs, bond_order in zip(topology.bond_idxs, topology.bond_orders):
+                idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
+
+                bond_order = int(bond_order)
+                bond_type = {
+                    1: openmm.app.Single,
+                    2: openmm.app.Double,
+                    3: openmm.app.Triple,
+                }[bond_order]
+
+                omm_topology.addBond(atoms[idx_a], atoms[idx_b], bond_type, bond_order)
+
+    return omm_topology

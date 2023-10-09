@@ -12,7 +12,7 @@ ANGSTROM = openmm.unit.angstrom
 GRAMS_PER_ML = openmm.unit.grams / openmm.unit.milliliters
 
 
-def _openmm_quantity_validator(
+def _quantity_validator(
     value: str | openmm.unit.Quantity | openff.units.unit.Quantity,
     expected_units: openmm.unit.Unit,
 ) -> openmm.unit.Quantity:
@@ -21,8 +21,17 @@ def _openmm_quantity_validator(
     if isinstance(value, openff.units.Quantity):
         value = openff.units.openmm.to_openmm(value)
 
-    assert isinstance(value, openmm.unit.Quantity)
-    return value.in_units_of(expected_units)
+    assert isinstance(value, openmm.unit.Quantity), f"invalid type - {type(value)}"
+
+    try:
+        return value.in_units_of(expected_units)
+    except TypeError:
+        raise ValueError(f"invalid units {value.unit} - expected {expected_units}")
+
+
+def _quantity_serializer(value: openmm.unit.Quantity) -> str:
+    unit_str = openff.units.openmm.openmm_unit_to_string(value.unit)
+    return f"{value.value_in_unit(value.unit):.8f} {unit_str}"
 
 
 class _OpenMMQuantityAnnotation:
@@ -40,7 +49,7 @@ class _OpenMMQuantityAnnotation:
             json_schema=from_value_schema,
             python_schema=from_value_schema,
             serialization=pydantic_core.core_schema.plain_serializer_function_ser_schema(
-                lambda instance: str(instance)
+                _quantity_serializer
             ),
         )
 
@@ -50,13 +59,12 @@ class _OpenMMQuantityAnnotation:
         _core_schema: pydantic_core.core_schema.CoreSchema,
         handler: pydantic.GetJsonSchemaHandler,
     ) -> pydantic.json_schema.JsonSchemaValue:
-        # Use the same schema that would be used for `int`
         return handler(pydantic_core.core_schema.str_schema())
 
 
 class _OpenMMQuantityMeta(type):
     def __getitem__(cls, item: openmm.unit.Unit):
-        validator = functools.partial(_openmm_quantity_validator, expected_units=item)
+        validator = functools.partial(_quantity_validator, expected_units=item)
         return typing.Annotated[
             openmm.unit.Quantity,
             _OpenMMQuantityAnnotation,
@@ -65,7 +73,7 @@ class _OpenMMQuantityMeta(type):
 
 
 class OpenMMQuantity(openmm.unit.Quantity, metaclass=_OpenMMQuantityMeta):
-    pass
+    """A pydantic safe OpenMM quantity type validates unit compatibility."""
 
 
 class GenerateCoordsConfig(pydantic.BaseModel):

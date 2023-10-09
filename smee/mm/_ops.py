@@ -264,23 +264,21 @@ class _EnsembleAverageOp(torch.autograd.Function):
             d_avg_output_dtheta[i + 1] = torch.zeros_like(ctx.saved_tensors[i])
 
             # "potential_energy", "volume", "density", ?"enthalpy"?
-            avg_d_output_dtheta = [
-                (
-                    avg_du_dtheta_i,
-                    torch.zeros_like(avg_du_dtheta_i),
-                    torch.zeros_like(avg_du_dtheta_i),
-                    avg_du_dtheta_i,
-                )
-                for i in range(len(du_dtheta))
-            ]
+            avg_d_output_dtheta = (
+                avg_du_dtheta_i,
+                torch.zeros_like(avg_du_dtheta_i),
+                torch.zeros_like(avg_du_dtheta_i),
+                avg_du_dtheta_i,
+            )
 
             for output_idx in range(len(avg_outputs)):
-                avg_du_dtheta_i_avg_obs = avg_du_dtheta_i * avg_outputs[output_idx]
+                avg_d_output_dtheta_i = avg_d_output_dtheta[output_idx]
 
                 avg_obs_du_dtheta_i = (du_dtheta[i] * outputs[:, output_idx]).mean(
                     dim=-1
                 )
-                avg_d_output_dtheta_i = avg_d_output_dtheta[i][output_idx]
+
+                avg_du_dtheta_i_avg_obs = avg_du_dtheta_i * avg_outputs[output_idx]
 
                 d_avg_output_d_theta_i = avg_d_output_dtheta_i - beta * (
                     avg_obs_du_dtheta_i - avg_du_dtheta_i_avg_obs

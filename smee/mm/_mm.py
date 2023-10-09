@@ -1,5 +1,4 @@
-"""Factories for building system coordintes."""
-import collections
+"""Run MM simulations using OpenMM."""
 import copy
 import functools
 import logging
@@ -40,46 +39,12 @@ def _topology_to_rdkit(topology: smee.ff.TensorTopology) -> Chem.Mol:
         idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
         mol.AddBond(idx_a, idx_b, Chem.BondType(bond_order))
 
-    mol = mol.GetMol()
-    Chem.SanitizeMol(mol)
+    mol = Chem.Mol(mol)
+    mol.UpdatePropertyCache()
+
     AllChem.EmbedMolecule(mol)
 
     return mol
-
-
-def _system_to_topology(system: smee.ff.TensorSystem) -> openmm.app.Topology:
-    """Convert a SMEE topology to an OpenMM topology."""
-    omm_topology = openmm.app.Topology()
-
-    for topology, n_copies in zip(system.topologies, system.n_copies):
-        chain = omm_topology.addChain()
-
-        for _ in range(n_copies):
-            residue = omm_topology.addResidue("UKN", chain)
-            element_counter = collections.defaultdict(int)
-
-            atoms = {}
-
-            for i, atomic_num in enumerate(topology.atomic_nums):
-                element = openmm.app.Element.getByAtomicNumber(int(atomic_num))
-                element_counter[element.symbol] += 1
-
-                name = f"{element.symbol}{element_counter[element.symbol]}"
-                atoms[i] = omm_topology.addAtom(name, element, residue)
-
-            for bond_idxs, bond_order in zip(topology.bond_idxs, topology.bond_orders):
-                idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
-
-                bond_order = int(bond_order)
-                bond_type = {
-                    1: openmm.app.Single,
-                    2: openmm.app.Double,
-                    3: openmm.app.Triple,
-                }[bond_order]
-
-                omm_topology.addBond(atoms[idx_a], atoms[idx_b], bond_type, bond_order)
-
-    return omm_topology
 
 
 def _approximate_box_size(
@@ -142,7 +107,7 @@ def _generate_packmol_input(
                 f"structure {i}.xyz\n"
                 f"  number {n}\n"
                 f"  inside box 0. 0. 0. {box_size} {box_size} {box_size}\n"
-                "end structure\n"
+                "end structure"
                 for i, n in enumerate(n_copies)
             ],
         ]
@@ -219,18 +184,36 @@ def _get_state_log(state: openmm.State) -> str:
     volume = box_vectors[0][0] * box_vectors[1][1] * box_vectors[2][2]
     volume = volume.value_in_unit(openmm.unit.angstrom**3)
 
-    return f"energy={energy: .4f} kcal / mol volume={volume: .4f} Å^3"
+    return f"energy={energy:.4f} kcal / mol volume={volume:.4f} Å^3"
+
+
+def _get_platform(is_periodic: bool) -> openmm.Platform:
+    """Returns the fastest OpenMM platform available.
+
+    Notes:
+        If the system is not periodic, it is assumed that a molecule (or dimer) in
+        vacuum is being simulated and the Reference platform will be used.
+    """
+
+    if not is_periodic:
+        return openmm.Platform.getPlatformByName("Reference")
+
+    platforms = [
+        openmm.Platform.getPlatform(i) for i in range(openmm.Platform.getNumPlatforms())
+    ]
+    return max(platforms, key=lambda platform: platform.getSpeed())
 
 
 def _energy_minimize(
     omm_system: openmm.System,
     state: openmm.State | tuple[openmm.unit.Quantity, openmm.unit.Quantity],
+    platform: openmm.Platform,
     config: "smee.mm.MinimizationConfig",
-):
+) -> openmm.State:
     omm_system = copy.deepcopy(omm_system)
 
     integrator = openmm.VerletIntegrator(0.0001)
-    context = openmm.Context(omm_system, integrator)
+    context = openmm.Context(omm_system, integrator, platform)
 
     if isinstance(state, openmm.State):
         context.setState(state)
@@ -240,7 +223,9 @@ def _energy_minimize(
         context.setPositions(coords)
 
     openmm.LocalEnergyMinimizer.minimize(
-        context, config.tolerance, config.max_iterations
+        context,
+        config.tolerance.value_in_unit_system(openmm.unit.md_unit_system),
+        config.max_iterations,
     )
     return context.getState(getEnergy=True, getPositions=True)
 
@@ -249,9 +234,12 @@ def _run_simulation(
     omm_system: openmm.System,
     omm_topology: openmm.app.Topology,
     state: openmm.State | tuple[openmm.unit.Quantity, openmm.unit.Quantity],
+    platform: openmm.Platform,
     config: "smee.mm.SimulationConfig",
-    reporter: typing.Any | None,
+    reporters: list[typing.Any] | None = None,
 ):
+    reporters = [] if reporters is None else reporters
+
     omm_system = copy.deepcopy(omm_system)
 
     if config.pressure is not None:
@@ -262,7 +250,7 @@ def _run_simulation(
         config.temperature, config.friction_coeff, config.timestep
     )
 
-    simulation = openmm.app.Simulation(omm_topology, omm_system, integrator)
+    simulation = openmm.app.Simulation(omm_topology, omm_system, integrator, platform)
 
     if isinstance(state, openmm.State):
         simulation.context.setState(state)
@@ -271,8 +259,7 @@ def _run_simulation(
         simulation.context.setPeriodicBoxVectors(*box_vectors)
         simulation.context.setPositions(coords)
 
-    if reporter is not None:
-        simulation.reporters.append(reporter)
+    simulation.reporters.extend(reporters)
 
     simulation.step(config.n_steps)
 
@@ -309,6 +296,12 @@ def simulate(
         ``shape=(n_steps, 3)`` if NVT.
     """
 
+    system: smee.ff.TensorSystem = (
+        system
+        if isinstance(system, smee.ff.TensorSystem)
+        else smee.ff.TensorSystem([system], [1], False)
+    )
+
     requires_pbc = any(
         config.pressure is not None
         for config in equilibrate_configs + [production_config]
@@ -318,55 +311,45 @@ def simulate(
     if not system.is_periodic and requires_pbc:
         raise ValueError("pressure cannot be specified for a non-periodic system")
 
-    system: smee.ff.TensorSystem = (
-        system
-        if isinstance(system, smee.ff.TensorSystem)
-        else smee.ff.TensorSystem([system], [1], False)
-    )
+    platform = _get_platform(system.is_periodic)
 
     omm_state = generate_system_coords(system, coords_config)
 
-    omm_system = smee.mm._converters.convert_to_openmm(force_field, system)
-    omm_topology = _system_to_topology(system)
+    omm_system = smee.mm._converters.convert_to_openmm_system(force_field, system)
+    omm_topology = smee.mm._converters.convert_to_openmm_topology(system)
 
     for i, config in enumerate(equilibrate_configs):
         _LOGGER.info(f"running equilibration step {i + 1} / {len(equilibrate_configs)}")
 
         if isinstance(config, smee.mm.MinimizationConfig):
-            omm_state = _energy_minimize(omm_system, omm_state, config)
+            omm_state = _energy_minimize(omm_system, omm_state, platform, config)
 
         elif isinstance(config, smee.mm.SimulationConfig):
             omm_state = _run_simulation(
-                omm_system, omm_topology, omm_state, config, None
+                omm_system, omm_topology, omm_state, platform, config, None
             )
         else:
             raise NotImplementedError
 
         _LOGGER.info(_get_state_log(omm_state))
 
-    coords, box_vectors, values = [], [], []
-
     total_mass = sum(
         (omm_system.getParticleMass(i) for i in range(omm_system.getNumParticles())),
         0.0 * openmm.unit.dalton,
     )
     reporter = smee.mm._reporters.TensorReporter(
-        production_report_interval,
-        coords,
-        box_vectors,
-        values,
-        total_mass,
-        production_config.pressure,
+        production_report_interval, total_mass, production_config.pressure
     )
 
     _LOGGER.info("running production simulation")
+
     omm_state = _run_simulation(
-        omm_system, omm_topology, omm_state, production_config, reporter
+        omm_system, omm_topology, omm_state, platform, production_config, [reporter]
     )
     _LOGGER.info(_get_state_log(omm_state))
 
     return (
-        numpy.ascontiguousarray(numpy.stack(coords)),
-        numpy.ascontiguousarray(numpy.stack(box_vectors)),
-        torch.stack(values),
+        numpy.ascontiguousarray(numpy.stack(reporter.coords)),
+        numpy.ascontiguousarray(numpy.stack(reporter.box_vectors)),
+        torch.stack(reporter.values),
     )

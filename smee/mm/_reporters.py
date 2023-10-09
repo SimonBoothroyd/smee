@@ -1,3 +1,4 @@
+"""OpenMM simulation reporters"""
 import math
 
 import numpy
@@ -5,30 +6,60 @@ import openmm.app
 import openmm.unit
 import torch
 
+_ANGSTROM = openmm.unit.angstrom
 _KCAL_PER_MOL = openmm.unit.kilocalories_per_mole
 _GRAM_PER_ML = openmm.unit.gram / openmm.unit.item / openmm.unit.milliliter
 
 TENSOR_REPORTER_COLUMNS = ["potential_energy", "volume", "density", "enthalpy"]
+TENSOR_REPORTER_UNITS = [_KCAL_PER_MOL, _ANGSTROM**3, _GRAM_PER_ML, _KCAL_PER_MOL]
 
 
 class TensorReporter:
+    """A reporter which stores coords, box vectors, and stats in memory."""
+
+    @property
+    def coords(self) -> list[numpy.ndarray]:
+        """A list to store the coordinates of each reported frame in, where coordinates
+        are stored as numpy arrays with ``shape=(n_atoms, 3)`` and units of angstroms.
+        """
+        return self._coords
+
+    @property
+    def box_vectors(self) -> list[numpy.ndarray]:
+        """A list to store the box vectors of each reported frame in, where box vectors
+        are stored as numpy arrays with ``shape=(3, 3)`` and units of angstroms.
+        """
+        return self._box_vectors
+
+    @property
+    def values(self) -> list[torch.Tensor]:
+        """A list to store the tensor values of each reported frame in. See
+        ``TENSOR_REPORTER_COLUMNS`` for the order of the values in each tensor.
+        """
+        return self._values
+
     def __init__(
         self,
         report_interval: int,
-        coords: list[numpy.ndarray],
-        box_vectors: list[numpy.ndarray],
-        values: list[torch.Tensor],
-        total_mass: openmm.unit.Quantity | None,
+        total_mass: openmm.unit.Quantity,
         pressure: openmm.unit.Quantity | None,
     ):
+        """
+
+        Args:
+            report_interval: The interval (in steps) at which to store the tensor
+                values.
+            total_mass: The total mass of the system.
+            pressure: The pressure of the system. If none, no enthalpy will be reported.
+        """
         self._report_interval = report_interval
 
         self._total_mass = total_mass
         self._pressure = pressure
 
-        self._coords = coords
-        self._box_vectors = box_vectors
-        self._values = values
+        self._coords = []
+        self._box_vectors = []
+        self._values = []
 
     def describeNextReport(self, simulation: openmm.app.Simulation):
         steps = self._report_interval - simulation.currentStep % self._report_interval
