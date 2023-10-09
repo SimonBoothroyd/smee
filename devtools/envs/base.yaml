@@ -22,6 +22,7 @@ dependencies:
   - openmm
   - rdkit
   - packmol
+  - numpy
 
   # Examples
   - jupyter

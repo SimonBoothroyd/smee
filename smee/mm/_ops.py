@@ -147,14 +147,28 @@ def _compute_energy(
     return torch.tensor(energies)
 
 
-def _compute_du_dtheta_parameter(
+def _compute_du_d_theta_parameter(
     system: smee.ff.TensorSystem,
     potential_0: smee.ff.TensorPotential,
     energy_0: torch.Tensor,
     coords: numpy.ndarray,
     box_vectors: numpy.ndarray,
 ) -> torch.Tensor:
-    du_dtheta = torch.zeros((*potential_0.parameters.shape, *energy_0.shape))
+    """Computes the gradients of the potential energy with respect to a potential's
+    parameters using the forward finite difference method.
+
+    Args:
+        system: The system being evaluated.
+        potential_0: The potential to compute the gradients for.
+        energy_0: The potential energy [kcal / mol] of the system with ``potential_0``.
+        coords: The coordinates [A] of the system.
+        box_vectors: The box vectors [A] of the system.
+
+    Returns:
+        The gradients of the potential energy with respect to the parameters with
+        ``shape=(n_parameters, n_parameter_cols, n_frames)``.
+    """
+    du_d_theta = torch.zeros((*potential_0.parameters.shape, *energy_0.shape))
 
     for i in range(potential_0.parameters.shape[0]):
         for j in range(potential_0.parameters.shape[1]):
@@ -162,25 +176,38 @@ def _compute_du_dtheta_parameter(
             potential_1.parameters[i, j] += FORWARD_DELTA
 
             energy_1 = _compute_energy(system, potential_1, coords, box_vectors)
-            du_dtheta[i, j] = (energy_1 - energy_0) / FORWARD_DELTA
+            du_d_theta[i, j] = (energy_1 - energy_0) / FORWARD_DELTA
 
-    return du_dtheta
+    return du_d_theta
 
 
-def _compute_du_dtheta(
-    inputs: tuple[torch.Tensor, ...], ctx: typing.Any
+def _compute_du_d_theta(
+    theta: tuple[torch.Tensor, ...], ctx: typing.Any
 ) -> list[torch.Tensor | None]:
+    """Computes the gradients of the potential energy with respect to each parameter
+    and attribute tensor in ``theta`` using the forward finite difference method.
+
+    Args:
+        theta: The set of 'packed' parameter and attribute tensors.
+        ctx: The context object passed to the custom PyTorch op.
+
+    Returns:
+        The gradients of the potential energy with respect to each theta. Gradients
+        w.r.t. parameters will have ``shape=(n_parameters, n_parameter_cols, n_frames)``
+        while gradients w.r.t. attributes will have
+        ``shape=(n_attribute_cols, n_frames)``.
+    """
     system = ctx.kwargs["system"]
 
     force_field = _unpack_force_field(
-        ctx.saved_tensors,
+        theta,
         ctx.kwargs["parameter_lookup"],
         ctx.kwargs["attribute_lookup"],
         ctx.kwargs["force_field"],
     )
     potential_types = {*ctx.kwargs["parameter_lookup"], *ctx.kwargs["attribute_lookup"]}
 
-    du_dtheta = [None] * len(inputs)
+    du_d_theta = [None] * len(theta)
 
     for potential_type in potential_types:
         parameter_idx = ctx.kwargs["parameter_lookup"][potential_type]
@@ -197,17 +224,19 @@ def _compute_du_dtheta(
         energy_0 = _compute_energy(system, potential_0, ctx.coords, ctx.box_vectors)
 
         if ctx.needs_input_grad[parameter_idx + 1]:
-            du_dtheta[parameter_idx] = _compute_du_dtheta_parameter(
+            du_d_theta[parameter_idx] = _compute_du_d_theta_parameter(
                 system, potential_0, energy_0, ctx.coords, ctx.box_vectors
             )
 
         if ctx.needs_input_grad[attribute_idx + 1]:
             raise NotImplementedError
 
-    return du_dtheta
+    return du_d_theta
 
 
 class _EnsembleAverageOp(torch.autograd.Function):
+    """A custom PyTorch op for computing ensemble averages over MD trajectories."""
+
     @staticmethod
     def forward(ctx, kwargs: _EnsembleAverageKwargs, *tensors: torch.Tensor):
         force_field = _unpack_force_field(
@@ -237,57 +266,51 @@ class _EnsembleAverageOp(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, *grad_outputs):
-        """
-        In the backward pass we receive a Tensor containing the gradient of the loss
-        with respect to the output, and we need to compute the gradient of the loss
-        with respect to the input.
-        """
-
-        outputs = ctx.saved_tensors[-1]
-        avg_outputs = outputs.mean(dim=0)
-
-        du_dtheta = _compute_du_dtheta(ctx.saved_tensors[:-1], ctx)
-
         temperature = ctx.kwargs["production_config"].temperature
         beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
         beta = beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1)
 
-        # we need to return one extra 'gradient' for kwargs.
-        d_avg_output_dtheta = [None] + [None] * len(ctx.saved_tensors[:-1])
+        outputs = ctx.saved_tensors[-1]
+        avg_outputs = outputs.mean(dim=0)
 
-        for i in range(len(du_dtheta)):
-            if du_dtheta[i] is None:
+        # we need to return one extra 'gradient' for kwargs.
+        theta = ctx.saved_tensors[:-1]
+        grads = [None] + [None] * len(theta)
+
+        du_d_theta = _compute_du_d_theta(theta, ctx)
+
+        for i in range(len(du_d_theta)):
+            if du_d_theta[i] is None:
                 continue
 
-            avg_du_dtheta_i = du_dtheta[i].mean(dim=-1)
+            grads[i + 1] = torch.zeros_like(theta[i])
 
-            d_avg_output_dtheta[i + 1] = torch.zeros_like(ctx.saved_tensors[i])
+            avg_du_d_theta_i = du_d_theta[i].mean(dim=-1)
 
-            # "potential_energy", "volume", "density", ?"enthalpy"?
-            avg_d_output_dtheta = (
-                avg_du_dtheta_i,
-                torch.zeros_like(avg_du_dtheta_i),
-                torch.zeros_like(avg_du_dtheta_i),
-                avg_du_dtheta_i,
-            )
+            avg_d_output_d_theta = [
+                avg_du_d_theta_i,  # du_d_theta
+                torch.zeros_like(avg_du_d_theta_i),  # d_volume_d_theta
+                torch.zeros_like(avg_du_d_theta_i),  # d_rho_d_theta
+            ]
+
+            if len(avg_outputs) == 4:
+                avg_d_output_d_theta.append(avg_du_d_theta_i)  # d_enthalpy_d_theta
 
             for output_idx in range(len(avg_outputs)):
-                avg_d_output_dtheta_i = avg_d_output_dtheta[output_idx]
+                avg_d_output_d_theta_i = avg_d_output_d_theta[output_idx]
 
-                avg_obs_du_dtheta_i = (du_dtheta[i] * outputs[:, output_idx]).mean(
+                avg_obs_du_d_theta_i = (du_d_theta[i] * outputs[:, output_idx]).mean(
                     dim=-1
                 )
 
-                avg_du_dtheta_i_avg_obs = avg_du_dtheta_i * avg_outputs[output_idx]
+                avg_du_d_theta_i_avg_obs = avg_du_d_theta_i * avg_outputs[output_idx]
 
-                d_avg_output_d_theta_i = avg_d_output_dtheta_i - beta * (
-                    avg_obs_du_dtheta_i - avg_du_dtheta_i_avg_obs
+                d_avg_output_d_theta_i = avg_d_output_d_theta_i - beta * (
+                    avg_obs_du_d_theta_i - avg_du_d_theta_i_avg_obs
                 )
-                d_avg_output_dtheta[i + 1] += (
-                    grad_outputs[output_idx] * d_avg_output_d_theta_i
-                )
+                grads[i + 1] += grad_outputs[output_idx] * d_avg_output_d_theta_i
 
-        return tuple(d_avg_output_dtheta)
+        return tuple(grads)
 
 
 def compute_ensemble_averages(

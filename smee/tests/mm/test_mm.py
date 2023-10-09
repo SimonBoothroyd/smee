@@ -1,7 +1,4 @@
 import numpy
-import openff.interchange
-import openff.toolkit
-import openff.units
 import openmm.app
 import openmm.unit
 import pytest
@@ -72,26 +69,6 @@ def mock_omm_system() -> openmm.System:
     system.addForce(force)
 
     return system
-
-
-@pytest.fixture()
-def mock_argon_ff() -> openff.toolkit.ForceField:
-    ff = openff.toolkit.ForceField()
-    ff.get_parameter_handler("Electrostatics")
-    ff.get_parameter_handler("LibraryCharges").add_parameter(
-        {
-            "smirks": "[Ar:1]",
-            "charge1": 0.0 * openff.units.unit.elementary_charge,
-        }
-    )
-    ff.get_parameter_handler("vdW").add_parameter(
-        {
-            "smirks": "[Ar:1]",
-            "epsilon": 0.1 * openff.units.unit.kilojoules / openff.units.unit.mole,
-            "sigma": 3.0 * openff.units.unit.angstrom,
-        }
-    )
-    return ff
 
 
 def test_topology_to_rdkit():
@@ -254,11 +231,8 @@ def test_run_simulation(mock_omm_topology, mock_omm_system):
     assert coords.shape == (2, 3)
 
 
-def test_simulate(mocker, mock_argon_ff):
-    interchange = openff.interchange.Interchange.from_smirnoff(
-        mock_argon_ff, openff.toolkit.Molecule.from_smiles("[Ar]").to_topology()
-    )
-    tensor_ff, [tensor_top] = smee.convert_interchange(interchange)
+def test_simulate(mocker, mock_argon_tensors):
+    tensor_ff, tensor_top = mock_argon_tensors
 
     state = (
         numpy.array([[0.0, 0.0, 0.0]]) * openmm.unit.angstrom,
@@ -307,11 +281,8 @@ def test_simulate(mocker, mock_argon_ff):
     assert values.shape == (2, 3)
 
 
-def test_simulate_invalid_pressure(mock_argon_ff):
-    interchange = openff.interchange.Interchange.from_smirnoff(
-        mock_argon_ff, openff.toolkit.Molecule.from_smiles("[Ar]").to_topology()
-    )
-    tensor_ff, [tensor_top] = smee.convert_interchange(interchange)
+def test_simulate_invalid_pressure(mock_argon_tensors):
+    tensor_ff, tensor_top = mock_argon_tensors
 
     with pytest.raises(
         ValueError, match="pressure cannot be specified for a non-periodic"
