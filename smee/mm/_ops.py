@@ -121,8 +121,8 @@ def _compute_energy(
 
     Args:
         system: The system to evaluate.
-        coords: The coordinates [A] of the system.
-        box_vectors: The box vectors [A] of the system.
+        coords: The coordinates [Å] of the system.
+        box_vectors: The box vectors [Å] of the system.
 
     Returns:
         The energy [kcal/mol] of the system.
@@ -161,8 +161,8 @@ def _compute_du_d_theta_parameter(
         system: The system being evaluated.
         potential_0: The potential to compute the gradients for.
         energy_0: The potential energy [kcal / mol] of the system with ``potential_0``.
-        coords: The coordinates [A] of the system.
-        box_vectors: The box vectors [A] of the system.
+        coords: The coordinates [Å] of the system.
+        box_vectors: The box vectors [Å] of the system.
 
     Returns:
         The gradients of the potential energy with respect to the parameters with
@@ -195,7 +195,7 @@ def _compute_du_d_theta(
         The gradients of the potential energy with respect to each theta. Gradients
         w.r.t. parameters will have ``shape=(n_parameters, n_parameter_cols, n_frames)``
         while gradients w.r.t. attributes will have
-        ``shape=(n_attribute_cols, n_frames)``.
+        ``shape=(1, n_attribute_cols, n_frames)``.
     """
     system = ctx.kwargs["system"]
 
@@ -283,32 +283,28 @@ class _EnsembleAverageOp(torch.autograd.Function):
             if du_d_theta[i] is None:
                 continue
 
-            grads[i + 1] = torch.zeros_like(theta[i])
-
             avg_du_d_theta_i = du_d_theta[i].mean(dim=-1)
 
-            avg_d_output_d_theta = [
-                avg_du_d_theta_i,  # du_d_theta
-                torch.zeros_like(avg_du_d_theta_i),  # d_volume_d_theta
-                torch.zeros_like(avg_du_d_theta_i),  # d_rho_d_theta
-            ]
+            avg_d_output_d_theta_i = torch.stack(
+                [
+                    avg_du_d_theta_i,  # potential energy
+                    torch.zeros_like(avg_du_d_theta_i),  # volume
+                    torch.zeros_like(avg_du_d_theta_i),  # density
+                ]
+                + ([avg_du_d_theta_i] if len(avg_outputs) == 4 else []),  # enthalpy
+                dim=-1,
+            )
+            avg_output_du_d_theta_i = torch.mean(
+                du_d_theta[i][:, :, None, :] * outputs.T[None, None, :, :], dim=-1
+            )
+            avg_du_d_theta_i_avg_output = (
+                avg_du_d_theta_i[:, :, None] * avg_outputs[None, None, :]
+            )
+            d_avg_output_d_theta_i = avg_d_output_d_theta_i - beta * (
+                avg_output_du_d_theta_i - avg_du_d_theta_i_avg_output
+            )
 
-            if len(avg_outputs) == 4:
-                avg_d_output_d_theta.append(avg_du_d_theta_i)  # d_enthalpy_d_theta
-
-            for output_idx in range(len(avg_outputs)):
-                avg_d_output_d_theta_i = avg_d_output_d_theta[output_idx]
-
-                avg_obs_du_d_theta_i = (du_d_theta[i] * outputs[:, output_idx]).mean(
-                    dim=-1
-                )
-
-                avg_du_d_theta_i_avg_obs = avg_du_d_theta_i * avg_outputs[output_idx]
-
-                d_avg_output_d_theta_i = avg_d_output_d_theta_i - beta * (
-                    avg_obs_du_d_theta_i - avg_du_d_theta_i_avg_obs
-                )
-                grads[i + 1] += grad_outputs[output_idx] * d_avg_output_d_theta_i
+            grads[i + 1] = d_avg_output_d_theta_i @ torch.stack(grad_outputs)
 
         return tuple(grads)
 
