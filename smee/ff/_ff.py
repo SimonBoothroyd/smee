@@ -118,7 +118,7 @@ class TensorTopology:
     v_sites: VSiteMap | None = None
     """The v-sites that have been assigned to the topology."""
 
-    constraints: TensorConstraints = None
+    constraints: TensorConstraints | None = None
     """Distance constraints that should be applied **during MD simulations**. These
     will not be used outside of MD simulations."""
 
@@ -131,6 +131,19 @@ class TensorTopology:
     def n_bonds(self) -> int:
         """The number of bonds in the topology."""
         return len(self.bond_idxs)
+
+
+@dataclasses.dataclass
+class TensorSystem:
+    """A tensor representation of a 'full' system."""
+
+    topologies: list[TensorTopology]
+    """The topologies of the individual molecules in the system."""
+    n_copies: list[int]
+    """The number of copies of each topology to include in the system."""
+
+    is_periodic: bool
+    """Whether the system is periodic or not."""
 
 
 @dataclasses.dataclass
@@ -153,7 +166,7 @@ class TensorPotential:
 
     attributes: torch.Tensor | None = None
     """The attributes defined on a handler such as 1-4 scaling factors with
-    ``shape=(n_attributes, n_attribute_cols)``"""
+    ``shape=(n_attribute_cols,)``"""
     attribute_cols: tuple[str, ...] | None = None
     """The names of each column of ``attributes``."""
     attribute_units: tuple[openff.units.Unit, ...] = None
@@ -503,7 +516,10 @@ def _convert_topology(
     )
 
     bond_idxs = torch.tensor(
-        [[bond.atom1_index, bond.atom2_index] for bond in topology.bonds]
+        [
+            (topology.atom_index(bond.atom1), topology.atom_index(bond.atom2))
+            for bond in topology.bonds
+        ]
     )
     bond_orders = torch.tensor([bond.bond_order for bond in topology.bonds])
 
