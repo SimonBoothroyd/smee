@@ -1,6 +1,9 @@
 PACKAGE_NAME  := smee
 CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 
+EXAMPLES_SKIP := examples/md-simulations.ipynb
+EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
+
 .PHONY: env lint format test test-examples
 
 env:
@@ -29,4 +32,4 @@ test:
 	$(CONDA_ENV_RUN) pytest -v --cov=$(PACKAGE_NAME) --cov-report=xml --color=yes $(PACKAGE_NAME)/tests/
 
 test-examples:
-	$(CONDA_ENV_RUN) jupyter nbconvert --to notebook --execute examples/*.ipynb
+	$(CONDA_ENV_RUN) jupyter nbconvert --to notebook --execute $(EXAMPLES)

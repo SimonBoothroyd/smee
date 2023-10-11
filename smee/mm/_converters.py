@@ -121,7 +121,7 @@ def _convert_electrostatics_potential(
 
             idx_offset += topology.n_atoms
 
-        return force
+    return force
 
 
 def _convert_bond_potential(

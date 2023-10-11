@@ -1,20 +1,30 @@
 """Custom PyTorch ops for computing ensemble averages."""
 import copy
+import functools
 import typing
 
 import numpy
 import openmm
+import openmm.app
 import openmm.unit
 import torch
 
 import smee.ff
 import smee.mm._converters
+import smee.mm._reporters
 
-FORWARD_DELTA = 1.0e-3
+GRADIENT_DELTA = 1.0e-3
 """The finite difference step size to use when computing gradients."""
 
 
+GRADIENT_EXCLUDED_ATTRIBUTES = ("cutoff", "switch_width", "scale_12", "scale_13")
+"""Attributes whose gradients will not be computed and will always be zero."""
+
+
 class _EnsembleAverageKwargs(typing.TypedDict):
+    """The keyword arguments passed to the custom PyTorch op for computing ensemble
+    averages."""
+
     force_field: smee.ff.TensorForceField
     parameter_lookup: dict[str, int]
     attribute_lookup: dict[str, int]
@@ -27,10 +37,15 @@ class _EnsembleAverageKwargs(typing.TypedDict):
     ]
     production_config: "smee.mm.SimulationConfig"
     production_report_interval: int
+    production_reporters: list[typing.Any]
 
 
 class EnsembleAverages(typing.TypedDict):
-    """Ensemble averages computed over an MD trajectory."""
+    """Ensemble averages computed over an MD trajectory.
+
+    The potential energy is in units of kcal/mol, the volume is in units of Å^3, the
+    density is in units of g/mL, and the enthalpy is in units of kcal/mol.
+    """
 
     potential_energy: torch.Tensor
     volume: torch.Tensor
@@ -170,13 +185,65 @@ def _compute_du_d_theta_parameter(
     """
     du_d_theta = torch.zeros((*potential_0.parameters.shape, *energy_0.shape))
 
-    for i in range(potential_0.parameters.shape[0]):
+    # only compute gradients for parameters that are actually used
+    parameter_idxs = {
+        i.item()
+        for topology in system.topologies
+        for i in topology.parameters[potential_0.type]
+        .assignment_matrix.indices()[1, :]
+        .unique()
+    }
+
+    for i in parameter_idxs:
         for j in range(potential_0.parameters.shape[1]):
             potential_1 = copy.deepcopy(potential_0)
-            potential_1.parameters[i, j] += FORWARD_DELTA
+            potential_1.parameters[i, j] += GRADIENT_DELTA
 
             energy_1 = _compute_energy(system, potential_1, coords, box_vectors)
-            du_d_theta[i, j] = (energy_1 - energy_0) / FORWARD_DELTA
+            du_d_theta[i, j] = (energy_1 - energy_0) / GRADIENT_DELTA
+
+    return du_d_theta
+
+
+def _compute_du_d_theta_attribute(
+    system: smee.ff.TensorSystem,
+    potential_0: smee.ff.TensorPotential,
+    energy_0: torch.Tensor,
+    coords: numpy.ndarray,
+    box_vectors: numpy.ndarray,
+) -> torch.Tensor:
+    """Computes the gradients of the potential energy with respect to a potential's
+    attributes using the forward finite difference method.
+
+    Notes:
+        Attributes listed in ``GRADIENT_EXCLUDED_ATTRIBUTES`` will not have their
+        gradients computed and will always be zero.
+
+    Args:
+        system: The system being evaluated.
+        potential_0: The potential to compute the gradients for.
+        energy_0: The potential energy [kcal / mol] of the system with ``potential_0``.
+        coords: The coordinates [Å] of the system.
+        box_vectors: The box vectors [Å] of the system.
+
+    Returns:
+        The gradients of the potential energy with respect to the attributes with
+        ``shape=(1, n_attribute_cols, n_frames)``.
+    """
+    du_d_theta = torch.zeros((1, len(potential_0.attributes), *energy_0.shape))
+
+    attribute_idxs = [
+        i
+        for i, col in enumerate(potential_0.attribute_cols)
+        if col not in GRADIENT_EXCLUDED_ATTRIBUTES
+    ]
+
+    for i in attribute_idxs:
+        potential_1 = copy.deepcopy(potential_0)
+        potential_1.attributes[i] += GRADIENT_DELTA
+
+        energy_1 = _compute_energy(system, potential_1, coords, box_vectors)
+        du_d_theta[0, i] = (energy_1 - energy_0) / GRADIENT_DELTA
 
     return du_d_theta
 
@@ -229,13 +296,38 @@ def _compute_du_d_theta(
             )
 
         if ctx.needs_input_grad[attribute_idx + 1]:
-            raise NotImplementedError
+            du_d_theta[attribute_idx] = _compute_du_d_theta_attribute(
+                system, potential_0, energy_0, ctx.coords, ctx.box_vectors
+            )
 
     return du_d_theta
 
 
 class _EnsembleAverageOp(torch.autograd.Function):
     """A custom PyTorch op for computing ensemble averages over MD trajectories."""
+
+    @staticmethod
+    def _create_reporter(kwargs: _EnsembleAverageKwargs):
+        """Creates an OpenMM reporter that stores coords and values in memory"""
+
+        system = kwargs["system"]
+
+        sum_fn = functools.partial(sum, start=0.0 * openmm.unit.dalton)
+
+        total_mass = sum_fn(
+            sum_fn(
+                openmm.app.Element.getByAtomicNumber(int(atomic_num)).mass
+                for atomic_num in topology.atomic_nums
+            )
+            * n_copies
+            for topology, n_copies in zip(system.topologies, system.n_copies)
+        )
+
+        return smee.mm._reporters.TensorReporter(
+            kwargs["production_report_interval"],
+            total_mass,
+            kwargs["production_config"].pressure,
+        )
 
     @staticmethod
     def forward(ctx, kwargs: _EnsembleAverageKwargs, *tensors: torch.Tensor):
@@ -246,19 +338,22 @@ class _EnsembleAverageOp(torch.autograd.Function):
             kwargs["force_field"],
         )
 
-        coords, box_vectors, outputs = smee.mm.simulate(
+        reporter = _EnsembleAverageOp._create_reporter(kwargs)
+
+        smee.mm.simulate(
             kwargs["system"],
             force_field,
             kwargs["coords_config"],
             kwargs["equilibrate_configs"],
             kwargs["production_config"],
-            kwargs["production_report_interval"],
+            [reporter, *kwargs["production_reporters"]],
         )
 
+        outputs = torch.stack(reporter.values)
         avg_outputs = outputs.mean(dim=0)
 
-        ctx.coords = coords
-        ctx.box_vectors = box_vectors
+        ctx.coords = numpy.ascontiguousarray(numpy.stack(reporter.coords))
+        ctx.box_vectors = numpy.ascontiguousarray(numpy.stack(reporter.box_vectors))
         ctx.kwargs = kwargs
         ctx.save_for_backward(*tensors, outputs)
 
@@ -318,8 +413,33 @@ def compute_ensemble_averages(
     ],
     production_config: "smee.mm.SimulationConfig",
     production_report_interval: int,
+    production_reporters: list[typing.Any] | None = None,
 ) -> EnsembleAverages:
+    """Compute ensemble average of the potential energy, volume, density,
+    and enthalpy (if running NPT) over an MD trajectory.
+
+    Args:
+        system: The system to simulate.
+        force_field: The force field to use.
+        coords_config: The configuration defining how to generate the system
+            coordinates.
+        equilibrate_configs: A list of configurations defining the steps to run for
+            equilibration. No data will be stored from these simulations.
+        production_config: The configuration defining the production simulation to run.
+        production_report_interval: The interval at which to store data
+            (coords, box vectors, energy, etc) from the production simulation
+        production_reporters: A list of additional OpenMM reporters to use for the
+            production simulation.
+
+    Returns:
+        A dictionary containing the ensemble averages of the potential energy [kcal/mol],
+        volume [Å^3], density [g/mL], and enthalpy [kcal/mol] (if running NPT).
+    """
     tensors, parameter_lookup, attribute_lookup = _pack_force_field(force_field)
+
+    production_reporters = (
+        production_reporters if production_reporters is not None else []
+    )
 
     kwargs: _EnsembleAverageKwargs = {
         "force_field": force_field,
@@ -330,6 +450,7 @@ def compute_ensemble_averages(
         "equilibrate_configs": equilibrate_configs,
         "production_config": production_config,
         "production_report_interval": production_report_interval,
+        "production_reporters": production_reporters,
     }
 
     avg_outputs = _EnsembleAverageOp.apply(kwargs, *tensors)

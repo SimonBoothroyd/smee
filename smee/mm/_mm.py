@@ -10,7 +10,6 @@ import typing
 import numpy
 import openmm.app
 import openmm.unit
-import torch
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
@@ -219,7 +218,8 @@ def _energy_minimize(
         context.setState(state)
     else:
         coords, box_vectors = state
-        context.setPeriodicBoxVectors(*box_vectors)
+        if box_vectors is not None:
+            context.setPeriodicBoxVectors(*box_vectors)
         context.setPositions(coords)
 
     openmm.LocalEnergyMinimizer.minimize(
@@ -256,7 +256,8 @@ def _run_simulation(
         simulation.context.setState(state)
     else:
         coords, box_vectors = state
-        simulation.context.setPeriodicBoxVectors(*box_vectors)
+        if box_vectors is not None:
+            simulation.context.setPeriodicBoxVectors(*box_vectors)
         simulation.context.setPositions(coords)
 
     simulation.reporters.extend(reporters)
@@ -274,8 +275,8 @@ def simulate(
         typing.Union["smee.mm.MinimizationConfig", "smee.mm.SimulationConfig"]
     ],
     production_config: "smee.mm.SimulationConfig",
-    production_report_interval: int,
-) -> tuple[numpy.ndarray, numpy.ndarray, torch.Tensor]:
+    production_reporters: list[typing.Any] | None = None,
+):
     """Simulate a SMEE system of molecules or topology.
 
     Args:
@@ -286,14 +287,8 @@ def simulate(
         equilibrate_configs: A list of configurations defining the steps to run for
             equilibration. No data will be stored from these simulations.
         production_config: The configuration defining the production simulation to run.
-        production_report_interval: The interval at which to store data
-            (coords, box vectors, energy, etc) from the production simulation
-
-    Returns:
-        The coordinates with ``shape=(n_steps, n_atoms, 3)`` and box vectors with
-        ``shape=(n_steps, 3, 3)``, and a tensor containing the potential energy, volume,
-        density and (if NPT) enthalpy with ``shape=(n_steps, 4)`` if NPT or
-        ``shape=(n_steps, 3)`` if NVT.
+        production_reporters: A list of additional OpenMM reporters to use for the
+            production simulation.
     """
 
     system: smee.ff.TensorSystem = (
@@ -333,23 +328,13 @@ def simulate(
 
         _LOGGER.info(_get_state_log(omm_state))
 
-    total_mass = sum(
-        (omm_system.getParticleMass(i) for i in range(omm_system.getNumParticles())),
-        0.0 * openmm.unit.dalton,
-    )
-    reporter = smee.mm._reporters.TensorReporter(
-        production_report_interval, total_mass, production_config.pressure
-    )
-
     _LOGGER.info("running production simulation")
-
     omm_state = _run_simulation(
-        omm_system, omm_topology, omm_state, platform, production_config, [reporter]
+        omm_system,
+        omm_topology,
+        omm_state,
+        platform,
+        production_config,
+        production_reporters,
     )
     _LOGGER.info(_get_state_log(omm_state))
-
-    return (
-        numpy.ascontiguousarray(numpy.stack(reporter.coords)),
-        numpy.ascontiguousarray(numpy.stack(reporter.box_vectors)),
-        torch.stack(reporter.values),
-    )

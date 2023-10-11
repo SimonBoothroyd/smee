@@ -6,3 +6,4 @@ This directory contains a number of examples of how to use `smee`. They currentl
 * [Minimizing the conformer of a molecule](conformer-minimization.ipynb)
 * [Computing the gradient of the energy w.r.t. force field parameters](parameter-gradients.ipynb)
 * [Registering custom parameter handlers](custom-handler.ipynb)
+* [Differentiably compute ensemble averages from MD simulations](md-simulations.ipynb)

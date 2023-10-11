@@ -251,7 +251,10 @@ def test_simulate(mocker, mock_argon_tensors):
     spied_energy_minimize = mocker.spy(smee.mm._mm, "_energy_minimize")
     spied_run_simulation = mocker.spy(smee.mm._mm, "_run_simulation")
 
-    coords, box_vectors, values = simulate(
+    reporter = mocker.MagicMock()
+    reporter.describeNextReport.return_value = (1, True, False, False, True)
+
+    simulate(
         tensor_top,
         tensor_ff,
         gen_coords_config,
@@ -264,21 +267,14 @@ def test_simulate(mocker, mock_argon_tensors):
         smee.mm.SimulationConfig(
             temperature=86.0 * openmm.unit.kelvin, pressure=None, n_steps=2
         ),
-        1,
+        [reporter],
     )
 
     mock_gen_coords.assert_called_once_with(mocker.ANY, gen_coords_config)
     spied_energy_minimize.assert_called_once()
     assert spied_run_simulation.call_count == 2
 
-    assert isinstance(coords, numpy.ndarray)
-    assert coords.shape == (2, 1, 3)
-
-    assert isinstance(box_vectors, numpy.ndarray)
-    assert box_vectors.shape == (2, 3, 3)
-
-    assert isinstance(values, torch.Tensor)
-    assert values.shape == (2, 3)
+    assert reporter.report.call_count == 2
 
 
 def test_simulate_invalid_pressure(mock_argon_tensors):

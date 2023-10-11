@@ -166,7 +166,7 @@ class TensorPotential:
 
     attributes: torch.Tensor | None = None
     """The attributes defined on a handler such as 1-4 scaling factors with
-    ``shape=(n_attributes, n_attribute_cols)``"""
+    ``shape=(n_attribute_cols,)``"""
     attribute_cols: tuple[str, ...] | None = None
     """The names of each column of ``attributes``."""
     attribute_units: tuple[openff.units.Unit, ...] = None
