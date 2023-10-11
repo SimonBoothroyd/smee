@@ -6,8 +6,6 @@ import smee.geometry
 import smee.potentials
 import smee.utils
 
-_EPSILON = 1.0e-8
-
 
 @smee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
 def compute_harmonic_bond_energy(

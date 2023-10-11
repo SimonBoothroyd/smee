@@ -2,7 +2,7 @@ import openff.interchange.models
 import openff.toolkit
 import torch
 
-import smee.ff
+import smee
 from smee.utils import find_exclusions
 
 
@@ -121,7 +121,7 @@ def test_find_exclusions_v_sites():
         ),
     ]
 
-    v_sites = smee.ff.VSiteMap(
+    v_sites = smee.VSiteMap(
         keys=v_site_keys,
         key_to_idx={v_site_keys[0]: 4, v_site_keys[1]: 5},
         parameter_idxs=torch.zeros((2, 1)),

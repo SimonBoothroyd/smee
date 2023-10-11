@@ -4,25 +4,26 @@ import openff.units
 import pytest
 import torch
 
-from smee.ff._ff import (
+import smee
+from smee.converters.openff._openff import (
     _CONVERTERS,
     _DEFAULT_UNITS,
-    TensorConstraints,
-    VSiteMap,
     _convert_topology,
     convert_handlers,
     convert_interchange,
-    parameter_converter,
+    smirnoff_parameter_converter,
 )
 
 
 def test_parameter_converter():
-    parameter_converter("Dummy", {"parm-a": openff.units.unit.angstrom})(lambda x: None)
+    smirnoff_parameter_converter("Dummy", {"parm-a": openff.units.unit.angstrom})(
+        lambda x: None
+    )
     assert "Dummy" in _CONVERTERS
     assert "parm-a" in _DEFAULT_UNITS["Dummy"]
 
     with pytest.raises(KeyError, match="A Dummy converter is already"):
-        parameter_converter("Dummy", {})(lambda x: None)
+        smirnoff_parameter_converter("Dummy", {})(lambda x: None)
 
     del _CONVERTERS["Dummy"]
     del _DEFAULT_UNITS["Dummy"]
@@ -32,7 +33,7 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
     mock_result = mocker.MagicMock()
 
     mock_vectorize = mocker.patch(
-        "smee.ff.nonbonded.convert_vdw",
+        "smee.converters.openff.nonbonded.convert_vdw",
         autospec=True,
         return_value=mock_result,
     )
@@ -47,7 +48,9 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
         match="once",
         name="EP",
     )
-    v_site_maps = [VSiteMap([v_site], {v_site: ethanol.n_atoms}, torch.tensor([[0]]))]
+    v_site_maps = [
+        smee.VSiteMap([v_site], {v_site: ethanol.n_atoms}, torch.tensor([[0]]))
+    ]
 
     result = convert_handlers(handlers, topologies, v_site_maps)
 
@@ -59,8 +62,8 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
 
 def test_convert_topology(formaldehyde, mocker):
     parameters = mocker.MagicMock()
-    v_sites = VSiteMap([], {}, torch.tensor([]))
-    constraints = TensorConstraints(torch.tensor([1, 2]), torch.tensor([3.0]))
+    v_sites = smee.VSiteMap([], {}, torch.tensor([]))
+    constraints = smee.TensorConstraints(torch.tensor([1, 2]), torch.tensor([3.0]))
 
     topology = _convert_topology(formaldehyde, parameters, v_sites, constraints)
 

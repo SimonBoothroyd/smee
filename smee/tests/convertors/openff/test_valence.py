@@ -1,4 +1,4 @@
-from smee.ff.valence import (
+from smee.converters.openff.valence import (
     convert_angles,
     convert_bonds,
     convert_impropers,

@@ -9,7 +9,7 @@ EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
 env:
 	mamba create     --name $(PACKAGE_NAME)
 	mamba env update --name $(PACKAGE_NAME) --file devtools/envs/base.yaml
-	$(CONDA_ENV_RUN) pip install --no-deps -e .
+	$(CONDA_ENV_RUN) pip install --no-build-isolation --no-deps -e .
 	$(CONDA_ENV_RUN) pre-commit install || true
 
 lint:

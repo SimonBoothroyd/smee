@@ -6,18 +6,18 @@ import openff.toolkit
 import torch
 
 if typing.TYPE_CHECKING:
-    import smee.ff
+    import smee
 
 
 _size = torch.Size | list[int] | tuple[int, ...]
 
+ExclusionType = typing.Literal["scale_12", "scale_13", "scale_14", "scale_15"]
+
 
 def find_exclusions(
     topology: openff.toolkit.Topology,
-    v_sites: typing.Optional["smee.ff.VSiteMap"] = None,
-) -> dict[
-    tuple[int, int], typing.Literal["scale_12", "scale_13", "scale_14", "scale_15"]
-]:
+    v_sites: typing.Optional["smee.VSiteMap"] = None,
+) -> dict[tuple[int, int], ExclusionType]:
     """Find all excluded interaction pairs and their associated scaling factor.
 
     Args:

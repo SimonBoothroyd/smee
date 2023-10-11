@@ -5,7 +5,7 @@ import copy
 import openmm
 import openmm.app
 
-import smee.ff
+import smee
 
 _KCAL_PER_MOL = openmm.unit.kilocalorie_per_mole
 _ANGSTROM = openmm.unit.angstrom
@@ -13,7 +13,7 @@ _RADIANS = openmm.unit.radians
 
 
 def _create_nonbonded_force(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.NonbondedForce:
     force = openmm.NonbondedForce()
     force.setUseDispersionCorrection(system.is_periodic)
@@ -46,7 +46,7 @@ def _create_nonbonded_force(
 
 
 def _convert_lj_potential(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.NonbondedForce:
     force = _create_nonbonded_force(potential, system)
 
@@ -87,7 +87,7 @@ def _convert_lj_potential(
 
 
 def _convert_electrostatics_potential(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.NonbondedForce:
     force = _create_nonbonded_force(potential, system)
 
@@ -125,7 +125,7 @@ def _convert_electrostatics_potential(
 
 
 def _convert_bond_potential(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.HarmonicBondForce:
     force = openmm.HarmonicBondForce()
 
@@ -153,7 +153,7 @@ def _convert_bond_potential(
 
 
 def _convert_angle_potential(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.HarmonicAngleForce:
     force = openmm.HarmonicAngleForce()
 
@@ -182,7 +182,7 @@ def _convert_angle_potential(
 
 
 def _convert_torsion_potential(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.PeriodicTorsionForce:
     force = openmm.PeriodicTorsionForce()
 
@@ -248,7 +248,7 @@ def _combine_nonbonded(
     return force
 
 
-def create_openmm_system(system: smee.ff.TensorSystem) -> openmm.System:
+def create_openmm_system(system: smee.TensorSystem) -> openmm.System:
     omm_system = openmm.System()
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
@@ -260,7 +260,7 @@ def create_openmm_system(system: smee.ff.TensorSystem) -> openmm.System:
     return omm_system
 
 
-def _apply_constraints(omm_system: openmm.System, system: smee.ff.TensorSystem):
+def _apply_constraints(omm_system: openmm.System, system: smee.TensorSystem):
     idx_offset = 0
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
@@ -276,8 +276,8 @@ def _apply_constraints(omm_system: openmm.System, system: smee.ff.TensorSystem):
             idx_offset += topology.n_atoms
 
 
-def convert_potential_to_force(
-    potential: smee.ff.TensorPotential, system: smee.ff.TensorSystem
+def convert_to_openmm_force(
+    potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.Force:
     if potential.type == "Electrostatics":
         return _convert_electrostatics_potential(potential, system)
@@ -298,8 +298,8 @@ def convert_potential_to_force(
 
 
 def convert_to_openmm_system(
-    force_field: smee.ff.TensorForceField,
-    system: smee.ff.TensorSystem | smee.ff.TensorTopology,
+    force_field: smee.TensorForceField,
+    system: smee.TensorSystem | smee.TensorTopology,
 ) -> openmm.System:
     """Convert a SMEE force field and system / topology into an OpenMM system.
 
@@ -311,14 +311,14 @@ def convert_to_openmm_system(
         The OpenMM system.
     """
 
-    system: smee.ff.TensorSystem = (
+    system: smee.TensorSystem = (
         system
-        if isinstance(system, smee.ff.TensorSystem)
-        else smee.ff.TensorSystem([system], [1], False)
+        if isinstance(system, smee.TensorSystem)
+        else smee.TensorSystem([system], [1], False)
     )
 
     omm_forces = {
-        potential_type: convert_potential_to_force(potential, system)
+        potential_type: convert_to_openmm_force(potential, system)
         for potential_type, potential in force_field.potentials_by_type.items()
     }
     omm_system = create_openmm_system(system)
@@ -338,8 +338,8 @@ def convert_to_openmm_system(
     return omm_system
 
 
-def convert_to_openmm_topology(system: smee.ff.TensorSystem) -> openmm.app.Topology:
-    """Convert a SMEE topology to an OpenMM topology."""
+def convert_to_openmm_topology(system: smee.TensorSystem) -> openmm.app.Topology:
+    """Convert a SMEE system to an OpenMM topology."""
     omm_topology = openmm.app.Topology()
 
     for topology, n_copies in zip(system.topologies, system.n_copies):

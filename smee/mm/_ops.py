@@ -9,8 +9,9 @@ import openmm.app
 import openmm.unit
 import torch
 
-import smee.ff
-import smee.mm._converters
+import smee
+import smee.converters
+import smee.converters.openmm
 import smee.mm._reporters
 
 GRADIENT_DELTA = 1.0e-3
@@ -25,11 +26,11 @@ class _EnsembleAverageKwargs(typing.TypedDict):
     """The keyword arguments passed to the custom PyTorch op for computing ensemble
     averages."""
 
-    force_field: smee.ff.TensorForceField
+    force_field: smee.TensorForceField
     parameter_lookup: dict[str, int]
     attribute_lookup: dict[str, int]
 
-    system: smee.ff.TensorSystem
+    system: smee.TensorSystem
 
     coords_config: "smee.mm.GenerateCoordsConfig"
     equilibrate_configs: list[
@@ -54,7 +55,7 @@ class EnsembleAverages(typing.TypedDict):
 
 
 def _pack_force_field(
-    force_field: smee.ff.TensorForceField,
+    force_field: smee.TensorForceField,
 ) -> tuple[tuple[torch.Tensor, ...], dict[str, int], dict[str, int]]:
     """Pack a SMEE force field into a tuple that can be consumed by a custom PyTorch op.
 
@@ -89,8 +90,8 @@ def _unpack_force_field(
     tensors: tuple[torch.Tensor, ...],
     parameter_lookup: dict[str, int],
     attribute_lookup: dict[str, int],
-    force_field: smee.ff.TensorForceField,
-) -> smee.ff.TensorForceField:
+    force_field: smee.TensorForceField,
+) -> smee.TensorForceField:
     """Unpack a SMEE force field from its packed tensor and lookup representation.
 
     Args:
@@ -110,7 +111,12 @@ def _unpack_force_field(
         parameters = tensors[parameter_lookup[original_potential.type]]
         attributes = tensors[attribute_lookup[original_potential.type]]
 
-        potential = smee.ff.TensorPotential(
+        if parameters is not None:
+            parameters = parameters.detach()
+        if attributes is not None:
+            attributes = attributes.detach()
+
+        potential = smee.TensorPotential(
             type=original_potential.type,
             fn=original_potential.fn,
             parameters=parameters,
@@ -123,12 +129,12 @@ def _unpack_force_field(
         )
         potentials.append(potential)
 
-    return smee.ff.TensorForceField(potentials, force_field.v_sites)
+    return smee.TensorForceField(potentials, force_field.v_sites)
 
 
 def _compute_energy(
-    system: smee.ff.TensorSystem,
-    potential: smee.ff.TensorPotential,
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
     coords: numpy.ndarray,
     box_vectors: numpy.ndarray,
 ) -> torch.Tensor:
@@ -142,9 +148,9 @@ def _compute_energy(
     Returns:
         The energy [kcal/mol] of the system.
     """
-    omm_force = smee.mm._converters.convert_potential_to_force(potential, system)
+    omm_force = smee.converters.convert_to_openmm_force(potential, system)
 
-    omm_system = smee.mm._converters.create_openmm_system(system)
+    omm_system = smee.converters.openmm.create_openmm_system(system)
     omm_system.addForce(omm_force)
 
     integrator = openmm.VerletIntegrator(0.0001)
@@ -163,8 +169,8 @@ def _compute_energy(
 
 
 def _compute_du_d_theta_parameter(
-    system: smee.ff.TensorSystem,
-    potential_0: smee.ff.TensorPotential,
+    system: smee.TensorSystem,
+    potential_0: smee.TensorPotential,
     energy_0: torch.Tensor,
     coords: numpy.ndarray,
     box_vectors: numpy.ndarray,
@@ -206,8 +212,8 @@ def _compute_du_d_theta_parameter(
 
 
 def _compute_du_d_theta_attribute(
-    system: smee.ff.TensorSystem,
-    potential_0: smee.ff.TensorPotential,
+    system: smee.TensorSystem,
+    potential_0: smee.TensorPotential,
     energy_0: torch.Tensor,
     coords: numpy.ndarray,
     box_vectors: numpy.ndarray,
@@ -405,8 +411,8 @@ class _EnsembleAverageOp(torch.autograd.Function):
 
 
 def compute_ensemble_averages(
-    system: smee.ff.TensorSystem,
-    force_field: smee.ff.TensorForceField,
+    system: smee.TensorSystem,
+    force_field: smee.TensorForceField,
     coords_config: "smee.mm.GenerateCoordsConfig",
     equilibrate_configs: list[
         typing.Union["smee.mm.MinimizationConfig", "smee.mm.SimulationConfig"]
