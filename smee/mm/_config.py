@@ -7,9 +7,9 @@ import openmm.unit
 import pydantic
 import pydantic_core
 
-KCAL_PER_MOL = openmm.unit.kilocalories_per_mole
-ANGSTROM = openmm.unit.angstrom
-GRAMS_PER_ML = openmm.unit.grams / openmm.unit.milliliters
+_KCAL_PER_MOL = openmm.unit.kilocalories_per_mole
+_ANGSTROM = openmm.unit.angstrom
+_GRAMS_PER_ML = openmm.unit.grams / openmm.unit.milliliters
 
 
 def _quantity_validator(
@@ -76,11 +76,15 @@ class OpenMMQuantity(openmm.unit.Quantity, metaclass=_OpenMMQuantityMeta):
     """A pydantic safe OpenMM quantity type validates unit compatibility."""
 
 
+if typing.TYPE_CHECKING:
+    OpenMMQuantity = openmm.unit.Quantity  # noqa: F811
+
+
 class GenerateCoordsConfig(pydantic.BaseModel):
     """Configure how coordinates should be generated for a system using PACKMOL."""
 
-    target_density: OpenMMQuantity[GRAMS_PER_ML] = pydantic.Field(
-        0.95 * GRAMS_PER_ML,
+    target_density: OpenMMQuantity[_GRAMS_PER_ML] = pydantic.Field(
+        0.95 * _GRAMS_PER_ML,
         description="Target mass density for final system with units compatible with "
         "g / mL.",
     )
@@ -109,8 +113,8 @@ class GenerateCoordsConfig(pydantic.BaseModel):
 class MinimizationConfig(pydantic.BaseModel):
     """Configure how a system should be energy minimized."""
 
-    tolerance: OpenMMQuantity[KCAL_PER_MOL / ANGSTROM] = pydantic.Field(
-        10.0 * KCAL_PER_MOL / ANGSTROM,
+    tolerance: OpenMMQuantity[_KCAL_PER_MOL / _ANGSTROM] = pydantic.Field(
+        10.0 * _KCAL_PER_MOL / _ANGSTROM,
         description="Minimization will be halted once the root-mean-square value of "
         "all force components reaches this tolerance.",
     )

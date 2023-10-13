@@ -5,7 +5,7 @@ import pytest
 import torch
 from rdkit import Chem
 
-import smee.ff
+import smee
 import smee.mm
 from smee.mm._mm import (
     _approximate_box_size,
@@ -20,10 +20,10 @@ from smee.mm._mm import (
 )
 
 
-def _topology_from_smiles(smiles) -> smee.ff.TensorTopology:
+def _topology_from_smiles(smiles) -> smee.TensorTopology:
     mol = Chem.AddHs(Chem.MolFromSmiles(smiles))
 
-    return smee.ff.TensorTopology(
+    return smee.TensorTopology(
         atomic_nums=torch.tensor([atom.GetAtomicNum() for atom in mol.GetAtoms()]),
         formal_charges=torch.tensor(
             [atom.GetFormalCharge() for atom in mol.GetAtoms()]
@@ -74,7 +74,7 @@ def mock_omm_system() -> openmm.System:
 def test_topology_to_rdkit():
     expected_atomic_nums = [1, 1, 8, 6, 8, 1, 1]
 
-    topology = smee.ff.TensorTopology(
+    topology = smee.TensorTopology(
         atomic_nums=torch.tensor(expected_atomic_nums),
         formal_charges=torch.tensor([0, 0, 0, 0, -1, 0, 0]),
         bond_idxs=torch.tensor([[2, 1], [2, 0], [3, 4], [3, 5], [3, 6]]),
@@ -94,7 +94,7 @@ def test_topology_to_rdkit():
 
 
 def test_approximate_box_size():
-    system = smee.ff.TensorSystem([_topology_from_smiles("O")], [256], True)
+    system = smee.TensorSystem([_topology_from_smiles("O")], [256], True)
 
     config = smee.mm.GenerateCoordsConfig(scale_factor=2.0)
 
@@ -147,7 +147,7 @@ def test_generate_packmol_input():
 
 def test_generate_system_coords():
     coords, box_vectors = generate_system_coords(
-        smee.ff.TensorSystem(
+        smee.TensorSystem(
             [_topology_from_smiles("O"), _topology_from_smiles("CO")], [1, 2], True
         ),
         smee.mm.GenerateCoordsConfig(),

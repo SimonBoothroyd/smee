@@ -6,7 +6,7 @@ import torch
 import smee.utils
 
 if typing.TYPE_CHECKING:
-    import smee.ff
+    import smee
 
 
 V_SITE_TYPE_TO_FRAME = {
@@ -160,9 +160,9 @@ def compute_dihedrals(
 
 
 def _build_v_site_coord_frames(
-    v_sites: "smee.ff.VSiteMap",
+    v_sites: "smee.VSiteMap",
     conformer: torch.Tensor,
-    force_field: "smee.ff.TensorForceField",
+    force_field: "smee.TensorForceField",
 ) -> torch.Tensor:
     """Builds an orthonormal coordinate frame for each virtual particle
     based on the type of virtual site and the coordinates of the parent atoms.
@@ -275,9 +275,9 @@ def _convert_v_site_coords(
 
 
 def compute_v_site_coords(
-    v_sites: "smee.ff.VSiteMap",
+    v_sites: "smee.VSiteMap",
     conformer: torch.Tensor,
-    force_field: "smee.ff.TensorForceField",
+    force_field: "smee.TensorForceField",
 ) -> torch.Tensor:
     """Computes the positions of a set of virtual sites relative to a specified
     conformer or batch of conformers.
@@ -312,9 +312,9 @@ def compute_v_site_coords(
 
 
 def add_v_site_coords(
-    v_sites: "smee.ff.VSiteMap",
+    v_sites: "smee.VSiteMap",
     conformer: torch.Tensor,
-    force_field: "smee.ff.TensorForceField",
+    force_field: "smee.TensorForceField",
 ):
     """Appends the coordinates of any virtual sites to a conformer (or batch of
     conformers) containing only atomic coordinates.

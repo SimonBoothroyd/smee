@@ -3,7 +3,8 @@ import openff.toolkit
 import openff.units
 import pytest
 
-import smee.ff
+import smee
+import smee.converters
 
 
 @pytest.fixture()
@@ -35,11 +36,11 @@ def mock_argon_ff(mock_argon_params) -> openff.toolkit.ForceField:
 @pytest.fixture()
 def mock_argon_tensors(
     mock_argon_ff,
-) -> tuple[smee.ff.TensorForceField, smee.ff.TensorTopology]:
+) -> tuple[smee.TensorForceField, smee.TensorTopology]:
     interchange = openff.interchange.Interchange.from_smirnoff(
         mock_argon_ff, openff.toolkit.Molecule.from_smiles("[Ar]").to_topology()
     )
-    tensor_ff, [tensor_top] = smee.convert_interchange(interchange)
+    tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
     tensor_ff.potentials = [p for p in tensor_ff.potentials if p.type == "vdW"]
 
     return tensor_ff, tensor_top

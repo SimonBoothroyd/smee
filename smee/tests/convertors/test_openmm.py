@@ -5,7 +5,8 @@ import openff.units
 import openmm
 
 import smee
-from smee.mm._converters import convert_to_openmm_system, convert_to_openmm_topology
+import smee.mm
+from smee.converters.openmm import convert_to_openmm_system, convert_to_openmm_topology
 
 
 def _compute_energy(
@@ -32,8 +33,8 @@ def _compute_energy(
 
 
 def _compare_smee_and_interchange(
-    tensor_ff: smee.ff.TensorForceField,
-    tensor_system: smee.ff.TensorSystem,
+    tensor_ff: smee.TensorForceField,
+    tensor_system: smee.TensorSystem,
     interchange: openff.interchange.Interchange,
     coords: openmm.unit.Quantity,
     box_vectors: openmm.unit.Quantity | None,
@@ -62,7 +63,7 @@ def test_convert_to_openmm_system_vacuum():
         openff.toolkit.ForceField("openff-2.0.0.offxml"), mol.to_topology()
     )
 
-    tensor_ff, [tensor_top] = smee.convert_interchange(interchange)
+    tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
 
     _compare_smee_and_interchange(tensor_ff, tensor_top, interchange, coords, None)
 
@@ -88,8 +89,8 @@ def test_convert_to_openmm_system_periodic():
         for _ in range(n_copies):
             top.add_molecule(mol)
 
-    tensor_ff, tensor_tops = smee.convert_interchange(interchanges)
-    tensor_system = smee.ff.TensorSystem(tensor_tops, n_copies_per_mol, True)
+    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
+    tensor_system = smee.TensorSystem(tensor_tops, n_copies_per_mol, True)
 
     coords, _ = smee.mm.generate_system_coords(
         tensor_system, smee.mm.GenerateCoordsConfig()
@@ -115,10 +116,10 @@ def test_convert_to_openmm_topology():
         openff.toolkit.Molecule.from_smiles("O").to_topology(),
     )
 
-    tensor_ff, [methane_top, water_top] = smee.convert_interchange(
+    tensor_ff, [methane_top, water_top] = smee.converters.convert_interchange(
         [formaldehyde_interchange, water_interchange]
     )
-    tensor_system = smee.ff.TensorSystem([methane_top, water_top], [1, 2], True)
+    tensor_system = smee.TensorSystem([methane_top, water_top], [1, 2], True)
 
     openmm_topology = convert_to_openmm_topology(tensor_system)
 

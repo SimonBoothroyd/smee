@@ -4,7 +4,7 @@ import openff.units
 import openmm.unit
 import torch
 
-import smee.ff
+import smee
 from smee.mm._ops import (
     _compute_du_d_theta,
     _compute_du_d_theta_attribute,
@@ -14,8 +14,8 @@ from smee.mm._ops import (
 )
 
 
-def _mock_potential(type_, parameters, attributes) -> smee.ff.TensorPotential:
-    return smee.ff.TensorPotential(
+def _mock_potential(type_, parameters, attributes) -> smee.TensorPotential:
+    return smee.TensorPotential(
         type_,
         f"{type_}-fn",
         parameters,
@@ -38,7 +38,7 @@ def test_pack_unpack_force_field():
     parameters_b = torch.randn(6).reshape(2, 3)
     attributes_b = torch.randn(3)
 
-    force_field = smee.ff.TensorForceField(
+    force_field = smee.TensorForceField(
         [
             _mock_potential("vdw", parameters_a, attributes_a),
             _mock_potential("bond", parameters_b, attributes_b),
@@ -96,7 +96,7 @@ def test_compute_du_d_theta_parameter(mocker, mock_argon_tensors, mock_argon_par
     sig = sig.m_as("angstrom")
 
     tensor_ff, tensor_top = mock_argon_tensors
-    tensor_system = smee.ff.TensorSystem([tensor_top], [2], False)
+    tensor_system = smee.TensorSystem([tensor_top], [2], False)
 
     theta = (
         tensor_ff.potentials_by_type["vdW"].parameters,
@@ -146,7 +146,7 @@ def test_compute_du_d_theta_attribute(mocker):
     attr_a, attr_b = 1.0, 2.0
     const_a, const_b = 3.0, 4.0
 
-    tensor_potential = smee.ff.TensorPotential(
+    tensor_potential = smee.TensorPotential(
         "bond",
         "bond-fn",
         parameters=torch.zeros((0, 0)),
@@ -157,13 +157,13 @@ def test_compute_du_d_theta_attribute(mocker):
         attribute_cols=("attr-a", "attr-b"),
         attribute_units=(openff.units.unit.angstrom, openff.units.unit.angstrom),
     )
-    tensor_top = smee.ff.TensorTopology(
+    tensor_top = smee.TensorTopology(
         atomic_nums=torch.tensor([17, 17]),
         formal_charges=torch.tensor([0, 0]),
         bond_idxs=torch.tensor([[0, 1]]),
         bond_orders=torch.tensor([1]),
         parameters={
-            "MOCK": smee.ff.ValenceParameterMap(
+            "MOCK": smee.ValenceParameterMap(
                 particle_idxs=torch.zeros((0, 0), dtype=torch.int64),
                 assignment_matrix=torch.zeros((0, 0), dtype=torch.int64).to_sparse(),
             )
@@ -171,7 +171,7 @@ def test_compute_du_d_theta_attribute(mocker):
         v_sites=None,
         constraints=None,
     )
-    tensor_system = smee.ff.TensorSystem([tensor_top], [1], False)
+    tensor_system = smee.TensorSystem([tensor_top], [1], False)
 
     def create_mock_force(*args):
         mock_force = openmm.CustomBondForce(f"{const_a} * attr_a + {const_b} * attr_b")
@@ -181,7 +181,7 @@ def test_compute_du_d_theta_attribute(mocker):
         return mock_force
 
     mocker.patch(
-        "smee.mm._converters.convert_potential_to_force",
+        "smee.converters.convert_to_openmm_force",
         autospec=True,
         side_effect=create_mock_force,
     )
@@ -208,7 +208,7 @@ def test_compute_du_d_theta_attribute(mocker):
 
 def test_compute_ensemble_averages(mocker, mock_argon_tensors):
     tensor_ff, tensor_top = mock_argon_tensors
-    tensor_system = smee.ff.TensorSystem([tensor_top], [2], False)
+    tensor_system = smee.TensorSystem([tensor_top], [2], False)
 
     mock_outputs = [torch.tensor([1.0, 2.0, 3.0]), torch.tensor([5.0, 6.0, 20.0])]
     mock_du_d_theta = (torch.tensor([[[9.0, 10.0], [11.0, 12.0]]]), None)

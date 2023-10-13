@@ -7,7 +7,7 @@ import openmm.unit
 import pytest
 import torch
 
-from smee.ff import convert_interchange
+import smee.converters
 from smee.potentials import compute_energy
 
 
@@ -91,7 +91,9 @@ def test_compute_energy(smiles: str):
         molecule.to_topology(),
     )
 
-    force_field, parameters_per_topology = convert_interchange(interchange)
+    force_field, parameters_per_topology = smee.converters.convert_interchange(
+        interchange
+    )
 
     energy_smee = compute_energy(
         parameters_per_topology[0].parameters, conformer, force_field
@@ -127,7 +129,7 @@ def test_compute_energy_v_sites():
     )
     conformer = place_v_sites(conformer, interchange)
 
-    force_field, topologies = convert_interchange(interchange)
+    force_field, topologies = smee.converters.convert_interchange(interchange)
 
     energy_openmm = compute_openmm_energy(interchange, conformer)
     energy_smee = compute_energy(topologies[0].parameters, conformer, force_field)

@@ -8,7 +8,7 @@ import openff.toolkit
 import openff.units
 import torch
 
-import smee.ff
+import smee
 import smee.utils
 
 _UNITLESS = openff.units.unit.dimensionless
@@ -22,10 +22,10 @@ def convert_nonbonded_handlers(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     handler_type: str,
     topologies: list[openff.toolkit.Topology],
-    v_site_maps: list[smee.ff.VSiteMap | None],
+    v_site_maps: list[smee.VSiteMap | None],
     parameter_cols: tuple[str, ...],
     attribute_cols: tuple[str, ...] | None = None,
-) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
     """Convert a list of SMIRNOFF non-bonded handlers into a tensor potential and
     associated parameter maps.
 
@@ -50,7 +50,7 @@ def convert_nonbonded_handlers(
     assert len(topologies) == len(handlers), "topologies and handlers must match"
     assert len(v_site_maps) == len(handlers), "v-site maps and handlers must match"
 
-    potential = smee.ff._ff._handlers_to_potential(
+    potential = smee.converters.openff._openff._handlers_to_potential(
         handlers,
         handler_type,
         parameter_cols,
@@ -109,7 +109,7 @@ def convert_nonbonded_handlers(
             dtype=torch.int64,
         )
 
-        parameter_map = smee.ff.NonbondedParameterMap(
+        parameter_map = smee.NonbondedParameterMap(
             assignment_matrix=assignment_matrix.to_sparse(),
             exclusions=exclusions,
             exclusion_scale_idxs=exclusion_scale_idxs,
@@ -119,7 +119,7 @@ def convert_nonbonded_handlers(
     return potential, parameter_maps
 
 
-@smee.ff.parameter_converter(
+@smee.converters.smirnoff_parameter_converter(
     "vdW",
     {
         "epsilon": _KCAL_PER_MOL,
@@ -135,8 +135,8 @@ def convert_nonbonded_handlers(
 def convert_vdw(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFvdWCollection],
     topologies: list[openff.toolkit.Topology],
-    v_site_maps: list[smee.ff.VSiteMap | None],
-) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
     mixing_rules = {handler.mixing_rule for handler in handlers}
     assert len(mixing_rules) == 1, "multiple mixing rules found"
     mixing_rule = next(iter(mixing_rules))
@@ -196,7 +196,7 @@ def _make_v_site_electrostatics_compatible(
         handlers[handler_idx] = handler
 
 
-@smee.ff.parameter_converter(
+@smee.converters.smirnoff_parameter_converter(
     "Electrostatics",
     {
         "charge": _ELEMENTARY_CHARGE,
@@ -210,8 +210,8 @@ def _make_v_site_electrostatics_compatible(
 def convert_electrostatics(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
     topologies: list[openff.toolkit.Topology],
-    v_site_maps: list[smee.ff.VSiteMap | None],
-) -> tuple[smee.ff.TensorPotential, list[smee.ff.NonbondedParameterMap]]:
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
     handlers = [*handlers]
     _make_v_site_electrostatics_compatible(handlers)
 

@@ -13,9 +13,9 @@ import openmm.unit
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
-import smee.ff
+import smee
+import smee.converters
 import smee.mm._config
-import smee.mm._converters
 import smee.mm._reporters
 
 _LOGGER = logging.getLogger("smee.mm")
@@ -25,7 +25,7 @@ class PACKMOLRuntimeError(RuntimeError):
     """An error raised when PACKMOL fails to execute / converge for some reason."""
 
 
-def _topology_to_rdkit(topology: smee.ff.TensorTopology) -> Chem.Mol:
+def _topology_to_rdkit(topology: smee.TensorTopology) -> Chem.Mol:
     """Convert a topology to an RDKit molecule."""
     mol = Chem.RWMol()
 
@@ -47,7 +47,7 @@ def _topology_to_rdkit(topology: smee.ff.TensorTopology) -> Chem.Mol:
 
 
 def _approximate_box_size(
-    system: smee.ff.TensorSystem,
+    system: smee.TensorSystem,
     config: "smee.mm.GenerateCoordsConfig",
 ) -> openmm.unit.Quantity:
     """Generate an approximate box size based on the number and molecular weight of
@@ -114,7 +114,7 @@ def _generate_packmol_input(
 
 
 def generate_system_coords(
-    system: smee.ff.TensorSystem,
+    system: smee.TensorSystem,
     config: typing.Optional["smee.mm.GenerateCoordsConfig"],
 ) -> tuple[openmm.unit.Quantity, openmm.unit.Quantity]:
     """Generate coordinates for a system of molecules using PACKMOL.
@@ -125,6 +125,9 @@ def generate_system_coords(
 
     Raises:
         * PACKMOLRuntimeError
+
+    energy
+    convert
 
     Returns:
         The coordinates with ``shape=(n_atoms, 3)`` and box vectors with
@@ -268,8 +271,8 @@ def _run_simulation(
 
 
 def simulate(
-    system: smee.ff.TensorSystem | smee.ff.TensorTopology,
-    force_field: smee.ff.TensorForceField,
+    system: smee.TensorSystem | smee.TensorTopology,
+    force_field: smee.TensorForceField,
     coords_config: "smee.mm.GenerateCoordsConfig",
     equilibrate_configs: list[
         typing.Union["smee.mm.MinimizationConfig", "smee.mm.SimulationConfig"]
@@ -291,10 +294,10 @@ def simulate(
             production simulation.
     """
 
-    system: smee.ff.TensorSystem = (
+    system: smee.TensorSystem = (
         system
-        if isinstance(system, smee.ff.TensorSystem)
-        else smee.ff.TensorSystem([system], [1], False)
+        if isinstance(system, smee.TensorSystem)
+        else smee.TensorSystem([system], [1], False)
     )
 
     requires_pbc = any(
@@ -310,8 +313,8 @@ def simulate(
 
     omm_state = generate_system_coords(system, coords_config)
 
-    omm_system = smee.mm._converters.convert_to_openmm_system(force_field, system)
-    omm_topology = smee.mm._converters.convert_to_openmm_topology(system)
+    omm_system = smee.converters.convert_to_openmm_system(force_field, system)
+    omm_topology = smee.converters.convert_to_openmm_topology(system)
 
     for i, config in enumerate(equilibrate_configs):
         _LOGGER.info(f"running equilibration step {i + 1} / {len(equilibrate_configs)}")

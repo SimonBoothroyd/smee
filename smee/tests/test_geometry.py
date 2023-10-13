@@ -9,7 +9,8 @@ import torch
 import torch.autograd.functional
 from openff.units import unit
 
-import smee.ff
+import smee
+import smee.converters
 from smee.geometry import (
     V_SITE_TYPE_TO_FRAME,
     _build_v_site_coord_frames,
@@ -307,9 +308,9 @@ def test_build_v_site_coordinate_frames():
         dtype=torch.float64,
     ).unsqueeze(0)
 
-    force_field = smee.ff.TensorForceField(
+    force_field = smee.TensorForceField(
         potentials=[],
-        v_sites=smee.ff.TensorVSites(
+        v_sites=smee.TensorVSites(
             keys=[openff.interchange.models.PotentialKey(id="[O:1]=[C:2]-[H:3]")],
             weights=[V_SITE_TYPE_TO_FRAME["MonovalentLonePair"]],
             parameters=torch.Tensor([[1.0, 180.0, 45.0]]),
@@ -325,7 +326,7 @@ def test_build_v_site_coordinate_frames():
         )
         for atom_idxs in [(0, 1, 2), (0, 1, 3)]
     ]
-    v_site_map = smee.ff.VSiteMap(
+    v_site_map = smee.VSiteMap(
         keys=v_sites,
         key_to_idx={v_sites[0]: 4, v_sites[1]: 5},
         parameter_idxs=torch.tensor([[0], [0]]),
@@ -384,7 +385,7 @@ def test_compute_v_site_coords(smiles, v_site_force_field):
     conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
 
     interchange = _apply_v_site_force_field(molecule, conformer, v_site_force_field)
-    force_field, [topology] = smee.ff.convert_interchange(interchange)
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
 
     assert topology.v_sites is not None
     assert len(topology.v_sites.keys) > 0
@@ -408,7 +409,7 @@ def test_compute_v_site_coords_batched(v_site_force_field):
     )
 
     interchange = _apply_v_site_force_field(molecule, conformers[0], v_site_force_field)
-    force_field, [topology] = smee.ff.convert_interchange(interchange)
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
 
     assert topology.v_sites is not None
     assert len(topology.v_sites.keys) > 0

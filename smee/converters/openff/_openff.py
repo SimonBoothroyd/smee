@@ -1,7 +1,5 @@
-import dataclasses
 import importlib
 import inspect
-import typing
 
 import openff.interchange.components.potentials
 import openff.interchange.models
@@ -10,6 +8,7 @@ import openff.toolkit
 import openff.units
 import torch
 
+import smee
 import smee.geometry
 
 _CONVERTERS = {}
@@ -18,11 +17,6 @@ _DEFAULT_UNITS = {}
 _ANGSTROM = openff.units.unit.angstrom
 _RADIANS = openff.units.unit.radians
 
-_V_SITE_DEFAULT_UNITS = {
-    "distance": _ANGSTROM,
-    "inPlaneAngle": _RADIANS,
-    "outOfPlaneAngle": _RADIANS,
-}
 _V_SITE_DEFAULT_VALUES = {
     "distance": 0.0 * _ANGSTROM,
     "inPlaneAngle": torch.pi * _RADIANS,
@@ -30,190 +24,9 @@ _V_SITE_DEFAULT_VALUES = {
 }
 
 
-@dataclasses.dataclass
-class ValenceParameterMap:
-    """A map between atom indices part of a particular valence interaction (e.g.
-    torsion indices) and the corresponding parameter in a ``TensorPotential``"""
-
-    particle_idxs: torch.Tensor
-    """The indices of the particles (e.g. atoms or virtual sites) involved in an
-    interaction with ``shape=(n_interactions, n_cols)``. For a bond ``n_cols=2``,
-    for angles ``n_cols=3`` etc.
-    """
-    assignment_matrix: torch.sparse.Tensor
-    """A sparse tensor that yields the assigned parameters when multiplied with the
-    corresponding handler parameters, with ``shape=(n_interacting, n_parameters)``.
-    """
-
-
-@dataclasses.dataclass
-class NonbondedParameterMap:
-    """A map between atom indices part of a particular valence interaction (e.g.
-    torsion indices) and the corresponding parameter in a ``TensorPotential``"""
-
-    assignment_matrix: torch.sparse.Tensor
-    """A sparse tensor that yields the parameters assigned to each particle in the
-    system when multiplied with the corresponding handler parameters, with
-    ``shape=(n_particles, n_parameters)``.
-    """
-
-    exclusions: torch.Tensor
-    """Indices of pairs of particles (i.e. atoms or virtual sites) that should
-    have their interactions scaled by some factor with ``shape=(n_exclusions, 2)``.
-    """
-    exclusion_scale_idxs: torch.Tensor
-    """Indices into the tensor of handler attributes defining the 1-n scaling factors
-    with ``shape=(n_exclusions, 1)``.
-    """
-
-
-ParameterMap = ValenceParameterMap | NonbondedParameterMap
-
-
-@dataclasses.dataclass
-class VSiteMap:
-    """A map between virtual sites that have been added to a topology and their
-    corresponding 'parameters' used to position them."""
-
-    keys: list[openff.interchange.models.VirtualSiteKey]
-    """The keys used to identify each v-site."""
-    key_to_idx: dict[openff.interchange.models.VirtualSiteKey, int]
-    """A map between the unique keys associated with each v-site and their index in
-    the topology"""
-
-    parameter_idxs: torch.Tensor
-    """The indices of the corresponding v-site parameters with ``shape=(n_v_sites, 1)``
-    """
-
-
-@dataclasses.dataclass
-class TensorConstraints:
-    """A tensor representation of a set of distance constraints between pairs of
-    atoms."""
-
-    idxs: torch.Tensor
-    """The indices of the atoms involved in each constraint with
-    ``shape=(n_constraints, 2)``"""
-    distances: torch.Tensor
-    """The distance [Å] between each pair of atoms with ``shape=(n_constraints,)``"""
-
-
-@dataclasses.dataclass
-class TensorTopology:
-    """A tensor representation of a molecular topology that has been assigned force
-    field parameters."""
-
-    atomic_nums: torch.Tensor
-    """The atomic numbers of each atom in the topology with ``shape=(n_atoms,)``"""
-    formal_charges: torch.Tensor
-    """The formal charge of each atom in the topology with ``shape=(n_atoms,)``"""
-
-    bond_idxs: torch.Tensor
-    """The indices of the atoms involved in each bond with ``shape=(n_bonds, 2)``"""
-    bond_orders: torch.Tensor
-    """The bond orders of each bond with ``shape=(n_bonds,)``"""
-
-    parameters: dict[str, ParameterMap]
-    """The parameters that have been assigned to the topology."""
-    v_sites: VSiteMap | None = None
-    """The v-sites that have been assigned to the topology."""
-
-    constraints: TensorConstraints | None = None
-    """Distance constraints that should be applied **during MD simulations**. These
-    will not be used outside of MD simulations."""
-
-    @property
-    def n_atoms(self) -> int:
-        """The number of atoms in the topology."""
-        return len(self.atomic_nums)
-
-    @property
-    def n_bonds(self) -> int:
-        """The number of bonds in the topology."""
-        return len(self.bond_idxs)
-
-
-@dataclasses.dataclass
-class TensorSystem:
-    """A tensor representation of a 'full' system."""
-
-    topologies: list[TensorTopology]
-    """The topologies of the individual molecules in the system."""
-    n_copies: list[int]
-    """The number of copies of each topology to include in the system."""
-
-    is_periodic: bool
-    """Whether the system is periodic or not."""
-
-
-@dataclasses.dataclass
-class TensorPotential:
-    """A tensor representation of a valence SMIRNOFF parameter handler"""
-
-    type: str
-    """The type of handler associated with these parameters"""
-    fn: str
-    """The associated potential energy function"""
-
-    parameters: torch.Tensor
-    """The values of the parameters with ``shape=(n_parameters, n_parameter_cols)``"""
-    parameter_keys: list[openff.interchange.models.PotentialKey]
-    """Unique keys associated with each parameter with ``length=(n_parameters)``"""
-    parameter_cols: tuple[str, ...]
-    """The names of each column of ``parameters``."""
-    parameter_units: tuple[openff.units.Unit, ...]
-    """The units of each parameter in ``parameters``."""
-
-    attributes: torch.Tensor | None = None
-    """The attributes defined on a handler such as 1-4 scaling factors with
-    ``shape=(n_attribute_cols,)``"""
-    attribute_cols: tuple[str, ...] | None = None
-    """The names of each column of ``attributes``."""
-    attribute_units: tuple[openff.units.Unit, ...] = None
-    """The units of each attribute in ``attributes``."""
-
-
-@dataclasses.dataclass
-class TensorVSites:
-    """A tensor representation of a set of virtual sites parameters."""
-
-    keys: typing.List[openff.interchange.models.VirtualSiteKey]
-    """The unique keys associated with each v-site with ``length=(n_v_sites)``"""
-    weights: list[torch.Tensor]
-    """A matrix of weights that, when applied to the 'orientiational' atoms, yields a
-    basis that the virtual site coordinate parameters can be projected onto with
-    ``shape=(n_v_sites, 3, 3)``"""
-    parameters: torch.Tensor
-    """The distance, in-plane and out-of-plane angles with ``shape=(n_v_sites, 3)``"""
-
-    @property
-    def parameter_units(self) -> dict[str, openff.units.Unit]:
-        """The units of each v-site parameter."""
-        return {**_V_SITE_DEFAULT_UNITS}
-
-
-@dataclasses.dataclass
-class TensorForceField:
-    """A tensor representation of a SMIRNOFF force field."""
-
-    potentials: list[TensorPotential]
-    """The terms and associated parameters of the potential energy function."""
-
-    v_sites: TensorVSites | None = None
-    """Parameters used to add and define the coords of v-sites in the system. The
-    non-bonded parameters of any v-sites are stored in relevant potentials, e.g. 'vdW'
-    or 'Electrostatics'.
-    """
-
-    @property
-    def potentials_by_type(self) -> dict[str, TensorPotential]:
-        potentials = {potential.type: potential for potential in self.potentials}
-        assert len(potentials) == len(self.potentials), "duplicate potentials found"
-
-        return potentials
-
-
-def parameter_converter(type_: str, default_units: dict[str, openff.units.Unit]):
+def smirnoff_parameter_converter(
+    type_: str, default_units: dict[str, openff.units.Unit]
+):
     """A decorator used to flag a function as being able to convert a parameter handlers
     parameters into tensors.
 
@@ -251,7 +64,7 @@ def _handlers_to_potential(
     handler_type: str,
     parameter_cols: tuple[str, ...],
     attribute_cols: tuple[str, ...] | None,
-) -> TensorPotential:
+) -> smee.TensorPotential:
     potential_fns = {handler.expression for handler in handlers}
     assert len(potential_fns) == 1, "multiple handler functions found"
     potential_fn = next(iter(potential_fns))
@@ -295,7 +108,7 @@ def _handlers_to_potential(
             dtype=torch.float64,
         )
 
-    potential = TensorPotential(
+    potential = smee.TensorPotential(
         type=handler_type,
         fn=potential_fn,
         parameters=parameters,
@@ -316,7 +129,7 @@ def _handlers_to_potential(
 def _convert_v_sites(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFVirtualSiteCollection],
     topologies: list[openff.toolkit.Topology],
-) -> tuple[TensorVSites, list[VSiteMap | None]]:
+) -> tuple[smee.TensorVSites, list[smee.VSiteMap | None]]:
     handler_types = {handler.type for handler in handlers}
     assert handler_types == {"VirtualSites"}, "invalid handler types found"
 
@@ -346,7 +159,7 @@ def _convert_v_sites(
             _get_value(
                 parameters_by_key[parameter_key],
                 column,
-                _V_SITE_DEFAULT_UNITS,
+                smee.TensorVSites.default_units(),
                 _V_SITE_DEFAULT_VALUES[column],
             )
             for column in ("distance", "inPlaneAngle", "outOfPlaneAngle")
@@ -358,7 +171,7 @@ def _convert_v_sites(
         smee.geometry.V_SITE_TYPE_TO_FRAME[parameter_key_to_type[parameter_key]]
         for parameter_key in parameter_keys
     ]
-    v_sites = TensorVSites(
+    v_sites = smee.TensorVSites(
         keys=parameter_keys, weights=v_site_frames, parameters=torch.tensor(parameters)
     )
 
@@ -386,7 +199,7 @@ def _convert_v_sites(
         # )
         # assert topology_indices == list(range(len(topology_indices)))
 
-        v_site_map = VSiteMap(
+        v_site_map = smee.VSiteMap(
             keys=v_site_keys,
             key_to_idx={key: i + topology.n_atoms for i, key in enumerate(v_site_keys)},
             parameter_idxs=torch.tensor(parameter_idxs),
@@ -398,7 +211,7 @@ def _convert_v_sites(
 
 def _convert_constraints(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFConstraintCollection],
-) -> list[TensorConstraints | None]:
+) -> list[smee.TensorConstraints | None]:
     handler_types = {handler.type for handler in handlers}
     assert handler_types == {"Constraints"}, "invalid handler types found"
 
@@ -421,7 +234,7 @@ def _convert_constraints(
             for key in topology_keys
         ]
 
-        constraint = TensorConstraints(
+        constraint = smee.TensorConstraints(
             idxs=constraint_idxs, distances=torch.tensor(constraint_distances)
         )
         constraints.append(constraint)
@@ -432,8 +245,8 @@ def _convert_constraints(
 def convert_handlers(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     topologies: list[openff.toolkit.Topology],
-    v_site_maps: list[VSiteMap | None] | None = None,
-) -> tuple[TensorPotential, list[ParameterMap]]:
+    v_site_maps: list[smee.VSiteMap | None] | None = None,
+) -> tuple[smee.TensorPotential, list[smee.ParameterMap]]:
     """Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.
 
     Args:
@@ -472,8 +285,8 @@ def convert_handlers(
 
     assert len(handlers) == len(topologies), "mismatched number of topologies"
 
-    importlib.import_module("smee.ff.nonbonded")
-    importlib.import_module("smee.ff.valence")
+    importlib.import_module("smee.converters.openff.nonbonded")
+    importlib.import_module("smee.converters.openff.valence")
 
     if handler_type not in _CONVERTERS:
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")
@@ -494,10 +307,10 @@ def convert_handlers(
 
 def _convert_topology(
     topology: openff.toolkit.Topology,
-    parameters: dict[str, ParameterMap],
-    v_sites: VSiteMap | None,
-    constraints: TensorConstraints | None,
-) -> TensorTopology:
+    parameters: dict[str, smee.ParameterMap],
+    v_sites: smee.VSiteMap | None,
+    constraints: smee.TensorConstraints | None,
+) -> smee.TensorTopology:
     """Convert an OpenFF topology into a tensor topology.
 
     Args:
@@ -523,7 +336,7 @@ def _convert_topology(
     )
     bond_orders = torch.tensor([bond.bond_order for bond in topology.bonds])
 
-    return TensorTopology(
+    return smee.TensorTopology(
         atomic_nums=atomic_nums,
         formal_charges=formal_charges,
         bond_idxs=bond_idxs,
@@ -536,7 +349,7 @@ def _convert_topology(
 
 def convert_interchange(
     interchange: openff.interchange.Interchange | list[openff.interchange.Interchange],
-) -> tuple[TensorForceField, list[TensorTopology]]:
+) -> tuple[smee.TensorForceField, list[smee.TensorTopology]]:
     """Convert a list of interchange objects into tensor potentials.
 
     Args:
@@ -627,5 +440,5 @@ def convert_interchange(
         for i, topology in enumerate(topologies)
     ]
 
-    tensor_force_field = TensorForceField(potentials, v_sites)
+    tensor_force_field = smee.TensorForceField(potentials, v_sites)
     return tensor_force_field, tensor_topologies
