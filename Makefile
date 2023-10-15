@@ -4,7 +4,10 @@ CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 EXAMPLES_SKIP := examples/md-simulations.ipynb
 EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
 
-.PHONY: env lint format test test-examples
+.PHONY: pip-install env lint format test test-examples
+
+pip-install:
+	$(CONDA_ENV_RUN) pip install --no-build-isolation --no-deps -e .
 
 env:
 	mamba create     --name $(PACKAGE_NAME)
