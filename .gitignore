@@ -107,3 +107,9 @@ ENV/
 
 # PyCharm
 .idea
+
+# OSX
+.DS_Store
+
+# Local development
+scratch

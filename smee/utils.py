@@ -87,3 +87,20 @@ def zeros_like(size: _size, other: torch.Tensor) -> torch.Tensor:
 def tensor_like(data: typing.Any, other: torch.Tensor) -> torch.Tensor:
     """Create a tensor with the same device and type as another tensor."""
     return torch.tensor(data, dtype=other.dtype, device=other.device)
+
+
+def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
+    """Converts pairs of 2D indices to 1D indices in an upper triangular matrix that
+    excludes the diagonal.
+
+    Args:
+        i: A tensor of the indices along the first axis with ``shape=(n_pairs,)``.
+        j: A tensor of the indices along the second axis with ``shape=(n_pairs,)``.
+        n: The size of the matrix.
+
+    Returns:
+        A tensor of the indices in the upper triangular matrix with
+        ``shape=(n_pairs * (n_pairs - 1) // 2,)``.
+    """
+    assert (i < j).all(), "i must be less than j"
+    return ((i * (2 * n - i - 1)) / 2 + j - i - 1).long()

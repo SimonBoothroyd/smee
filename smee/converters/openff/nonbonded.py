@@ -67,9 +67,7 @@ def convert_nonbonded_handlers(
     for handler, topology, v_site_map in zip(handlers, topologies, v_site_maps):
         assignment_map = collections.defaultdict(lambda: collections.defaultdict(float))
 
-        n_particles = topology.n_atoms + (
-            0 if v_site_map is None else len(v_site_map.keys)
-        )
+        n_particles = topology.n_particles
 
         for topology_key, parameter_key in handler.key_map.items():
             if isinstance(topology_key, openff.interchange.models.VirtualSiteKey):

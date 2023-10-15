@@ -15,6 +15,7 @@ dependencies:
 
   - pytorch-cpu
   - pydantic
+  - nnpops
 
   # Optional packages
 

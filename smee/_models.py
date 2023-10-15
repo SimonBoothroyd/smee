@@ -113,6 +113,16 @@ class TensorTopology:
         """The number of bonds in the topology."""
         return len(self.bond_idxs)
 
+    @property
+    def n_v_sites(self) -> int:
+        """The number of v-sites in the topology."""
+        return 0 if self.v_sites is None else len(self.v_sites.parameter_idxs)
+
+    @property
+    def n_particles(self) -> int:
+        """The number of atoms + v-sites in the topology."""
+        return self.n_atoms + self.n_v_sites
+
 
 @dataclasses.dataclass
 class TensorSystem:
@@ -125,6 +135,27 @@ class TensorSystem:
 
     is_periodic: bool
     """Whether the system is periodic or not."""
+
+    @property
+    def n_atoms(self) -> int:
+        """The number of atoms in the system."""
+        return sum(
+            topology.n_atoms * n_copies
+            for topology, n_copies in zip(self.topologies, self.n_copies)
+        )
+
+    @property
+    def n_v_sites(self) -> int:
+        """The number of v-sites in the system."""
+        return sum(
+            topology.n_v_sites * n_copies
+            for topology, n_copies in zip(self.topologies, self.n_copies)
+        )
+
+    @property
+    def n_particles(self) -> int:
+        """The number of atoms + v-sites in the system."""
+        return self.n_atoms + self.n_v_sites
 
 
 @dataclasses.dataclass

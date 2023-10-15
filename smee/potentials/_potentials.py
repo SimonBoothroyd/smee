@@ -5,6 +5,7 @@ import inspect
 import torch
 
 import smee
+import smee.utils
 
 _POTENTIAL_ENERGY_FUNCTIONS = {}
 
@@ -24,6 +25,87 @@ def potential_energy_fn(handler_type: str, energy_expression: str):
         return func
 
     return _potential_function_inner
+
+
+def broadcast_parameters(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Returns parameters for the full system by broadcasting and stacking the
+    parameters of each topology.
+
+    Args:
+        system: The system.
+        potential: The potential whose parameters should be broadcast.
+
+    Returns:
+        The parameters for the full system with
+        ``shape=(n_particles, n_parameter_cols)``.
+    """
+    parameters = torch.vstack(
+        [
+            torch.broadcast_to(
+                (
+                    topology.parameters[potential.type].assignment_matrix
+                    @ potential.parameters
+                )[None, :, :],
+                (n_copies, topology.n_atoms, potential.parameters.shape[-1]),
+            )
+            for topology, n_copies in zip(system.topologies, system.n_copies)
+        ]
+    ).reshape(-1, 2)
+
+    return parameters
+
+
+def broadcast_exclusions(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Returns the scale factor for each interaction in the full system by broadcasting
+    and stacking the exclusions of each topology.
+
+    Args:
+        system: The system.
+        potential: The potential containing the scale factors to broadcast.
+
+    Returns:
+        The parameters for the full system with
+        ``shape=(n_particles * (n_particles - 1) / 2,)``.
+    """
+
+    n_particles = system.n_particles
+    n_pairs = (n_particles * (n_particles - 1)) // 2
+
+    pair_scales = smee.utils.ones_like(n_pairs, other=potential.parameters)
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+
+        exclusion_idxs = topology.parameters[potential.type].exclusions
+        exclusion_idxs = exclusion_offset[:, None, None] + exclusion_idxs[None, :, :]
+
+        exclusion_scales = potential.attributes[
+            topology.parameters[potential.type].exclusion_scale_idxs
+        ]
+        exclusion_scales = torch.broadcast_to(
+            exclusion_scales, (n_copies, *exclusion_scales.shape)
+        )
+
+        exclusion_idxs = exclusion_idxs.reshape(-1, 2)
+        exclusion_scales = exclusion_scales.reshape(-1)
+
+        if len(exclusion_idxs) > 0:
+            exclusion_idxs, _ = exclusion_idxs.sort(dim=1)  # ensure upper triangle
+
+            pair_idxs = smee.utils.to_upper_tri_idx(
+                exclusion_idxs[:, 0], exclusion_idxs[:, 1], n_particles
+            )
+            pair_scales[pair_idxs] = exclusion_scales
+
+        idx_offset += n_copies * topology.n_particles
+
+    return pair_scales
 
 
 def compute_energy_potential(

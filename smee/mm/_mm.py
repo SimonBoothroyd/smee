@@ -115,7 +115,7 @@ def _generate_packmol_input(
 
 def generate_system_coords(
     system: smee.TensorSystem,
-    config: typing.Optional["smee.mm.GenerateCoordsConfig"],
+    config: typing.Optional["smee.mm.GenerateCoordsConfig"] = None,
 ) -> tuple[openmm.unit.Quantity, openmm.unit.Quantity]:
     """Generate coordinates for a system of molecules using PACKMOL.
 
@@ -126,13 +126,12 @@ def generate_system_coords(
     Raises:
         * PACKMOLRuntimeError
 
-    energy
-    convert
-
     Returns:
         The coordinates with ``shape=(n_atoms, 3)`` and box vectors with
         ``shape=(3, 3)``
     """
+
+    config = config if config is not None else smee.mm.GenerateCoordsConfig()
 
     box_size = _approximate_box_size(system, config)
 

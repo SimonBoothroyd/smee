@@ -3,7 +3,7 @@ import openff.toolkit
 import torch
 
 import smee
-from smee.utils import find_exclusions
+from smee.utils import find_exclusions, to_upper_tri_idx
 
 
 def test_find_exclusions_simple():
@@ -179,3 +179,14 @@ def test_tensor_like():
 
     assert tensor.dtype == expected_type
     assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
+
+
+def test_to_upper_tri_idx():
+    i = torch.tensor([0, 1, 0])
+    j = torch.tensor([1, 2, 2])
+
+    idxs = to_upper_tri_idx(i, j, 3)
+
+    expected_idxs = torch.tensor([0, 2, 1])
+    assert idxs.shape == expected_idxs.shape
+    assert torch.allclose(idxs, expected_idxs)
