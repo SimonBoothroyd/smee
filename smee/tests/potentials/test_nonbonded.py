@@ -9,10 +9,35 @@ import smee.converters.openmm
 import smee.mm
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
+    _compute_coulomb_energy_periodic,
     _compute_lj_energy_periodic,
+    _compute_pair_scales,
     compute_coulomb_energy,
     compute_lj_energy,
 )
+
+
+def compute_openmm_periodic_energy(
+    system: smee.TensorSystem,
+    coords: openmm.unit.Quantity,
+    box_vectors: openmm.unit.Quantity,
+    potential: smee.TensorPotential,
+) -> torch.Tensor:
+    omm_force = smee.converters.convert_to_openmm_force(potential, system)
+
+    omm_system = smee.converters.openmm.create_openmm_system(system)
+    omm_system.addForce(omm_force)
+    omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
+
+    omm_integrator = openmm.VerletIntegrator(1.0 * openmm.unit.femtoseconds)
+    omm_context = openmm.Context(omm_system, omm_integrator)
+    omm_context.setPeriodicBoxVectors(*box_vectors)
+    omm_context.setPositions(coords)
+
+    omm_energy = omm_context.getState(getEnergy=True).getPotentialEnergy()
+    omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
+
+    return torch.tensor(omm_energy, dtype=torch.float64)
 
 
 def test_coulomb_pre_factor():
@@ -66,6 +91,40 @@ def test_compute_coulomb_energy_three_particle():
     )
 
     assert torch.isclose(expected_energy, actual_energy)
+
+
+def test_compute_coulomb_energy_periodic():
+    interchanges = [
+        openff.interchange.Interchange.from_smirnoff(
+            openff.toolkit.ForceField("openff-2.0.0.offxml"),
+            openff.toolkit.Molecule.from_smiles(smiles).to_topology(),
+        )
+        for smiles in ["CCO", "O"]
+    ]
+
+    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
+    tensor_sys = smee.TensorSystem(tensor_tops, [67, 123], is_periodic=True)
+
+    coulomb_potential = tensor_ff.potentials_by_type["Electrostatics"]
+    coulomb_potential.parameters.requires_grad = True
+
+    coords, box_vectors = smee.mm.generate_system_coords(tensor_sys)
+
+    energy = _compute_coulomb_energy_periodic(
+        tensor_sys,
+        torch.tensor(coords.value_in_unit(openmm.unit.angstrom), dtype=torch.float32),
+        torch.tensor(
+            box_vectors.value_in_unit(openmm.unit.angstrom), dtype=torch.float32
+        ),
+        coulomb_potential,
+    )
+    energy.backward()
+
+    expected_energy = compute_openmm_periodic_energy(
+        tensor_sys, coords, box_vectors, coulomb_potential
+    )
+
+    assert torch.isclose(energy, expected_energy, atol=1.0e-2)
 
 
 def test_compute_lj_energy_two_particle():
@@ -133,6 +192,50 @@ def test_compute_lj_energy_three_particle():
     assert torch.isclose(expected_energy, actual_energy)
 
 
+def test_compute_pair_scales(mock_lj_potential, mock_methane_top, mock_water_top):
+    mock_lj_potential.attributes = torch.tensor([0.01, 0.02, 0.5, 1.0, 9.0, 2.0])
+
+    system = smee.TensorSystem([mock_methane_top, mock_water_top], [2, 3], True)
+
+    scales = _compute_pair_scales(system, mock_lj_potential)
+
+    # fmt: off
+    expected_scale_matrix = torch.tensor(
+        [
+            [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 5),
+            [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 5),
+            #
+            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),
+            #
+            [1.0] * 10 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 13),
+            [1.0] * 10 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 13),
+            [1.0] * 10 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 13),
+            #
+            [1.0] * 13 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 16),
+            [1.0] * 13 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 16),
+            [1.0] * 13 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 16),
+            #
+            [1.0] * 16 + [1.0, 0.01, 0.01],
+            [1.0] * 16 + [0.01, 1.0, 0.02],
+            [1.0] * 16 + [0.01, 0.02, 1.0],
+        ]
+    )
+    # fmt: on
+
+    i, j = torch.triu_indices(system.n_particles, system.n_particles, 1)
+    expected_scales = expected_scale_matrix[i, j]
+
+    assert scales.shape == expected_scales.shape
+    assert torch.allclose(scales, expected_scales)
+
+
 def test_compute_lj_energy_periodic():
     interchanges = [
         openff.interchange.Interchange.from_smirnoff(
@@ -160,22 +263,8 @@ def test_compute_lj_energy_periodic():
     )
     energy.backward()
 
-    omm_force = smee.converters.convert_to_openmm_force(vdw_potential, tensor_sys)
-    omm_force.setUseSwitchingFunction(True)
-    omm_force.setUseDispersionCorrection(True)
-
-    omm_system = smee.converters.openmm.create_openmm_system(tensor_sys)
-    omm_system.addForce(omm_force)
-    omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
-
-    omm_integrator = openmm.VerletIntegrator(1.0 * openmm.unit.femtoseconds)
-    omm_context = openmm.Context(omm_system, omm_integrator)
-    omm_context.setPeriodicBoxVectors(*box_vectors)
-    omm_context.setPositions(coords)
-
-    omm_energy = omm_context.getState(getEnergy=True).getPotentialEnergy()
-    omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
-
-    assert torch.isclose(
-        energy, torch.tensor(omm_energy, dtype=torch.float64), atol=1.0e-3
+    expected_energy = compute_openmm_periodic_energy(
+        tensor_sys, coords, box_vectors, vdw_potential
     )
+
+    assert torch.isclose(energy, expected_energy, atol=1.0e-3)
