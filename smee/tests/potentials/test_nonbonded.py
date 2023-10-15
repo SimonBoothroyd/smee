@@ -1,8 +1,15 @@
 import numpy
+import openff.interchange
+import openff.toolkit
+import openmm.unit
 import torch
 
+import smee.converters
+import smee.converters.openmm
+import smee.mm
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
+    _compute_lj_energy_periodic,
     compute_coulomb_energy,
     compute_lj_energy,
 )
@@ -124,3 +131,51 @@ def test_compute_lj_energy_three_particle():
     )
 
     assert torch.isclose(expected_energy, actual_energy)
+
+
+def test_compute_lj_energy_periodic():
+    interchanges = [
+        openff.interchange.Interchange.from_smirnoff(
+            openff.toolkit.ForceField("openff-2.0.0.offxml"),
+            openff.toolkit.Molecule.from_smiles(smiles).to_topology(),
+        )
+        for smiles in ["CCO", "O"]
+    ]
+
+    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
+    tensor_sys = smee.TensorSystem(tensor_tops, [67, 123], is_periodic=True)
+
+    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential.parameters.requires_grad = True
+
+    coords, box_vectors = smee.mm.generate_system_coords(tensor_sys)
+
+    energy = _compute_lj_energy_periodic(
+        tensor_sys,
+        torch.tensor(coords.value_in_unit(openmm.unit.angstrom), dtype=torch.float32),
+        torch.tensor(
+            box_vectors.value_in_unit(openmm.unit.angstrom), dtype=torch.float32
+        ),
+        vdw_potential,
+    )
+    energy.backward()
+
+    omm_force = smee.converters.convert_to_openmm_force(vdw_potential, tensor_sys)
+    omm_force.setUseSwitchingFunction(True)
+    omm_force.setUseDispersionCorrection(True)
+
+    omm_system = smee.converters.openmm.create_openmm_system(tensor_sys)
+    omm_system.addForce(omm_force)
+    omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
+
+    omm_integrator = openmm.VerletIntegrator(1.0 * openmm.unit.femtoseconds)
+    omm_context = openmm.Context(omm_system, omm_integrator)
+    omm_context.setPeriodicBoxVectors(*box_vectors)
+    omm_context.setPositions(coords)
+
+    omm_energy = omm_context.getState(getEnergy=True).getPotentialEnergy()
+    omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
+
+    assert torch.isclose(
+        energy, torch.tensor(omm_energy, dtype=torch.float64), atol=1.0e-3
+    )

@@ -49,10 +49,10 @@ def broadcast_parameters(
                     @ potential.parameters
                 )[None, :, :],
                 (n_copies, topology.n_atoms, potential.parameters.shape[-1]),
-            )
+            ).reshape(-1, 2)
             for topology, n_copies in zip(system.topologies, system.n_copies)
         ]
-    ).reshape(-1, 2)
+    )
 
     return parameters
 
