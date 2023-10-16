@@ -1,17 +1,17 @@
 import numpy
-import openff.interchange
-import openff.toolkit
 import openmm.unit
 import torch
 
 import smee.converters
 import smee.converters.openmm
 import smee.mm
+import smee.tests.utils
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
     _compute_coulomb_energy_periodic,
     _compute_lj_energy_periodic,
     _compute_pair_scales,
+    _compute_pme_exclusions,
     compute_coulomb_energy,
     compute_lj_energy,
 )
@@ -23,6 +23,9 @@ def compute_openmm_periodic_energy(
     box_vectors: openmm.unit.Quantity,
     potential: smee.TensorPotential,
 ) -> torch.Tensor:
+    coords = coords.numpy() * openmm.unit.angstrom
+    box_vectors = box_vectors.numpy() * openmm.unit.angstrom
+
     omm_force = smee.converters.convert_to_openmm_force(potential, system)
 
     omm_system = smee.converters.openmm.create_openmm_system(system)
@@ -46,6 +49,45 @@ def test_coulomb_pre_factor():
     _KCAL_TO_KJ = 4.184
 
     assert numpy.isclose(_COULOMB_PRE_FACTOR * _KCAL_TO_KJ, 1389.3545764, atol=1.0e-7)
+
+
+def test_compute_pme_exclusions():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+
+    coulomb_potential = force_field.potentials_by_type["Electrostatics"]
+    exclusions = _compute_pme_exclusions(system, coulomb_potential)
+
+    expected_exclusions = torch.tensor(
+        [
+            # C #1
+            [1, 2, 3, 4],
+            [0, 2, 3, 4],
+            [0, 1, 3, 4],
+            [0, 1, 2, 4],
+            [0, 1, 2, 3],
+            # C #2
+            [6, 7, 8, 9],
+            [5, 7, 8, 9],
+            [5, 6, 8, 9],
+            [5, 6, 7, 9],
+            [5, 6, 7, 8],
+            # O #1
+            [11, 12, -1, -1],
+            [10, 12, -1, -1],
+            [10, 11, -1, -1],
+            # O #2
+            [14, 15, -1, -1],
+            [13, 15, -1, -1],
+            [13, 14, -1, -1],
+            # O #3
+            [17, 18, -1, -1],
+            [16, 18, -1, -1],
+            [16, 17, -1, -1],
+        ]
+    )
+
+    assert exclusions.shape == expected_exclusions.shape
+    assert torch.allclose(exclusions, expected_exclusions)
 
 
 def test_compute_coulomb_energy_two_particle():
@@ -93,30 +135,14 @@ def test_compute_coulomb_energy_three_particle():
     assert torch.isclose(expected_energy, actual_energy)
 
 
-def test_compute_coulomb_energy_periodic():
-    interchanges = [
-        openff.interchange.Interchange.from_smirnoff(
-            openff.toolkit.ForceField("openff-2.0.0.offxml"),
-            openff.toolkit.Molecule.from_smiles(smiles).to_topology(),
-        )
-        for smiles in ["CCO", "O"]
-    ]
-
-    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
-    tensor_sys = smee.TensorSystem(tensor_tops, [67, 123], is_periodic=True)
+def test_compute_coulomb_energy_periodic(etoh_water_system):
+    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
 
     coulomb_potential = tensor_ff.potentials_by_type["Electrostatics"]
     coulomb_potential.parameters.requires_grad = True
 
-    coords, box_vectors = smee.mm.generate_system_coords(tensor_sys)
-
     energy = _compute_coulomb_energy_periodic(
-        tensor_sys,
-        torch.tensor(coords.value_in_unit(openmm.unit.angstrom), dtype=torch.float32),
-        torch.tensor(
-            box_vectors.value_in_unit(openmm.unit.angstrom), dtype=torch.float32
-        ),
-        coulomb_potential,
+        tensor_sys, coords.float(), box_vectors.float(), coulomb_potential
     )
     energy.backward()
 
@@ -192,12 +218,15 @@ def test_compute_lj_energy_three_particle():
     assert torch.isclose(expected_energy, actual_energy)
 
 
-def test_compute_pair_scales(mock_lj_potential, mock_methane_top, mock_water_top):
-    mock_lj_potential.attributes = torch.tensor([0.01, 0.02, 0.5, 1.0, 9.0, 2.0])
+def test_compute_pair_scales():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
 
-    system = smee.TensorSystem([mock_methane_top, mock_water_top], [2, 3], True)
+    vdw_potential = force_field.potentials_by_type["vdW"]
+    vdw_potential.attributes = torch.tensor(
+        [0.01, 0.02, 0.5, 1.0, 9.0, 2.0], dtype=torch.float64
+    )
 
-    scales = _compute_pair_scales(system, mock_lj_potential)
+    scales = _compute_pair_scales(system, vdw_potential)
 
     # fmt: off
     expected_scale_matrix = torch.tensor(
@@ -225,7 +254,8 @@ def test_compute_pair_scales(mock_lj_potential, mock_methane_top, mock_water_top
             [1.0] * 16 + [1.0, 0.01, 0.01],
             [1.0] * 16 + [0.01, 1.0, 0.02],
             [1.0] * 16 + [0.01, 0.02, 1.0],
-        ]
+        ],
+        dtype=torch.float64
     )
     # fmt: on
 
@@ -236,30 +266,14 @@ def test_compute_pair_scales(mock_lj_potential, mock_methane_top, mock_water_top
     assert torch.allclose(scales, expected_scales)
 
 
-def test_compute_lj_energy_periodic():
-    interchanges = [
-        openff.interchange.Interchange.from_smirnoff(
-            openff.toolkit.ForceField("openff-2.0.0.offxml"),
-            openff.toolkit.Molecule.from_smiles(smiles).to_topology(),
-        )
-        for smiles in ["CCO", "O"]
-    ]
-
-    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
-    tensor_sys = smee.TensorSystem(tensor_tops, [67, 123], is_periodic=True)
+def test_compute_lj_energy_periodic(etoh_water_system):
+    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
 
     vdw_potential = tensor_ff.potentials_by_type["vdW"]
     vdw_potential.parameters.requires_grad = True
 
-    coords, box_vectors = smee.mm.generate_system_coords(tensor_sys)
-
     energy = _compute_lj_energy_periodic(
-        tensor_sys,
-        torch.tensor(coords.value_in_unit(openmm.unit.angstrom), dtype=torch.float32),
-        torch.tensor(
-            box_vectors.value_in_unit(openmm.unit.angstrom), dtype=torch.float32
-        ),
-        vdw_potential,
+        tensor_sys, coords.float(), box_vectors.float(), vdw_potential
     )
     energy.backward()
 

@@ -1,7 +1,10 @@
+import openff.interchange
+import openff.toolkit
 import torch
 from rdkit import Chem
 
 import smee
+import smee.converters
 
 
 def topology_from_smiles(smiles: str) -> smee.TensorTopology:
@@ -30,3 +33,30 @@ def topology_from_smiles(smiles: str) -> smee.TensorTopology:
         v_sites=None,
         constraints=None,
     )
+
+
+def system_from_smiles(
+    smiles: list[str], n_copies: list[int]
+) -> tuple[smee.TensorSystem, smee.TensorForceField]:
+    """Creates a system from a list of SMILES strings.
+
+    Args:
+        smiles: The list of SMILES strings.
+        n_copies: The number of copies of each molecule.
+
+    Returns:
+        The system and force field.
+    """
+    force_field = openff.toolkit.ForceField("openff-2.0.0.offxml")
+
+    interchanges = [
+        openff.interchange.Interchange.from_smirnoff(
+            force_field,
+            openff.toolkit.Molecule.from_smiles(pattern).to_topology(),
+        )
+        for pattern in smiles
+    ]
+
+    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
+
+    return smee.TensorSystem(tensor_tops, n_copies, is_periodic=True), tensor_ff

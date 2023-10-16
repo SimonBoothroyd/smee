@@ -13,22 +13,23 @@ import smee.tests.utils
 from smee.potentials import broadcast_parameters, compute_energy
 
 
-def test_broadcast_parameters(mock_lj_potential, mock_methane_top, mock_water_top):
-    system = smee.TensorSystem([mock_methane_top, mock_water_top], [2, 3], True)
+def test_broadcast_parameters():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+    vdw_potential = force_field.potentials_by_type["vdW"]
 
-    parameters = broadcast_parameters(system, mock_lj_potential)
+    methane_top, water_top = system.topologies
 
-    methane_parameters = (
-        mock_methane_top.parameters["vdW"].assignment_matrix
-        @ mock_lj_potential.parameters
+    parameters = broadcast_parameters(system, vdw_potential)
+
+    expected_methane_parameters = (
+        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
     )
-    water_parameters = (
-        mock_water_top.parameters["vdW"].assignment_matrix
-        @ mock_lj_potential.parameters
+    expected_water_parameters = (
+        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
     )
 
     expected_parameters = torch.vstack(
-        [methane_parameters] * 2 + [water_parameters] * 3
+        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
     )
     assert parameters.shape == expected_parameters.shape
     assert torch.allclose(parameters, expected_parameters)
