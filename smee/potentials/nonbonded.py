@@ -1,6 +1,7 @@
 """Non-bonded potential energy functions."""
 import collections
 import math
+import typing
 
 import openff.units
 import torch
@@ -24,50 +25,19 @@ _PME_ORDER = 5  # see OpenMM issue #2567
 _LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
 
 
-def lorentz_berthelot(
-    epsilon_a: torch.Tensor,
-    epsilon_b: torch.Tensor,
-    sigma_a: torch.Tensor,
-    sigma_b: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    """Computes the Lorentz-Berthelot combination rules for the given parameters.
+class PairwiseDistances(typing.NamedTuple):
+    """A container for the pairwise distances between all particles, possibly within
+    a given cutoff."""
 
-    Args:
-        epsilon_a: The epsilon [kcal / mol] values of the first particle in each pair
-            with ``shape=(n_pairs, 1)``.
-        epsilon_b: The epsilon [kcal / mol] values of the second particle in each pair
-            with ``shape=(n_pairs, 1)``.
-        sigma_a: The sigma [kcal / mol] values of the first particle in each pair
-            with ``shape=(n_pairs, 1)``.
-        sigma_b: The sigma [kcal / mol] values of the second particle in each pair
-            with ``shape=(n_pairs, 1)``.
+    idxs: torch.Tensor
+    """The particle indices of each pair with ``shape=(n_pairs, 2)``."""
+    deltas: torch.Tensor
+    """The vector between each pair with ``shape=(n_pairs, 3)``."""
+    distances: torch.Tensor
+    """The distance between each pair with ``shape=(n_pairs,)``."""
 
-    Returns:
-        The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
-        ``shape=(n_pairs, 1)``.
-    """
-    return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
-
-
-def _compute_pairwise(
-    conformer: torch.Tensor, box_vectors: torch.Tensor, cutoff: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    import NNPOps.neighbors
-
-    (
-        pairs,
-        deltas,
-        distances,
-        _,
-    ) = NNPOps.neighbors.getNeighborPairs(conformer, cutoff.item(), -1, box_vectors)
-
-    are_interacting = ~torch.isnan(distances)
-
-    pairs, _ = pairs[:, are_interacting].sort(dim=0)
-    distances = distances[are_interacting]
-    deltas = deltas[are_interacting, :]
-
-    return pairs, deltas, distances
+    cutoff: torch.Tensor | None = None
+    """The cutoff used when computing the distances."""
 
 
 def broadcast_exclusions(
@@ -114,19 +84,82 @@ def broadcast_exclusions(
     )
 
 
-def _compute_pair_scales(
+def _compute_pairwise_periodic(
+    conformer: torch.Tensor, box_vectors: torch.Tensor, cutoff: torch.Tensor
+) -> PairwiseDistances:
+    import NNPOps.neighbors
+
+    assert box_vectors is not None, "box vectors must be specified for PBC."
+    assert len(conformer.shape) == 2, "the conformer must not have a batch dimension."
+
+    (
+        pair_idxs,
+        deltas,
+        distances,
+        _,
+    ) = NNPOps.neighbors.getNeighborPairs(conformer, cutoff.item(), -1, box_vectors)
+
+    are_interacting = ~torch.isnan(distances)
+
+    pair_idxs, _ = pair_idxs[:, are_interacting].sort(dim=0)
+    distances = distances[are_interacting]
+    deltas = deltas[are_interacting, :]
+
+    return PairwiseDistances(pair_idxs, deltas, distances, cutoff)
+
+
+def _compute_pairwise_non_periodic(conformer: torch.Tensor) -> PairwiseDistances:
+    n_particles = conformer.shape[-2]
+
+    pair_idxs = torch.triu_indices(n_particles, n_particles, 1).T
+
+    deltas = conformer[:, pair_idxs[:, 1], :] - conformer[:, pair_idxs[:, 0], :]
+    distances = deltas.norm(dim=-1)
+
+    return PairwiseDistances(pair_idxs, deltas, distances)
+
+
+def compute_pairwise(
+    system: smee.TensorSystem,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None,
+    cutoff: torch.Tensor,
+) -> PairwiseDistances:
+    """Computes all pairwise distances between particles in the system.
+
+    Notes:
+        If the system is not periodic, no cutoff and no PBC will be applied.
+
+    Args:
+        system: The system to compute the distances for.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        cutoff: The cutoff [Å] to apply for periodic systems.
+
+    Returns:
+        The pairwise distances between each pair of particles within the cutoff.
+    """
+    if system.is_periodic:
+        return _compute_pairwise_periodic(conformer, box_vectors, cutoff)
+    else:
+        return _compute_pairwise_non_periodic(conformer)
+
+
+def compute_pairwise_scales(
     system: smee.TensorSystem, potential: smee.TensorPotential
 ) -> torch.Tensor:
-    """Returns the scale factor for each interaction in the full system by broadcasting
-    and stacking the exclusions of each topology.
+    """Returns the scale factor for each pair of particles in the system by
+    broadcasting and stacking the exclusions of each topology.
 
     Args:
         system: The system.
         potential: The potential containing the scale factors to broadcast.
 
     Returns:
-        The parameters for the full system with
-        ``shape=(n_particles * (n_particles - 1) / 2,)``.
+        The scales for each pair of particles as a flattened upper triangular matrix
+        with ``shape=(n_particles * (n_particles - 1) / 2,)``.
     """
 
     n_particles = system.n_particles
@@ -145,6 +178,31 @@ def _compute_pair_scales(
         pair_scales[pair_idxs] = exclusion_scales
 
     return pair_scales
+
+
+def lorentz_berthelot(
+    epsilon_a: torch.Tensor,
+    epsilon_b: torch.Tensor,
+    sigma_a: torch.Tensor,
+    sigma_b: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Computes the Lorentz-Berthelot combination rules for the given parameters.
+
+    Args:
+        epsilon_a: The epsilon [kcal / mol] values of the first particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        epsilon_b: The epsilon [kcal / mol] values of the second particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        sigma_a: The sigma [kcal / mol] values of the first particle in each pair
+            with ``shape=(n_pairs, 1)``.
+        sigma_b: The sigma [kcal / mol] values of the second particle in each pair
+            with ``shape=(n_pairs, 1)``.
+
+    Returns:
+        The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
+        ``shape=(n_pairs, 1)``.
+    """
+    return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
 
 
 def _compute_dispersion_integral(
@@ -299,163 +357,106 @@ def _compute_dispersion_correction(
     )
 
 
-def _compute_lj_energy_periodic(
-    system: smee.TensorSystem,
-    conformer: torch.Tensor,
-    box_vectors: torch.Tensor,
+def _compute_switch_fn(
     potential: smee.TensorPotential,
-) -> torch.Tensor:
-    """Compute the potential energy [kcal / mol] of a periodic system due to
-    LJ interactions.
+    pairwise: PairwiseDistances,
+) -> tuple[torch.Tensor, torch.Tensor | None]:
+    if "switch_width" not in potential.attribute_cols:
+        return torch.ones(1), None
 
-    Args:
-        system: The system to compute the energy for.
-        conformer: The conformer [Å] to evaluate the potential at with
-            ``shape=(n_particles, 3)``.
-        box_vectors: The box vectors [Å] of the system. with ``shape=(3, 3)``.
-        potential: The LJ potential.
+    switch_width_idx = potential.attribute_cols.index("switch_width")
+    switch_width = pairwise.cutoff - potential.attributes[switch_width_idx]
 
-    Returns:
-        The potential energy [kcal / mol].
-    """
-    assert system.is_periodic, "the system must be periodic."
+    x_switch = (pairwise.distances - switch_width) / (pairwise.cutoff - switch_width)
 
-    volume = torch.det(box_vectors)
+    switch_fn = 1.0 - 6.0 * x_switch**5 + 15.0 * x_switch**4 - 10.0 * x_switch**3
 
-    parameters = smee.potentials.broadcast_parameters(system, potential)
-    pair_scales = _compute_pair_scales(system, potential)
-
-    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
-
-    pairs, _, distances = _compute_pairwise(conformer, box_vectors, cutoff)
-
-    pair_idxs = smee.utils.to_upper_tri_idx(pairs[0, :], pairs[1, :], len(parameters))
-    pair_scales = pair_scales[pair_idxs]
-
-    epsilon, sigma = lorentz_berthelot(
-        parameters[pairs[0, :], 0],
-        parameters[pairs[1, :], 0],
-        parameters[pairs[0, :], 1],
-        parameters[pairs[1, :], 1],
+    switch_fn = torch.where(
+        pairwise.distances < switch_width, torch.tensor(1.0), switch_fn
+    )
+    switch_fn = torch.where(
+        pairwise.distances > pairwise.cutoff, torch.tensor(0.0), switch_fn
     )
 
-    use_switch_fn = "switch_width" in potential.attribute_cols
-
-    switch_width_idx = (
-        None if not use_switch_fn else potential.attribute_cols.index("switch_width")
-    )
-    switch_width = (
-        None if not use_switch_fn else (cutoff - potential.attributes[switch_width_idx])
-    )
-    switch_fn = 1.0
-
-    if use_switch_fn:
-        x_switch = (distances - switch_width) / (cutoff - switch_width)
-
-        switch_fn = (
-            1.0 - 6.0 * x_switch**5 + 15.0 * x_switch**4 - 10.0 * x_switch**3
-        )
-        switch_fn = torch.where(distances < switch_width, torch.tensor(1.0), switch_fn)
-        switch_fn = torch.where(distances > cutoff, torch.tensor(0.0), switch_fn)
-
-    x = (sigma / distances) ** 6
-
-    energy = (switch_fn * pair_scales * 4.0 * epsilon * (x * (x - 1.0))).sum(-1)
-    energy += _compute_dispersion_correction(
-        system, potential, switch_width, cutoff, volume
-    )
-
-    return energy
-
-
-def compute_pairwise(
-    conformer: torch.Tensor,
-    exclusions: torch.Tensor,
-    exclusion_scales: torch.Tensor,
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Computes the pairwise squared distance between all pairs of particles, and the
-    corresponding scale factor based off any exclusions.
-
-    Args:
-        conformer: The conformer(s).
-        exclusions: A tensor containing pairs of atom indices whose interaction should
-            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
-        exclusion_scales: A tensor containing the scale factor for each exclusion pair
-            with ``shape=(n_exclusions, 1)``.
-
-    Returns:
-        The particle indices of each pair with ``shape=(n_pairs, 2)``, the squared
-        distance between each pair with ``shape=(B, n_pairs)``, and the scale factor
-        for each pair with ``shape=(n_pairs,)``.
-    """
-
-    n_particles = conformer.shape[-2]
-
-    pair_idxs = torch.triu_indices(n_particles, n_particles, 1).T
-    pair_scales = smee.utils.ones_like(len(pair_idxs), other=exclusion_scales)
-
-    if len(exclusions) > 0:
-        exclusions, _ = exclusions.sort(dim=1)
-
-        i, j = exclusions[:, 0], exclusions[:, 1]
-        exclusions_1d = ((i * (2 * n_particles - i - 1)) / 2 + j - i - 1).long()
-
-        pair_scales[exclusions_1d] = exclusion_scales.squeeze(-1)
-
-    directions = conformer[:, pair_idxs[:, 1], :] - conformer[:, pair_idxs[:, 0], :]
-    distances_sqr = (directions * directions).sum(dim=-1)
-
-    return pair_idxs, distances_sqr, pair_scales
+    return switch_fn, switch_width
 
 
 @smee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
 def compute_lj_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
     conformer: torch.Tensor,
-    parameters: torch.Tensor,
-    exclusions: torch.Tensor,
-    exclusion_scales: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kcal / mol] of the vdW interactions using the
+    """Computes the potential energy [kcal / mol] of the vdW interactions using the
     standard Lennard-Jones potential.
 
     Notes:
-        * No cutoff will be applied.
+        * No cutoff / switching function will be applied if the system is not
+          periodic.
+        * A switching function will only be applied if the potential has a
+          ``switch_width`` attribute.
 
     Args:
-        conformer: The conformer [Å] to evaluate the potential at.
-        parameters: A tensor containing the epsilon [kcal / mol] and sigma [Å] values
-            of each particle, with ``shape=(n_particles, 2)``.
-        exclusions: A tensor containing pairs of atom indices whose interaction should
-            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
-        exclusion_scales: A tensor containing the scale factor for each exclusion pair
-            with ``shape=(n_exclusions, 1)``.
+        system: The system to compute the energy for.
+        potential: The potential energy function to evaluate.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs, 3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        pairwise: The pre-computed pairwise distances between each pair of particles
+            in the system. If none, these will be computed within the function.
 
     Returns:
-        The evaluated potential energy [kcal / mol].
+        The computed potential energy [kcal / mol] with ``shape=(n_confs,)`` if the
+        input conformer has a batch dimension, or ``shape=()`` otherwise.
     """
 
-    is_batched = conformer.ndim == 3
+    box_vectors = None if not system.is_periodic else box_vectors
 
-    if not is_batched:
-        conformer = torch.unsqueeze(conformer, 0)
+    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
 
-    pair_idxs, distances_sqr, pair_scales = compute_pairwise(
-        conformer, exclusions, exclusion_scales
+    pairwise = (
+        pairwise
+        if pairwise is not None
+        else compute_pairwise(system, conformer, box_vectors, cutoff)
     )
+
+    if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
+        raise ValueError("the distance cutoff does not match the potential.")
+
+    parameters = smee.potentials.broadcast_parameters(system, potential)
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    pairs_1d = smee.utils.to_upper_tri_idx(
+        pairwise.idxs[0, :], pairwise.idxs[1, :], len(parameters)
+    )
+    pair_scales = pair_scales[pairs_1d]
+
+    epsilon_column = potential.parameter_cols.index("epsilon")
+    sigma_column = potential.parameter_cols.index("sigma")
 
     epsilon, sigma = lorentz_berthelot(
-        parameters[pair_idxs[:, 0], 0],
-        parameters[pair_idxs[:, 1], 0],
-        parameters[pair_idxs[:, 0], 1],
-        parameters[pair_idxs[:, 1], 1],
+        parameters[pairwise.idxs[0, :], epsilon_column],
+        parameters[pairwise.idxs[1, :], epsilon_column],
+        parameters[pairwise.idxs[0, :], sigma_column],
+        parameters[pairwise.idxs[1, :], sigma_column],
     )
 
-    x = sigma**6 / (distances_sqr**3)
+    x = (sigma / pairwise.distances) ** 6
+    energies = pair_scales * 4.0 * epsilon * (x * (x - 1.0))
 
-    energy = (pair_scales * 4.0 * epsilon * (x * (x - 1.0))).sum(-1)
+    if not system.is_periodic:
+        return energies.sum(-1)
 
-    if not is_batched:
-        energy = torch.squeeze(energy, 0)
+    switch_fn, switch_width = _compute_switch_fn(potential, pairwise)
+    energies *= switch_fn
+
+    energy = energies.sum(-1)
+    energy += _compute_dispersion_correction(
+        system, potential, switch_width, pairwise.cutoff, torch.det(box_vectors)
+    )
 
     return energy
 
@@ -531,25 +532,32 @@ def _compute_pme_grid(
     return int(grid_x), int(grid_y), int(grid_z), float(alpha)
 
 
+def _compute_coulomb_energy_non_periodic(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    pairwise: PairwiseDistances,
+):
+    parameters = smee.potentials.broadcast_parameters(system, potential)
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    energy = (
+        _COULOMB_PRE_FACTOR
+        * pair_scales
+        * parameters[pairwise.idxs[:, 0], 0]
+        * parameters[pairwise.idxs[:, 1], 0]
+        / pairwise.distances
+    ).sum(-1)
+
+    return energy
+
+
 def _compute_coulomb_energy_periodic(
     system: smee.TensorSystem,
     conformer: torch.Tensor,
     box_vectors: torch.Tensor,
     potential: smee.TensorPotential,
+    pairwise: PairwiseDistances,
 ) -> torch.Tensor:
-    """Compute the potential energy [kcal / mol] of a periodic system due to
-    Coulomb interactions using PME.
-
-    Args:
-        system: The system to compute the energy for.
-        conformer: The conformer [Å] to evaluate the potential at with
-            ``shape=(n_particles, 3)``.
-        box_vectors: The box vectors [Å] of the system. with ``shape=(3, 3)``.
-        potential: The Coulomb potential.
-
-    Returns:
-        The potential energy [kcal / mol].
-    """
     import NNPOps.pme
 
     assert system.is_periodic, "the system must be periodic."
@@ -561,7 +569,6 @@ def _compute_coulomb_energy_periodic(
     cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
     error_tol = torch.tensor(0.0001)
 
-    pairs, deltas, distances = _compute_pairwise(conformer, box_vectors, cutoff)
     exceptions = _compute_pme_exclusions(system, potential)
 
     grid_x, grid_y, grid_z, alpha = _compute_pme_grid(box_vectors, cutoff, error_tol)
@@ -573,9 +580,9 @@ def _compute_coulomb_energy_periodic(
     energy_direct = torch.ops.pme.pme_direct(
         conformer.float(),
         charges,
-        pairs,
-        deltas,
-        distances,
+        pairwise.idxs,
+        pairwise.deltas,
+        pairwise.distances,
         pme.exclusions,
         pme.alpha,
         pme.coulomb,
@@ -617,49 +624,50 @@ def _compute_coulomb_energy_periodic(
 
 @smee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)
 def compute_coulomb_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
     conformer: torch.Tensor,
-    parameters: torch.Tensor,
-    exclusions: torch.Tensor,
-    exclusion_scales: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
 ) -> torch.Tensor:
-    """Evaluates the potential energy [kcal / mol] of the electrostatic interactions
-    using the standard Coulomb potential.
+    """Computes the potential energy [kcal / mol] of the electrostatic interactions
+    using the Coulomb potential.
 
     Notes:
-        * No cutoff will be applied.
+        * No cutoff will be applied if the system is not periodic.
+        * PME will be used to compute the energy if the system is periodic.
 
     Args:
-        conformer: The conformer [Å] to evaluate the potential at.
-        parameters: A tensor containing the charge [e] of each particle, with
-            ``shape=(n_particles, 1)``.
-        exclusions: A tensor containing pairs of atom indices whose interaction should
-            be scaled by ``exclusion_scales`` with ``shape=(n_exclusions, 2)``.
-        exclusion_scales: A tensor containing the scale factor for each exclusion pair
-            with ``shape=(n_exclusions, 1)``.
+        system: The system to compute the energy for.
+        potential: The potential energy function to evaluate.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs, 3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        pairwise: The pre-computed pairwise distances between each pair of particles
+            in the system. If none, these will be computed within the function.
 
     Returns:
-        The evaluated potential energy [kcal / mol].
+        The computed potential energy [kcal / mol] with ``shape=(n_confs,)`` if the
+        input conformer has a batch dimension, or ``shape=()`` otherwise.
     """
 
-    is_batched = conformer.ndim == 3
+    box_vectors = None if not system.is_periodic else box_vectors
 
-    if not is_batched:
-        conformer = torch.unsqueeze(conformer, 0)
+    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
 
-    pair_idxs, distances_sqr, pair_scales = compute_pairwise(
-        conformer, exclusions, exclusion_scales
+    pairwise = (
+        pairwise
+        if pairwise is not None
+        else compute_pairwise(system, conformer, box_vectors, cutoff)
     )
-    inverse_distances = torch.rsqrt(distances_sqr)
 
-    energy = (
-        _COULOMB_PRE_FACTOR
-        * pair_scales
-        * parameters[pair_idxs[:, 0], 0]
-        * parameters[pair_idxs[:, 1], 0]
-        * inverse_distances
-    ).sum(-1)
+    if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
+        raise ValueError("the distance cutoff does not match the potential.")
 
-    if not is_batched:
-        energy = torch.squeeze(energy, 0)
-
-    return energy
+    if system.is_periodic:
+        return _compute_coulomb_energy_periodic(
+            system, conformer, box_vectors, potential, pairwise
+        )
+    else:
+        return _compute_coulomb_energy_non_periodic(system, potential, pairwise)
