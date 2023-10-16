@@ -1,7 +1,6 @@
 """Evaluate the potential energy of parameterized topologies."""
 
 from smee.potentials._potentials import (
-    broadcast_exclusions,
     broadcast_parameters,
     compute_energy,
     compute_energy_potential,
@@ -9,7 +8,6 @@ from smee.potentials._potentials import (
 )
 
 __all__ = [
-    "broadcast_exclusions",
     "broadcast_parameters",
     "compute_energy",
     "compute_energy_potential",

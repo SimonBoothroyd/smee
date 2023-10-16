@@ -100,7 +100,7 @@ def _convert_electrostatics_potential(
         for _ in range(n_copies):
             for charge in parameters:
                 force.addParticle(
-                    charge * openmm.unit.elementary_charge,
+                    charge.detach() * openmm.unit.elementary_charge,
                     1.0 * _ANGSTROM,
                     0.0 * _KCAL_PER_MOL,
                 )

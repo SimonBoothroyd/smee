@@ -1,5 +1,6 @@
 """Non-bonded potential energy functions."""
 import collections
+import math
 
 import openff.units
 import torch
@@ -16,6 +17,9 @@ _COULOMB_PRE_FACTOR = (_UNIT.avogadro_constant / (4.0 * _UNIT.pi * _UNIT.eps0)).
     _COULOMB_PRE_FACTOR_UNITS
 )
 _COULOMB_POTENTIAL = "coul"
+
+_PME_MIN_NODES = torch.tensor(6)  # taken to match OpenMM 8.0.0
+_PME_ORDER = 5  # see OpenMM issue #2567
 
 _LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
 
@@ -47,23 +51,100 @@ def lorentz_berthelot(
 
 def _compute_pairwise(
     conformer: torch.Tensor, box_vectors: torch.Tensor, cutoff: torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     import NNPOps.neighbors
 
     (
         pairs,
-        _,
+        deltas,
         distances,
         _,
     ) = NNPOps.neighbors.getNeighborPairs(conformer, cutoff.item(), -1, box_vectors)
 
     are_interacting = ~torch.isnan(distances)
 
-    pairs = pairs[:, are_interacting]
+    pairs, _ = pairs[:, are_interacting].sort(dim=0)
     distances = distances[are_interacting]
+    deltas = deltas[are_interacting, :]
 
-    pairs, _ = pairs.sort(dim=0)
-    return pairs, distances
+    return pairs, deltas, distances
+
+
+def broadcast_exclusions(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Broadcasts the exclusions (indices and scale factors) of each topology to the
+    full system.
+
+    Args:
+        system: The system.
+        potential: The potential containing the scale factors to broadcast.
+
+    Returns:
+        The exception indices with shape ``(n_exceptions, 2)`` and the scale factors
+        with shape ``(n_exceptions,)``.
+    """
+
+    idx_offset = 0
+
+    per_topology_exclusion_idxs = []
+    per_topology_exclusion_scales = []
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+
+        exclusion_idxs = topology.parameters[potential.type].exclusions
+        exclusion_idxs = exclusion_offset[:, None, None] + exclusion_idxs[None, :, :]
+
+        exclusion_scales = potential.attributes[
+            topology.parameters[potential.type].exclusion_scale_idxs
+        ]
+        exclusion_scales = torch.broadcast_to(
+            exclusion_scales, (n_copies, *exclusion_scales.shape)
+        )
+
+        per_topology_exclusion_idxs.append(exclusion_idxs.reshape(-1, 2))
+        per_topology_exclusion_scales.append(exclusion_scales.reshape(-1))
+
+        idx_offset += n_copies * topology.n_particles
+
+    return (
+        torch.vstack(per_topology_exclusion_idxs),
+        torch.cat(per_topology_exclusion_scales),
+    )
+
+
+def _compute_pair_scales(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Returns the scale factor for each interaction in the full system by broadcasting
+    and stacking the exclusions of each topology.
+
+    Args:
+        system: The system.
+        potential: The potential containing the scale factors to broadcast.
+
+    Returns:
+        The parameters for the full system with
+        ``shape=(n_particles * (n_particles - 1) / 2,)``.
+    """
+
+    n_particles = system.n_particles
+    n_pairs = (n_particles * (n_particles - 1)) // 2
+
+    exclusion_idxs, exclusion_scales = broadcast_exclusions(system, potential)
+
+    pair_scales = smee.utils.ones_like(n_pairs, other=potential.parameters)
+
+    if len(exclusion_idxs) > 0:
+        exclusion_idxs, _ = exclusion_idxs.sort(dim=1)  # ensure upper triangle
+
+        pair_idxs = smee.utils.to_upper_tri_idx(
+            exclusion_idxs[:, 0], exclusion_idxs[:, 1], n_particles
+        )
+        pair_scales[pair_idxs] = exclusion_scales
+
+    return pair_scales
 
 
 def _compute_dispersion_integral(
@@ -242,11 +323,11 @@ def _compute_lj_energy_periodic(
     volume = torch.det(box_vectors)
 
     parameters = smee.potentials.broadcast_parameters(system, potential)
-    pair_scales = smee.potentials.broadcast_exclusions(system, potential)
+    pair_scales = _compute_pair_scales(system, potential)
 
     cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
 
-    pairs, distances = _compute_pairwise(conformer, box_vectors, cutoff)
+    pairs, _, distances = _compute_pairwise(conformer, box_vectors, cutoff)
 
     pair_idxs = smee.utils.to_upper_tri_idx(pairs[0, :], pairs[1, :], len(parameters))
     pair_scales = pair_scales[pair_idxs]
@@ -377,6 +458,161 @@ def compute_lj_energy(
         energy = torch.squeeze(energy, 0)
 
     return energy
+
+
+def _compute_pme_exclusions(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Builds the exclusion tensor required by NNPOps pme functions
+
+    Args:
+        system: The system to compute the exclusions for.
+        potential: The electrostatics potential.
+
+    Returns:
+        The exclusion tensor with ``shape=(n_particles, max_exclusions)`` where
+        ``max_exclusions`` is the maximum number of exclusions of any atom. A value
+        of -1 is used for padding.
+    """
+    exclusion_templates = [
+        [[] for _ in range(topology.n_particles)] for topology in system.topologies
+    ]
+    max_exclusions = 0
+
+    for exclusions, topology, n_copies in zip(
+        exclusion_templates, system.topologies, system.n_copies
+    ):
+        for i, j in topology.parameters[potential.type].exclusions:
+            exclusions[i].append(int(j))
+            exclusions[j].append(int(i))
+
+            max_exclusions = max(len(exclusions[i]), max_exclusions)
+            max_exclusions = max(len(exclusions[j]), max_exclusions)
+
+    idx_offset = 0
+
+    exclusions_per_type = []
+
+    for exclusions, topology, n_copies in zip(
+        exclusion_templates, system.topologies, system.n_copies
+    ):
+        for atom_exclusions in exclusions:
+            n_padding = max_exclusions - len(atom_exclusions)
+            atom_exclusions.extend([-1] * n_padding)
+
+        exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+
+        exclusions = torch.broadcast_to(
+            torch.tensor(exclusions, dtype=torch.int32),
+            (n_copies, len(exclusions), max_exclusions),
+        )
+        exclusions = torch.where(
+            exclusions >= 0, exclusions + exclusion_offset[:, None, None], exclusions
+        )
+
+        exclusions_per_type.append(exclusions.reshape(-1, max_exclusions))
+
+        idx_offset += n_copies * topology.n_particles
+
+    return torch.vstack(exclusions_per_type)
+
+
+def _compute_pme_grid(
+    box_vectors: torch.Tensor, cutoff: torch.Tensor, error_tolerance: torch.Tensor
+) -> tuple[int, int, int, float]:
+    alpha = torch.sqrt(-torch.log(2.0 * error_tolerance)) / cutoff
+
+    factor = 2.0 * alpha / (3 * error_tolerance ** (1.0 / 5.0))
+
+    grid_x = torch.maximum(torch.ceil(factor * box_vectors[0, 0]), _PME_MIN_NODES)
+    grid_y = torch.maximum(torch.ceil(factor * box_vectors[1, 1]), _PME_MIN_NODES)
+    grid_z = torch.maximum(torch.ceil(factor * box_vectors[2, 2]), _PME_MIN_NODES)
+
+    return int(grid_x), int(grid_y), int(grid_z), float(alpha)
+
+
+def _compute_coulomb_energy_periodic(
+    system: smee.TensorSystem,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor,
+    potential: smee.TensorPotential,
+) -> torch.Tensor:
+    """Compute the potential energy [kcal / mol] of a periodic system due to
+    Coulomb interactions using PME.
+
+    Args:
+        system: The system to compute the energy for.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system. with ``shape=(3, 3)``.
+        potential: The Coulomb potential.
+
+    Returns:
+        The potential energy [kcal / mol].
+    """
+    import NNPOps.pme
+
+    assert system.is_periodic, "the system must be periodic."
+
+    charges = (
+        smee.potentials.broadcast_parameters(system, potential).squeeze(-1).float()
+    )
+
+    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+    error_tol = torch.tensor(0.0001)
+
+    pairs, deltas, distances = _compute_pairwise(conformer, box_vectors, cutoff)
+    exceptions = _compute_pme_exclusions(system, potential)
+
+    grid_x, grid_y, grid_z, alpha = _compute_pme_grid(box_vectors, cutoff, error_tol)
+
+    pme = NNPOps.pme.PME(
+        grid_x, grid_y, grid_z, _PME_ORDER, alpha, _COULOMB_PRE_FACTOR, exceptions
+    )
+
+    energy_direct = torch.ops.pme.pme_direct(
+        conformer.float(),
+        charges,
+        pairs,
+        deltas,
+        distances,
+        pme.exclusions,
+        pme.alpha,
+        pme.coulomb,
+    )
+    energy_self = (
+        -torch.sum(charges**2) * pme.coulomb * pme.alpha / math.sqrt(torch.pi)
+    )
+    energy_recip = energy_self + torch.ops.pme.pme_reciprocal(
+        conformer.float(),
+        charges,
+        box_vectors.float(),
+        pme.gridx,
+        pme.gridy,
+        pme.gridz,
+        pme.order,
+        pme.alpha,
+        pme.coulomb,
+        pme.moduli[0],
+        pme.moduli[1],
+        pme.moduli[2],
+    )
+
+    exclusion_idxs, exclusion_scales = broadcast_exclusions(system, potential)
+
+    exclusion_distances = (
+        conformer[exclusion_idxs[:, 0], :] - conformer[exclusion_idxs[:, 1], :]
+    ).norm(dim=-1)
+
+    energy_exclusion = (
+        _COULOMB_PRE_FACTOR
+        * exclusion_scales
+        * charges[exclusion_idxs[:, 0]]
+        * charges[exclusion_idxs[:, 1]]
+        / exclusion_distances
+    ).sum(-1)
+
+    return energy_direct + energy_recip + energy_exclusion
 
 
 @smee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)

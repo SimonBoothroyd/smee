@@ -10,161 +10,29 @@ import torch
 
 import smee.converters
 import smee.tests.utils
-from smee.potentials import broadcast_exclusions, broadcast_parameters, compute_energy
+from smee.potentials import broadcast_parameters, compute_energy
 
 
-@pytest.fixture()
-def mock_lj_potential() -> smee.TensorPotential:
-    return smee.TensorPotential(
-        type="vdW",
-        fn="LJ",
-        parameters=torch.tensor([[0.1, 1.1], [0.2, 2.1], [0.3, 3.1]]),
-        parameter_keys=[
-            openff.interchange.models.PotentialKey(id="[#1:1]"),
-            openff.interchange.models.PotentialKey(id="[#6:1]"),
-            openff.interchange.models.PotentialKey(id="[#8:1]"),
-        ],
-        parameter_cols=("epsilon", "sigma"),
-        parameter_units=(
-            openff.units.unit.kilojoule_per_mole,
-            openff.units.unit.angstrom,
-        ),
-        attributes=torch.tensor([0.0, 0.0, 0.5, 1.0, 9.0, 2.0]),
-        attribute_cols=(
-            "scale_12",
-            "scale_13",
-            "scale_14",
-            "scale_15",
-            "cutoff",
-            "switch_width",
-        ),
-        attribute_units=(
-            openff.units.unit.dimensionless,
-            openff.units.unit.dimensionless,
-            openff.units.unit.dimensionless,
-            openff.units.unit.dimensionless,
-            openff.units.unit.angstrom,
-            openff.units.unit.angstrom,
-        ),
+def test_broadcast_parameters():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+    vdw_potential = force_field.potentials_by_type["vdW"]
+
+    methane_top, water_top = system.topologies
+
+    parameters = broadcast_parameters(system, vdw_potential)
+
+    expected_methane_parameters = (
+        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
     )
-
-
-@pytest.fixture()
-def mock_methane_top() -> smee.TensorTopology:
-    methane_top = smee.tests.utils.topology_from_smiles("C")
-    methane_top.parameters = {
-        "vdW": smee.NonbondedParameterMap(
-            assignment_matrix=torch.tensor(
-                [
-                    [0.0, 1.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                ]
-            ).to_sparse(),
-            exclusions=torch.tensor(
-                [
-                    [0, 1],
-                    [0, 2],
-                    [0, 3],
-                    [0, 4],
-                    [1, 2],
-                    [1, 3],
-                    [1, 4],
-                    [2, 3],
-                    [2, 4],
-                    [3, 4],
-                ]
-            ),
-            exclusion_scale_idxs=torch.tensor([[0] * 4 + [1] * 6]),
-        )
-    }
-    return methane_top
-
-
-@pytest.fixture()
-def mock_water_top() -> smee.TensorTopology:
-    methane_top = smee.tests.utils.topology_from_smiles("O")
-    methane_top.parameters = {
-        "vdW": smee.NonbondedParameterMap(
-            assignment_matrix=torch.tensor(
-                [
-                    [0.0, 0.0, 1.0],
-                    [1.0, 0.0, 0.0],
-                    [1.0, 0.0, 0.0],
-                ]
-            ).to_sparse(),
-            exclusions=torch.tensor([[0, 1], [0, 2], [1, 2]]),
-            exclusion_scale_idxs=torch.tensor([[0], [0], [1]]),
-        )
-    }
-    return methane_top
-
-
-def test_broadcast_parameters(mock_lj_potential, mock_methane_top, mock_water_top):
-    system = smee.TensorSystem([mock_methane_top, mock_water_top], [2, 3], True)
-
-    parameters = broadcast_parameters(system, mock_lj_potential)
-
-    methane_parameters = (
-        mock_methane_top.parameters["vdW"].assignment_matrix
-        @ mock_lj_potential.parameters
-    )
-    water_parameters = (
-        mock_water_top.parameters["vdW"].assignment_matrix
-        @ mock_lj_potential.parameters
+    expected_water_parameters = (
+        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
     )
 
     expected_parameters = torch.vstack(
-        [methane_parameters] * 2 + [water_parameters] * 3
+        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
     )
     assert parameters.shape == expected_parameters.shape
     assert torch.allclose(parameters, expected_parameters)
-
-
-def test_broadcast_exclusions(mock_lj_potential, mock_methane_top, mock_water_top):
-    mock_lj_potential.attributes = torch.tensor([0.01, 0.02, 0.5, 1.0, 9.0, 2.0])
-
-    system = smee.TensorSystem([mock_methane_top, mock_water_top], [2, 3], True)
-
-    scales = broadcast_exclusions(system, mock_lj_potential)
-
-    # fmt: off
-    expected_scale_matrix = torch.tensor(
-        [
-            [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 5),
-            [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 5),
-            #
-            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),
-            #
-            [1.0] * 10 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 13),
-            [1.0] * 10 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 13),
-            [1.0] * 10 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 13),
-            #
-            [1.0] * 13 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 16),
-            [1.0] * 13 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 16),
-            [1.0] * 13 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 16),
-            #
-            [1.0] * 16 + [1.0, 0.01, 0.01],
-            [1.0] * 16 + [0.01, 1.0, 0.02],
-            [1.0] * 16 + [0.01, 0.02, 1.0],
-        ]
-    )
-    # fmt: on
-
-    i, j = torch.triu_indices(system.n_particles, system.n_particles, 1)
-    expected_scales = expected_scale_matrix[i, j]
-
-    assert scales.shape == expected_scales.shape
-    assert torch.allclose(scales, expected_scales)
 
 
 def place_v_sites(
