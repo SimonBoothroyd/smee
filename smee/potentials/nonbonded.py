@@ -427,7 +427,7 @@ def compute_lj_energy(
     )
 
     if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
-        raise ValueError("the distance cutoff does not match the potential.")
+        raise ValueError("the pairwise cutoff does not match the potential.")
 
     parameters = smee.potentials.broadcast_parameters(system, potential)
     pair_scales = compute_pairwise_scales(system, potential)
