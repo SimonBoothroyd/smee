@@ -39,22 +39,61 @@ def broadcast_parameters(
 
     Returns:
         The parameters for the full system with
-        ``shape=(n_particles, n_parameter_cols)``.
+        ``shape=(n_parameters, n_parameter_cols)``.
     """
-    parameters = torch.vstack(
-        [
-            torch.broadcast_to(
-                (
-                    topology.parameters[potential.type].assignment_matrix
-                    @ potential.parameters
-                )[None, :, :],
-                (n_copies, topology.n_atoms, potential.parameters.shape[-1]),
-            ).reshape(-1, potential.parameters.shape[-1])
-            for topology, n_copies in zip(system.topologies, system.n_copies)
-        ]
-    )
 
-    return parameters
+    parameters = []
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+
+        topology_parameters = parameter_map.assignment_matrix @ potential.parameters
+
+        n_interactions = len(topology_parameters)
+        n_cols = len(potential.parameter_cols)
+
+        topology_parameters = torch.broadcast_to(
+            topology_parameters[None, :, :],
+            (n_copies, n_interactions, n_cols),
+        ).reshape(-1, n_cols)
+
+        parameters.append(topology_parameters)
+
+    return torch.vstack(parameters)
+
+
+def broadcast_idxs(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Broadcasts the particle indices of each topology for a given potential
+    to the full system.
+
+    Args:
+        system: The system.
+        potential: The potential.
+
+    Returns:
+        The indices with shape ``(n_interactions, n_interacting_particles)`` where
+        ``n_interacting_particles`` is 2 for bonds, 3 for angles, etc.
+    """
+
+    idx_offset = 0
+
+    per_topology_idxs = []
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+
+        parameter_map = topology.parameters[potential.type]
+        n_interacting_particles = parameter_map.particle_idxs.shape[-1]
+
+        idxs = parameter_map.particle_idxs
+        idxs = offset[:, None, None] + idxs[None, :, :]
+        per_topology_idxs.append(idxs.reshape(-1, n_interacting_particles))
+
+        idx_offset += n_copies * topology.n_particles
+
+    return torch.vstack(per_topology_idxs)
 
 
 def _prepare_inputs(
@@ -82,6 +121,12 @@ def _prepare_inputs(
 
     if isinstance(system, smee.TensorTopology):
         system = smee.TensorSystem([system], [1], False)
+
+    if conformer.ndim == 3 and system.is_periodic:
+        raise NotImplementedError("batched periodic systems are not supported")
+
+    if system.is_periodic and box_vectors is None:
+        raise ValueError("box vectors must be provided for periodic systems")
 
     return system, conformer, box_vectors
 
@@ -119,11 +164,13 @@ def compute_energy_potential(
 
     energy_fn_kwargs = {}
 
+    if "box_vectors" in energy_fn_spec.parameters:
+        energy_fn_kwargs["box_vectors"] = box_vectors
     if "pairwise" in energy_fn_spec.parameters:
         # TODO: pairwise...
         energy_fn_kwargs["pairwise"] = None
 
-    return energy_fn(system, potential, conformer, box_vectors**energy_fn_kwargs)
+    return energy_fn(system, potential, conformer, **energy_fn_kwargs)
 
 
 def compute_energy(
@@ -149,7 +196,9 @@ def compute_energy(
 
     system, conformer, box_vectors = _prepare_inputs(system, conformer, box_vectors)
 
-    energy = torch.zeros(conformer.shape[0])
+    is_batched = conformer.ndim == 3
+
+    energy = torch.zeros(conformer.shape[0] if is_batched else 1)
 
     for potential in force_field.potentials:
         energy += compute_energy_potential(system, potential, conformer, box_vectors)

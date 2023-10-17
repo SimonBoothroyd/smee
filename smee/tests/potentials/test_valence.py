@@ -1,6 +1,7 @@
 import pytest
 import torch
 
+import smee
 from smee.potentials.valence import (
     _compute_cosine_torsion_energy,
     compute_cosine_improper_torsion_energy,
@@ -8,6 +9,42 @@ from smee.potentials.valence import (
     compute_harmonic_angle_energy,
     compute_harmonic_bond_energy,
 )
+
+
+def _mock_models(
+    particle_idxs: torch.Tensor,
+    parameters: torch.Tensor,
+    parameter_cols: tuple[str, ...],
+) -> tuple[smee.TensorPotential, smee.TensorSystem]:
+    potential = smee.TensorPotential(
+        type="mock",
+        fn="mock-fn",
+        parameters=parameters,
+        parameter_keys=[None] * len(parameters),
+        parameter_cols=parameter_cols,
+        parameter_units=[None] * len(parameters),
+        attributes=None,
+        attribute_cols=None,
+        attribute_units=None,
+    )
+
+    n_atoms = int(particle_idxs.max())
+
+    parameter_map = smee.ValenceParameterMap(
+        particle_idxs=particle_idxs,
+        assignment_matrix=torch.eye(len(particle_idxs)),
+    )
+    topology = smee.TensorTopology(
+        atomic_nums=torch.zeros(n_atoms, dtype=torch.long),
+        formal_charges=torch.zeros(n_atoms, dtype=torch.long),
+        bond_idxs=torch.zeros((0, 2), dtype=torch.long),
+        bond_orders=torch.zeros(0, dtype=torch.long),
+        parameters={potential.type: parameter_map},
+        v_sites=None,
+        constraints=None,
+    )
+
+    return potential, smee.TensorSystem([topology], [1], False)
 
 
 @pytest.mark.parametrize(
@@ -24,7 +61,9 @@ def test_compute_harmonic_bond_energy(conformer, expected_shape):
     atom_indices = torch.tensor([[0, 1], [0, 2]])
     parameters = torch.tensor([[2.0, 0.95], [0.5, 1.01]], requires_grad=True)
 
-    energy = compute_harmonic_bond_energy(conformer, atom_indices, parameters)
+    potential, system = _mock_models(atom_indices, parameters, ("k", "length"))
+
+    energy = compute_harmonic_bond_energy(system, potential, conformer)
     energy.backward()
 
     assert energy.shape == expected_shape
@@ -47,7 +86,9 @@ def test_compute_harmonic_angle_energy(conformer, expected_shape):
     atom_indices = torch.tensor([[0, 1, 2]])
     parameters = torch.tensor([[2.0, 92.5]], requires_grad=True)
 
-    energy = compute_harmonic_angle_energy(conformer, atom_indices, parameters)
+    potential, system = _mock_models(atom_indices, parameters, ("k", "angle"))
+
+    energy = compute_harmonic_angle_energy(system, potential, conformer)
     energy.backward()
 
     assert energy.shape == expected_shape
@@ -85,7 +126,11 @@ def test_compute_cosine_torsion_energy(expected_shape, energy_function, phi_sign
     atom_indices = torch.tensor([[0, 1, 2, 3]])
     parameters = torch.tensor([[2.0, 2.0, 20.0, 1.5]], requires_grad=True)
 
-    energy = energy_function(conformer, atom_indices, parameters)
+    potential, system = _mock_models(
+        atom_indices, parameters, ("k", "periodicity", "phase", "idivf")
+    )
+
+    energy = energy_function(system, potential, conformer)
     energy.backward()
 
     expected_energy = (
