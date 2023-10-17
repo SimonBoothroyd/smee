@@ -13,28 +13,6 @@ import smee.tests.utils
 from smee.potentials import broadcast_parameters, compute_energy
 
 
-def test_broadcast_parameters():
-    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
-    vdw_potential = force_field.potentials_by_type["vdW"]
-
-    methane_top, water_top = system.topologies
-
-    parameters = broadcast_parameters(system, vdw_potential)
-
-    expected_methane_parameters = (
-        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
-    )
-    expected_water_parameters = (
-        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
-    )
-
-    expected_parameters = torch.vstack(
-        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
-    )
-    assert parameters.shape == expected_parameters.shape
-    assert torch.allclose(parameters, expected_parameters)
-
-
 def place_v_sites(
     conformer: torch.Tensor, interchange: openff.interchange.Interchange
 ) -> torch.Tensor:
@@ -88,6 +66,28 @@ def compute_openmm_energy(
     energy = state.getPotentialEnergy().value_in_unit(openmm.unit.kilocalorie_per_mole)
 
     return torch.tensor(energy)
+
+
+def test_broadcast_parameters():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+    vdw_potential = force_field.potentials_by_type["vdW"]
+
+    methane_top, water_top = system.topologies
+
+    parameters = broadcast_parameters(system, vdw_potential)
+
+    expected_methane_parameters = (
+        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
+    )
+    expected_water_parameters = (
+        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
+    )
+
+    expected_parameters = torch.vstack(
+        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
+    )
+    assert parameters.shape == expected_parameters.shape
+    assert torch.allclose(parameters, expected_parameters)
 
 
 @pytest.mark.parametrize(

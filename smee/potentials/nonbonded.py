@@ -40,7 +40,7 @@ class PairwiseDistances(typing.NamedTuple):
     """The cutoff used when computing the distances."""
 
 
-def broadcast_exclusions(
+def _broadcast_exclusions(
     system: smee.TensorSystem, potential: smee.TensorPotential
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Broadcasts the exclusions (indices and scale factors) of each topology to the
@@ -84,6 +84,39 @@ def broadcast_exclusions(
     )
 
 
+def compute_pairwise_scales(
+    system: smee.TensorSystem, potential: smee.TensorPotential
+) -> torch.Tensor:
+    """Returns the scale factor for each pair of particles in the system by
+    broadcasting and stacking the exclusions of each topology.
+
+    Args:
+        system: The system.
+        potential: The potential containing the scale factors to broadcast.
+
+    Returns:
+        The scales for each pair of particles as a flattened upper triangular matrix
+        with ``shape=(n_particles * (n_particles - 1) / 2,)``.
+    """
+
+    n_particles = system.n_particles
+    n_pairs = (n_particles * (n_particles - 1)) // 2
+
+    exclusion_idxs, exclusion_scales = _broadcast_exclusions(system, potential)
+
+    pair_scales = smee.utils.ones_like(n_pairs, other=potential.parameters)
+
+    if len(exclusion_idxs) > 0:
+        exclusion_idxs, _ = exclusion_idxs.sort(dim=1)  # ensure upper triangle
+
+        pair_idxs = smee.utils.to_upper_tri_idx(
+            exclusion_idxs[:, 0], exclusion_idxs[:, 1], n_particles
+        )
+        pair_scales[pair_idxs] = exclusion_scales
+
+    return pair_scales
+
+
 def _compute_pairwise_periodic(
     conformer: torch.Tensor, box_vectors: torch.Tensor, cutoff: torch.Tensor
 ) -> PairwiseDistances:
@@ -105,18 +138,21 @@ def _compute_pairwise_periodic(
     distances = distances[are_interacting]
     deltas = deltas[are_interacting, :]
 
-    return PairwiseDistances(pair_idxs, deltas, distances, cutoff)
+    return PairwiseDistances(pair_idxs.T.contiguous(), deltas, distances, cutoff)
 
 
 def _compute_pairwise_non_periodic(conformer: torch.Tensor) -> PairwiseDistances:
     n_particles = conformer.shape[-2]
 
-    pair_idxs = torch.triu_indices(n_particles, n_particles, 1).T
+    pair_idxs = torch.triu_indices(n_particles, n_particles, 1, dtype=torch.int32).T
 
-    deltas = conformer[:, pair_idxs[:, 1], :] - conformer[:, pair_idxs[:, 0], :]
+    if conformer.ndim == 2:
+        deltas = conformer[pair_idxs[:, 1], :] - conformer[pair_idxs[:, 0], :]
+    else:
+        deltas = conformer[:, pair_idxs[:, 1], :] - conformer[:, pair_idxs[:, 0], :]
     distances = deltas.norm(dim=-1)
 
-    return PairwiseDistances(pair_idxs, deltas, distances)
+    return PairwiseDistances(pair_idxs.contiguous(), deltas, distances)
 
 
 def compute_pairwise(
@@ -145,39 +181,6 @@ def compute_pairwise(
         return _compute_pairwise_periodic(conformer, box_vectors, cutoff)
     else:
         return _compute_pairwise_non_periodic(conformer)
-
-
-def compute_pairwise_scales(
-    system: smee.TensorSystem, potential: smee.TensorPotential
-) -> torch.Tensor:
-    """Returns the scale factor for each pair of particles in the system by
-    broadcasting and stacking the exclusions of each topology.
-
-    Args:
-        system: The system.
-        potential: The potential containing the scale factors to broadcast.
-
-    Returns:
-        The scales for each pair of particles as a flattened upper triangular matrix
-        with ``shape=(n_particles * (n_particles - 1) / 2,)``.
-    """
-
-    n_particles = system.n_particles
-    n_pairs = (n_particles * (n_particles - 1)) // 2
-
-    exclusion_idxs, exclusion_scales = broadcast_exclusions(system, potential)
-
-    pair_scales = smee.utils.ones_like(n_pairs, other=potential.parameters)
-
-    if len(exclusion_idxs) > 0:
-        exclusion_idxs, _ = exclusion_idxs.sort(dim=1)  # ensure upper triangle
-
-        pair_idxs = smee.utils.to_upper_tri_idx(
-            exclusion_idxs[:, 0], exclusion_idxs[:, 1], n_particles
-        )
-        pair_scales[pair_idxs] = exclusion_scales
-
-    return pair_scales
 
 
 def lorentz_berthelot(
@@ -430,7 +433,7 @@ def compute_lj_energy(
     pair_scales = compute_pairwise_scales(system, potential)
 
     pairs_1d = smee.utils.to_upper_tri_idx(
-        pairwise.idxs[0, :], pairwise.idxs[1, :], len(parameters)
+        pairwise.idxs[:, 0], pairwise.idxs[:, 1], len(parameters)
     )
     pair_scales = pair_scales[pairs_1d]
 
@@ -438,10 +441,10 @@ def compute_lj_energy(
     sigma_column = potential.parameter_cols.index("sigma")
 
     epsilon, sigma = lorentz_berthelot(
-        parameters[pairwise.idxs[0, :], epsilon_column],
-        parameters[pairwise.idxs[1, :], epsilon_column],
-        parameters[pairwise.idxs[0, :], sigma_column],
-        parameters[pairwise.idxs[1, :], sigma_column],
+        parameters[pairwise.idxs[:, 0], epsilon_column],
+        parameters[pairwise.idxs[:, 1], epsilon_column],
+        parameters[pairwise.idxs[:, 0], sigma_column],
+        parameters[pairwise.idxs[:, 1], sigma_column],
     )
 
     x = (sigma / pairwise.distances) ** 6
@@ -580,7 +583,7 @@ def _compute_coulomb_energy_periodic(
     energy_direct = torch.ops.pme.pme_direct(
         conformer.float(),
         charges,
-        pairwise.idxs,
+        pairwise.idxs.T,
         pairwise.deltas,
         pairwise.distances,
         pme.exclusions,
@@ -605,7 +608,7 @@ def _compute_coulomb_energy_periodic(
         pme.moduli[2],
     )
 
-    exclusion_idxs, exclusion_scales = broadcast_exclusions(system, potential)
+    exclusion_idxs, exclusion_scales = _broadcast_exclusions(system, potential)
 
     exclusion_distances = (
         conformer[exclusion_idxs[:, 0], :] - conformer[exclusion_idxs[:, 1], :]
