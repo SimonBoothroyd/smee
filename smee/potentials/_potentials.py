@@ -1,11 +1,16 @@
 """Compute the potential energy of parameterized systems / topologies."""
 import importlib
 import inspect
+import typing
 
 import torch
 
 import smee
 import smee.utils
+
+if typing.TYPE_CHECKING:
+    import smee.potentials.nonbonded
+
 
 _POTENTIAL_ENERGY_FUNCTIONS = {}
 
@@ -88,8 +93,10 @@ def broadcast_idxs(
         n_interacting_particles = parameter_map.particle_idxs.shape[-1]
 
         idxs = parameter_map.particle_idxs
-        idxs = offset[:, None, None] + idxs[None, :, :]
-        per_topology_idxs.append(idxs.reshape(-1, n_interacting_particles))
+
+        if len(idxs) > 0:
+            idxs = offset[:, None, None] + idxs[None, :, :]
+            per_topology_idxs.append(idxs.reshape(-1, n_interacting_particles))
 
         idx_offset += n_copies * topology.n_particles
 
@@ -131,11 +138,65 @@ def _prepare_inputs(
     return system, conformer, box_vectors
 
 
+def _precompute_pairwise(
+    system: smee.TensorSystem,
+    force_field: smee.TensorForceField,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+) -> typing.Optional["smee.potentials.nonbonded.PairwiseDistances"]:
+    """Pre-compute pairwise distances for a system if required by any of the
+    potential energy functions.
+
+    Args:
+        system: The system to compute the potential energy of.
+        force_field: The force field that defines the potential energy function.
+        conformer: The conformer(s) to evaluate the potential at with
+            ``shape=(n_particles, 3)`` or ``shape=(n_confs, n_particles, 3)``.
+        box_vectors: The box vectors of the system with ``shape=(3, 3)`` or
+            shape=(n_confs, 3, 3)`` if the system is periodic, or ``None`` if the system
+            is non-periodic.
+
+    Returns:
+        The pre-computed pairwise distances if required by any of the potential energy
+        functions, or ``None`` otherwise.
+    """
+    requires_pairwise = False
+    cutoffs = []
+
+    for potential in force_field.potentials:
+        energy_fn = _POTENTIAL_ENERGY_FUNCTIONS[(potential.type, potential.fn)]
+        energy_fn_spec = inspect.signature(energy_fn)
+
+        if "pairwise" not in energy_fn_spec.parameters:
+            continue
+
+        requires_pairwise = True
+
+        if "cutoff" in potential.attribute_cols:
+            cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+            cutoffs.append(cutoff)
+
+        break
+
+    if not requires_pairwise:
+        return
+
+    if len(cutoffs) > 1 and not torch.allclose(torch.cat(cutoffs), cutoffs[0]):
+        return
+
+    cutoff = None if len(cutoffs) == 0 else cutoffs[0]
+
+    return smee.potentials.nonbonded.compute_pairwise(
+        system, conformer, box_vectors, cutoff
+    )
+
+
 def compute_energy_potential(
     system: smee.TensorSystem | smee.TensorTopology,
     potential: smee.TensorPotential,
     conformer: torch.Tensor,
     box_vectors: torch.Tensor | None = None,
+    pairwise: typing.Optional["smee.potentials.nonbonded.PairwiseDistances"] = None,
 ) -> torch.Tensor:
     """Computes the potential energy [kcal / mol] due to a SMIRNOFF potential
     handler for a given conformer(s).
@@ -148,6 +209,7 @@ def compute_energy_potential(
         box_vectors: The box vectors of the system with ``shape=(3, 3)`` or
             shape=(n_confs, 3, 3)`` if the system is periodic, or ``None`` if the system
             is non-periodic.
+        pairwise: Pre-computed pairwise distances between particles in the system.
 
     Returns:
         The potential energy of the conformer(s) [kcal / mol].
@@ -167,8 +229,7 @@ def compute_energy_potential(
     if "box_vectors" in energy_fn_spec.parameters:
         energy_fn_kwargs["box_vectors"] = box_vectors
     if "pairwise" in energy_fn_spec.parameters:
-        # TODO: pairwise...
-        energy_fn_kwargs["pairwise"] = None
+        energy_fn_kwargs["pairwise"] = pairwise
 
     return energy_fn(system, potential, conformer, **energy_fn_kwargs)
 
@@ -194,13 +255,18 @@ def compute_energy(
         The potential energy of the conformer(s) [kcal / mol].
     """
 
+    # register the built-in potential energy functions
+    importlib.import_module("smee.potentials.nonbonded")
+    importlib.import_module("smee.potentials.valence")
+
     system, conformer, box_vectors = _prepare_inputs(system, conformer, box_vectors)
+    pairwise = _precompute_pairwise(system, force_field, conformer, box_vectors)
 
-    is_batched = conformer.ndim == 3
-
-    energy = torch.zeros(conformer.shape[0] if is_batched else 1)
+    energy = torch.zeros(conformer.shape[0] if conformer.ndim == 3 else 1)
 
     for potential in force_field.potentials:
-        energy += compute_energy_potential(system, potential, conformer, box_vectors)
+        energy += compute_energy_potential(
+            system, potential, conformer, box_vectors, pairwise
+        )
 
     return energy

@@ -122,6 +122,32 @@ def test_compute_energy(smiles: str):
     assert torch.isclose(energy_smee, energy_openmm)
 
 
+def test_compute_energy_periodic(etoh_water_system):
+    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
+
+    energy_smee = compute_energy(tensor_sys, tensor_ff, coords, box_vectors)
+
+    openmm_system = smee.converters.openmm.convert_to_openmm_system(
+        tensor_ff, tensor_sys
+    )
+    openmm_system.setDefaultPeriodicBoxVectors(
+        *box_vectors.numpy() * openmm.unit.angstrom
+    )
+    openmm_context = openmm.Context(
+        openmm_system,
+        openmm.VerletIntegrator(0.1),
+        openmm.Platform.getPlatformByName("Reference"),
+    )
+    openmm_context.setPeriodicBoxVectors(*box_vectors.numpy() * openmm.unit.angstrom)
+    openmm_context.setPositions(coords.numpy() * openmm.unit.angstrom)
+    openmm_state = openmm_context.getState(getEnergy=True)
+    energy_openmm = openmm_state.getPotentialEnergy().value_in_unit(
+        openmm.unit.kilocalorie_per_mole
+    )
+
+    assert torch.isclose(energy_smee, torch.tensor(energy_openmm))
+
+
 def test_compute_energy_v_sites():
     molecule_a = openff.toolkit.Molecule.from_smiles("O")
     molecule_a.generate_conformers(n_conformers=1)
