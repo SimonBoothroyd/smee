@@ -204,7 +204,7 @@ def _convert_torsion_potential(
                     j,
                     k,
                     l,
-                    periodicity,
+                    int(periodicity),
                     phase * _RADIANS,
                     constant / idivf * _KCAL_PER_MOL,
                 )

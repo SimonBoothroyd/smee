@@ -13,29 +13,7 @@ import smee.tests.utils
 from smee.potentials import broadcast_parameters, compute_energy
 
 
-def test_broadcast_parameters():
-    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
-    vdw_potential = force_field.potentials_by_type["vdW"]
-
-    methane_top, water_top = system.topologies
-
-    parameters = broadcast_parameters(system, vdw_potential)
-
-    expected_methane_parameters = (
-        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
-    )
-    expected_water_parameters = (
-        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
-    )
-
-    expected_parameters = torch.vstack(
-        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
-    )
-    assert parameters.shape == expected_parameters.shape
-    assert torch.allclose(parameters, expected_parameters)
-
-
-def place_v_sites(
+def _place_v_sites(
     conformer: torch.Tensor, interchange: openff.interchange.Interchange
 ) -> torch.Tensor:
     conformer = conformer.numpy() * openmm.unit.angstrom
@@ -52,7 +30,7 @@ def place_v_sites(
     return torch.tensor(conformer.value_in_unit(openmm.unit.angstrom))
 
 
-def compute_openmm_energy(
+def _compute_openmm_energy(
     interchange: openff.interchange.Interchange,
     conformer: torch.Tensor,
 ) -> torch.Tensor:
@@ -90,6 +68,28 @@ def compute_openmm_energy(
     return torch.tensor(energy)
 
 
+def test_broadcast_parameters():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+    vdw_potential = force_field.potentials_by_type["vdW"]
+
+    methane_top, water_top = system.topologies
+
+    parameters = broadcast_parameters(system, vdw_potential)
+
+    expected_methane_parameters = (
+        methane_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
+    )
+    expected_water_parameters = (
+        water_top.parameters["vdW"].assignment_matrix @ vdw_potential.parameters
+    )
+
+    expected_parameters = torch.vstack(
+        [expected_methane_parameters] * 2 + [expected_water_parameters] * 3
+    )
+    assert parameters.shape == expected_parameters.shape
+    assert torch.allclose(parameters, expected_parameters)
+
+
 @pytest.mark.parametrize(
     "smiles",
     [
@@ -114,17 +114,38 @@ def test_compute_energy(smiles: str):
         openff.toolkit.ForceField("openff_unconstrained-2.0.0.offxml"),
         molecule.to_topology(),
     )
+    tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
 
-    force_field, parameters_per_topology = smee.converters.convert_interchange(
-        interchange
-    )
-
-    energy_smee = compute_energy(
-        parameters_per_topology[0].parameters, conformer, force_field
-    )
-    energy_openmm = compute_openmm_energy(interchange, conformer)
+    energy_smee = compute_energy(tensor_top, tensor_ff, conformer, None)
+    energy_openmm = _compute_openmm_energy(interchange, conformer)
 
     assert torch.isclose(energy_smee, energy_openmm)
+
+
+def test_compute_energy_periodic(etoh_water_system):
+    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
+
+    energy_smee = compute_energy(tensor_sys, tensor_ff, coords, box_vectors)
+
+    openmm_system = smee.converters.openmm.convert_to_openmm_system(
+        tensor_ff, tensor_sys
+    )
+    openmm_system.setDefaultPeriodicBoxVectors(
+        *box_vectors.numpy() * openmm.unit.angstrom
+    )
+    openmm_context = openmm.Context(
+        openmm_system,
+        openmm.VerletIntegrator(0.1),
+        openmm.Platform.getPlatformByName("Reference"),
+    )
+    openmm_context.setPeriodicBoxVectors(*box_vectors.numpy() * openmm.unit.angstrom)
+    openmm_context.setPositions(coords.numpy() * openmm.unit.angstrom)
+    openmm_state = openmm_context.getState(getEnergy=True)
+    energy_openmm = openmm_state.getPotentialEnergy().value_in_unit(
+        openmm.unit.kilocalorie_per_mole
+    )
+
+    assert torch.isclose(energy_smee, torch.tensor(energy_openmm))
 
 
 def test_compute_energy_v_sites():
@@ -151,11 +172,11 @@ def test_compute_energy_v_sites():
     interchange = openff.interchange.Interchange.from_smirnoff(
         openff.toolkit.ForceField("tip4p_fb.offxml"), topology
     )
-    conformer = place_v_sites(conformer, interchange)
+    conformer = _place_v_sites(conformer, interchange)
 
-    force_field, topologies = smee.converters.convert_interchange(interchange)
+    tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
 
-    energy_openmm = compute_openmm_energy(interchange, conformer)
-    energy_smee = compute_energy(topologies[0].parameters, conformer, force_field)
+    energy_openmm = _compute_openmm_energy(interchange, conformer)
+    energy_smee = compute_energy(tensor_top, tensor_ff, conformer)
 
     assert torch.isclose(energy_smee, energy_openmm)

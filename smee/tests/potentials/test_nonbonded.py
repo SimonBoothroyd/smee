@@ -1,5 +1,6 @@
 import numpy
 import openmm.unit
+import pytest
 import torch
 
 import smee.converters
@@ -8,39 +9,237 @@ import smee.mm
 import smee.tests.utils
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
-    _compute_coulomb_energy_periodic,
-    _compute_lj_energy_periodic,
-    _compute_pair_scales,
     _compute_pme_exclusions,
     compute_coulomb_energy,
     compute_lj_energy,
+    compute_pairwise,
+    compute_pairwise_scales,
 )
 
 
-def compute_openmm_periodic_energy(
+def _compute_openmm_energy(
     system: smee.TensorSystem,
-    coords: openmm.unit.Quantity,
-    box_vectors: openmm.unit.Quantity,
+    coords: torch.Tensor,
+    box_vectors: torch.Tensor | None,
     potential: smee.TensorPotential,
 ) -> torch.Tensor:
     coords = coords.numpy() * openmm.unit.angstrom
-    box_vectors = box_vectors.numpy() * openmm.unit.angstrom
+
+    if box_vectors is not None:
+        box_vectors = box_vectors.numpy() * openmm.unit.angstrom
 
     omm_force = smee.converters.convert_to_openmm_force(potential, system)
 
     omm_system = smee.converters.openmm.create_openmm_system(system)
     omm_system.addForce(omm_force)
-    omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
+
+    if box_vectors is not None:
+        omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
 
     omm_integrator = openmm.VerletIntegrator(1.0 * openmm.unit.femtoseconds)
     omm_context = openmm.Context(omm_system, omm_integrator)
-    omm_context.setPeriodicBoxVectors(*box_vectors)
+
+    if box_vectors is not None:
+        omm_context.setPeriodicBoxVectors(*box_vectors)
+
     omm_context.setPositions(coords)
 
     omm_energy = omm_context.getState(getEnergy=True).getPotentialEnergy()
     omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
 
     return torch.tensor(omm_energy, dtype=torch.float64)
+
+
+def test_compute_pairwise_scales():
+    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
+
+    vdw_potential = force_field.potentials_by_type["vdW"]
+    vdw_potential.attributes = torch.tensor(
+        [0.01, 0.02, 0.5, 1.0, 9.0, 2.0], dtype=torch.float64
+    )
+
+    scales = compute_pairwise_scales(system, vdw_potential)
+
+    # fmt: off
+    expected_scale_matrix = torch.tensor(
+        [
+            [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 5),
+            [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 5),
+            [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 5),
+            #
+            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),
+            #
+            [1.0] * 10 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 13),
+            [1.0] * 10 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 13),
+            [1.0] * 10 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 13),
+            #
+            [1.0] * 13 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 16),
+            [1.0] * 13 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 16),
+            [1.0] * 13 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 16),
+            #
+            [1.0] * 16 + [1.0, 0.01, 0.01],
+            [1.0] * 16 + [0.01, 1.0, 0.02],
+            [1.0] * 16 + [0.01, 0.02, 1.0],
+        ],
+        dtype=torch.float64
+    )
+    # fmt: on
+
+    i, j = torch.triu_indices(system.n_particles, system.n_particles, 1)
+    expected_scales = expected_scale_matrix[i, j]
+
+    assert scales.shape == expected_scales.shape
+    assert torch.allclose(scales, expected_scales)
+
+
+def test_compute_pairwise_periodic():
+    system = smee.TensorSystem(
+        [
+            smee.tests.utils.topology_from_smiles("[Ar]"),
+            smee.tests.utils.topology_from_smiles("[Ne]"),
+        ],
+        [2, 3],
+        True,
+    )
+
+    coords = torch.tensor(
+        [
+            [+0.0, 0.0, 0.0],
+            [-4.0, 0.0, 0.0],
+            [+4.0, 0.0, 0.0],
+            [-8.0, 0.0, 0.0],
+            [+8.0, 0.0, 0.0],
+        ]
+    )
+    box_vectors = torch.eye(3) * 24.0
+
+    cutoff = torch.tensor(9.0)
+
+    pairwise = compute_pairwise(system, coords, box_vectors, cutoff)
+
+    expected_idxs = torch.tensor(
+        [[0, 1], [0, 2], [1, 2], [0, 3], [1, 3], [0, 4], [2, 4], [3, 4]],
+        dtype=torch.int32,
+    )
+    n_expected_pairs = len(expected_idxs)
+
+    assert pairwise.idxs.shape == (n_expected_pairs, 2)
+    assert torch.allclose(pairwise.idxs, expected_idxs)
+    assert pairwise.idxs.dtype == torch.int32
+
+    assert pairwise.deltas.shape == (n_expected_pairs, 3)
+    assert pairwise.deltas.dtype == torch.float32
+
+    expected_distances = torch.tensor([4.0, 4.0, 8.0, 8.0, 4.0, 8.0, 4.0, 8.0])
+    assert torch.allclose(pairwise.distances, expected_distances)
+    assert pairwise.distances.shape == (n_expected_pairs,)
+    assert pairwise.distances.dtype == torch.float32
+
+    assert torch.isclose(cutoff, pairwise.cutoff)
+
+
+@pytest.mark.parametrize("with_batch", [True, False])
+def test_compute_pairwise_non_periodic(with_batch):
+    system = smee.TensorSystem(
+        [
+            smee.tests.utils.topology_from_smiles("[Ar]"),
+            smee.tests.utils.topology_from_smiles("[Ne]"),
+        ],
+        [2, 3],
+        False,
+    )
+
+    coords = torch.tensor(
+        [
+            [+0.0, 0.0, 0.0],
+            [-4.0, 0.0, 0.0],
+            [+4.0, 0.0, 0.0],
+            [-8.0, 0.0, 0.0],
+            [+8.0, 0.0, 0.0],
+        ]
+    )
+    coords = coords if not with_batch else coords.unsqueeze(0)
+
+    pairwise = compute_pairwise(system, coords, None, torch.tensor(9.0))
+
+    expected_idxs = torch.tensor(
+        [
+            [0, 1],
+            [0, 2],
+            [0, 3],
+            [0, 4],
+            [1, 2],
+            [1, 3],
+            [1, 4],
+            [2, 3],
+            [2, 4],
+            [3, 4],
+        ],
+        dtype=torch.int32,
+    )
+    n_expected_pairs = len(expected_idxs)
+
+    expected_batch_size = tuple() if not with_batch else (1,)
+
+    assert pairwise.idxs.shape == (n_expected_pairs, 2)
+    assert torch.allclose(pairwise.idxs, expected_idxs)
+    assert pairwise.idxs.dtype == torch.int32
+
+    assert pairwise.deltas.shape == (*expected_batch_size, n_expected_pairs, 3)
+    assert pairwise.deltas.dtype == torch.float32
+
+    expected_distances = torch.tensor(
+        [4.0, 4.0, 8.0, 8.0, 8.0, 4.0, 12.0, 12.0, 4.0, 16.0]
+    )
+    expected_distances = (
+        expected_distances if not with_batch else expected_distances.unsqueeze(0)
+    )
+
+    assert torch.allclose(pairwise.distances, expected_distances)
+    assert pairwise.distances.shape == (*expected_batch_size, n_expected_pairs)
+    assert pairwise.distances.dtype == torch.float32
+
+    assert pairwise.cutoff is None
+
+
+def test_compute_lj_energy_periodic(etoh_water_system):
+    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
+
+    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential.parameters.requires_grad = True
+
+    energy = compute_lj_energy(
+        tensor_sys, vdw_potential, coords.float(), box_vectors.float()
+    )
+    energy.backward()
+
+    expected_energy = _compute_openmm_energy(
+        tensor_sys, coords, box_vectors, vdw_potential
+    )
+
+    assert torch.isclose(energy, expected_energy, atol=1.0e-3)
+
+
+def test_compute_lj_energy_non_periodic():
+    tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(["CCC", "O"], [2, 3])
+    tensor_sys.is_periodic = False
+
+    coords, _ = smee.mm.generate_system_coords(tensor_sys)
+    coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
+
+    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential.parameters.requires_grad = True
+
+    energy = compute_lj_energy(tensor_sys, vdw_potential, coords.float(), None)
+    expected_energy = _compute_openmm_energy(tensor_sys, coords, None, vdw_potential)
+
+    assert torch.isclose(energy, expected_energy, atol=1.0e-5)
 
 
 def test_coulomb_pre_factor():
@@ -90,195 +289,35 @@ def test_compute_pme_exclusions():
     assert torch.allclose(exclusions, expected_exclusions)
 
 
-def test_compute_coulomb_energy_two_particle():
-    scale_factor = 5.0
-
-    distance = 2.0
-
-    conformer = torch.tensor([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]])
-    exclusions = torch.tensor([[0, 1]])
-
-    q_a, q_b = 0.25, 0.75
-
-    parameters = torch.tensor([[q_a], [q_b]])
-    exclusion_scales = torch.tensor([scale_factor])
-
-    actual_energy = compute_coulomb_energy(
-        conformer, parameters, exclusions, exclusion_scales=exclusion_scales
-    )
-    expected_energy = scale_factor * _COULOMB_PRE_FACTOR * q_a * q_b / distance
-
-    assert torch.isclose(torch.tensor(expected_energy), actual_energy)
-
-
-def test_compute_coulomb_energy_three_particle():
-    scale_factor = 5.0
-
-    conformer = torch.tensor([[0.0, 0.0, 0.0], [3.0, 0.0, 0.0], [0.0, 4.0, 0.0]])
-    exclusions = torch.tensor([[0, 2], [0, 1], [1, 2]])
-
-    q_a, q_b, q_c = 0.25, 0.75, 0.50
-
-    parameters = torch.tensor([[q_a], [q_b], [q_c]])
-    exclusion_scales = torch.tensor([[scale_factor], [scale_factor], [scale_factor]])
-
-    actual_energy = compute_coulomb_energy(
-        conformer, parameters, exclusions, exclusion_scales
-    )
-
-    expected_energy = torch.tensor(
-        _COULOMB_PRE_FACTOR
-        * scale_factor
-        * (q_a * q_b / 3.0 + q_a * q_c / 4.0 + q_b * q_c / 5.0),
-    )
-
-    assert torch.isclose(expected_energy, actual_energy)
-
-
 def test_compute_coulomb_energy_periodic(etoh_water_system):
     tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
 
     coulomb_potential = tensor_ff.potentials_by_type["Electrostatics"]
     coulomb_potential.parameters.requires_grad = True
 
-    energy = _compute_coulomb_energy_periodic(
-        tensor_sys, coords.float(), box_vectors.float(), coulomb_potential
-    )
+    energy = compute_coulomb_energy(tensor_sys, coulomb_potential, coords, box_vectors)
     energy.backward()
 
-    expected_energy = compute_openmm_periodic_energy(
+    expected_energy = _compute_openmm_energy(
         tensor_sys, coords, box_vectors, coulomb_potential
     )
 
     assert torch.isclose(energy, expected_energy, atol=1.0e-2)
 
 
-def test_compute_lj_energy_two_particle():
-    distance = 2.0
+def test_compute_coulomb_energy_non_periodic():
+    tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(["CCC", "O"], [2, 3])
+    tensor_sys.is_periodic = False
 
-    conformer = torch.tensor([[0.0, 0.0, 0.0], [distance, 0.0, 0.0]])
+    coords, _ = smee.mm.generate_system_coords(tensor_sys)
+    coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
 
-    eps_a, sigma_a = 0.1, 2.0
-    eps_b, sigma_b = 0.3, 4.0
+    coulomb_potential = tensor_ff.potentials_by_type["Electrostatics"]
+    coulomb_potential.parameters.requires_grad = True
 
-    scale_factor = 5.0
-
-    parameters = torch.tensor([[eps_a, sigma_a], [eps_b, sigma_b]])
-
-    eps_ab = torch.sqrt(torch.tensor(eps_a * eps_b))
-    sigma_ab = 0.5 * torch.tensor(sigma_a + sigma_b)
-
-    actual_energy = compute_lj_energy(
-        conformer,
-        parameters,
-        torch.tensor([[0, 1]]),
-        torch.tensor([[scale_factor]]),
-    )
-    expected_energy = (
-        (1.0 + (scale_factor - 1.0))
-        * 4.0
-        * eps_ab
-        * ((sigma_ab / distance) ** 12 - (sigma_ab / distance) ** 6)
+    energy = compute_coulomb_energy(tensor_sys, coulomb_potential, coords.float(), None)
+    expected_energy = _compute_openmm_energy(
+        tensor_sys, coords, None, coulomb_potential
     )
 
-    assert torch.isclose(expected_energy, actual_energy)
-
-
-def test_compute_lj_energy_three_particle():
-    scale_factor = 5.0
-
-    conformer = torch.tensor([[0.0, 0.0, 0.0], [3.0, 0.0, 0.0], [0.0, 4.0, 0.0]])
-
-    eps_a, sigma_a = 0.1, 2.0
-    eps_b, sigma_b = 0.5, 6.0
-    eps_c, sigma_c = 0.3, 4.0
-
-    parameters = torch.tensor([[eps_a, sigma_a], [eps_b, sigma_b], [eps_c, sigma_c]])
-
-    actual_energy = compute_lj_energy(
-        conformer,
-        parameters,
-        torch.tensor([[1, 0], [2, 0], [1, 2]]),
-        torch.tensor([[scale_factor], [scale_factor], [scale_factor]]),
-    )
-
-    eps_ab = torch.sqrt(torch.tensor(eps_a * eps_b))
-    sigma_ab = 0.5 * torch.tensor(sigma_a + sigma_b)
-    eps_ac = torch.sqrt(torch.tensor(eps_a * eps_c))
-    sigma_ac = 0.5 * torch.tensor(sigma_a + sigma_c)
-    eps_bc = torch.sqrt(torch.tensor(eps_b * eps_c))
-    sigma_bc = 0.5 * torch.tensor(sigma_b + sigma_c)
-
-    expected_energy = (
-        scale_factor * 4.0 * eps_ab * ((sigma_ab / 3.0) ** 12 - (sigma_ab / 3.0) ** 6)
-        + scale_factor * 4.0 * eps_ac * ((sigma_ac / 4.0) ** 12 - (sigma_ac / 4.0) ** 6)
-        + scale_factor * 4.0 * eps_bc * ((sigma_bc / 5.0) ** 12 - (sigma_bc / 5.0) ** 6)
-    )
-
-    assert torch.isclose(expected_energy, actual_energy)
-
-
-def test_compute_pair_scales():
-    system, force_field = smee.tests.utils.system_from_smiles(["C", "O"], [2, 3])
-
-    vdw_potential = force_field.potentials_by_type["vdW"]
-    vdw_potential.attributes = torch.tensor(
-        [0.01, 0.02, 0.5, 1.0, 9.0, 2.0], dtype=torch.float64
-    )
-
-    scales = _compute_pair_scales(system, vdw_potential)
-
-    # fmt: off
-    expected_scale_matrix = torch.tensor(
-        [
-            [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 5),
-            [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 5),
-            [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 5),
-            #
-            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),
-            #
-            [1.0] * 10 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 13),
-            [1.0] * 10 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 13),
-            [1.0] * 10 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 13),
-            #
-            [1.0] * 13 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 16),
-            [1.0] * 13 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 16),
-            [1.0] * 13 + [0.01, 0.02, 1.0] + [1.0] * (system.n_particles - 16),
-            #
-            [1.0] * 16 + [1.0, 0.01, 0.01],
-            [1.0] * 16 + [0.01, 1.0, 0.02],
-            [1.0] * 16 + [0.01, 0.02, 1.0],
-        ],
-        dtype=torch.float64
-    )
-    # fmt: on
-
-    i, j = torch.triu_indices(system.n_particles, system.n_particles, 1)
-    expected_scales = expected_scale_matrix[i, j]
-
-    assert scales.shape == expected_scales.shape
-    assert torch.allclose(scales, expected_scales)
-
-
-def test_compute_lj_energy_periodic(etoh_water_system):
-    tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
-
-    vdw_potential = tensor_ff.potentials_by_type["vdW"]
-    vdw_potential.parameters.requires_grad = True
-
-    energy = _compute_lj_energy_periodic(
-        tensor_sys, coords.float(), box_vectors.float(), vdw_potential
-    )
-    energy.backward()
-
-    expected_energy = compute_openmm_periodic_energy(
-        tensor_sys, coords, box_vectors, vdw_potential
-    )
-
-    assert torch.isclose(energy, expected_energy, atol=1.0e-3)
+    assert torch.isclose(energy, expected_energy, atol=1.0e-5)

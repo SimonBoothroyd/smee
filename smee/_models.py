@@ -181,7 +181,7 @@ class TensorPotential:
     ``shape=(n_attribute_cols,)``"""
     attribute_cols: tuple[str, ...] | None = None
     """The names of each column of ``attributes``."""
-    attribute_units: tuple[openff.units.Unit, ...] = None
+    attribute_units: tuple[openff.units.Unit, ...] | None = None
     """The units of each attribute in ``attributes``."""
 
 
