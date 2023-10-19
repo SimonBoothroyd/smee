@@ -62,8 +62,13 @@ def _broadcast_exclusions(
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
         exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+        idx_offset += n_copies * topology.n_particles
 
         exclusion_idxs = topology.parameters[potential.type].exclusions
+
+        if len(exclusion_idxs) == 0:
+            continue
+
         exclusion_idxs = exclusion_offset[:, None, None] + exclusion_idxs[None, :, :]
 
         exclusion_scales = potential.attributes[
@@ -76,12 +81,18 @@ def _broadcast_exclusions(
         per_topology_exclusion_idxs.append(exclusion_idxs.reshape(-1, 2))
         per_topology_exclusion_scales.append(exclusion_scales.reshape(-1))
 
-        idx_offset += n_copies * topology.n_particles
-
-    return (
-        torch.vstack(per_topology_exclusion_idxs),
-        torch.cat(per_topology_exclusion_scales),
+    system_idxs = (
+        torch.zeros((0, 2), dtype=torch.int32)
+        if len(per_topology_exclusion_idxs) == 0
+        else torch.vstack(per_topology_exclusion_idxs)
     )
+    system_scales = (
+        torch.zeros((0,), dtype=torch.float32)
+        if len(per_topology_exclusion_scales) == 0
+        else torch.cat(per_topology_exclusion_scales)
+    )
+
+    return system_idxs, system_scales
 
 
 def compute_pairwise_scales(
@@ -504,11 +515,16 @@ def _compute_pme_exclusions(
             n_padding = max_exclusions - len(atom_exclusions)
             atom_exclusions.extend([-1] * n_padding)
 
+        exclusions = torch.tensor(exclusions, dtype=torch.int32)
+
         exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
+        idx_offset += n_copies * topology.n_particles
+
+        if exclusions.shape[-1] == 0:
+            continue
 
         exclusions = torch.broadcast_to(
-            torch.tensor(exclusions, dtype=torch.int32),
-            (n_copies, len(exclusions), max_exclusions),
+            exclusions, (n_copies, len(exclusions), max_exclusions)
         )
         exclusions = torch.where(
             exclusions >= 0, exclusions + exclusion_offset[:, None, None], exclusions
@@ -516,9 +532,11 @@ def _compute_pme_exclusions(
 
         exclusions_per_type.append(exclusions.reshape(-1, max_exclusions))
 
-        idx_offset += n_copies * topology.n_particles
-
-    return torch.vstack(exclusions_per_type)
+    return (
+        torch.zeros((0, 0), dtype=torch.int32)
+        if len(exclusions_per_type) == 0
+        else torch.vstack(exclusions_per_type)
+    )
 
 
 def _compute_pme_grid(
