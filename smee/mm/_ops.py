@@ -192,7 +192,7 @@ def _compute_observables(
         ``shape=(n_parameters, n_parameter_cols)``.
     """
 
-    needs_grad = [i for i, v in enumerate(theta) if v.requires_grad]
+    needs_grad = [i for i, v in enumerate(theta) if v is not None and v.requires_grad]
     du_d_theta = [None if i not in needs_grad else [] for i in range(len(theta))]
 
     values = []
