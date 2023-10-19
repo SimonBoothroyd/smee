@@ -1,9 +1,8 @@
 import numpy
 import openmm.unit
 import pytest
-import torch
 
-from smee.mm._reporters import TensorReporter
+from smee.mm._reporters import TensorReporter, unpack_frames
 
 
 class TestTensorReporter:
@@ -11,34 +10,15 @@ class TestTensorReporter:
         simulation = mocker.MagicMock()
         simulation.currentStep = 5
 
-        reporter = TensorReporter(
-            report_interval=2, total_mass=1.0 * openmm.unit.daltons, pressure=None
-        )
-
+        reporter = TensorReporter(mocker.MagicMock(), 2)
         assert reporter.describeNextReport(simulation) == (1, True, False, False, True)
 
-    def test_report(sef, mocker):
-        total_mass = 5.0 * openmm.unit.daltons
-        pressure = 1.0 * openmm.unit.atmospheres
-
-        reporter = TensorReporter(
-            report_interval=1, total_mass=total_mass, pressure=pressure
-        )
-
+    def test_report(self, tmp_path, mocker):
         expected_potential = 1.0 * openmm.unit.kilocalories_per_mole
-        expected_kinetic = 2.0 * openmm.unit.kilocalories_per_mole
-        expected_total = expected_potential + expected_kinetic
+        expected_kinetic = 2.0 * openmm.unit.kilojoules_per_mole
 
         expected_box_vectors = numpy.eye(3) * 3.0
         expected_coords = numpy.ones((1, 3))
-
-        expected_volume = 27.0 * openmm.unit.angstrom**3
-        expected_density = total_mass / expected_volume
-
-        expected_enthalpy = (
-            expected_total
-            + pressure * expected_volume * openmm.unit.AVOGADRO_CONSTANT_NA
-        )
 
         mock_state = mocker.MagicMock()
         mock_state.getPotentialEnergy.return_value = expected_potential
@@ -48,34 +28,28 @@ class TestTensorReporter:
         )
         mock_state.getPositions.return_value = expected_coords * openmm.unit.angstrom
 
-        reporter.report(None, mock_state)
+        expected_output_path = tmp_path / "output.msgpack"
 
-        assert reporter.coords == [pytest.approx(expected_coords)]
-        assert reporter.box_vectors == [pytest.approx(expected_box_vectors)]
+        with expected_output_path.open("wb") as file:
+            reporter = TensorReporter(file, 1)
+            reporter.report(None, mock_state)
 
-        expected_values = torch.tensor(
-            [
-                expected_potential.value_in_unit(openmm.unit.kilocalories_per_mole),
-                expected_volume.value_in_unit(openmm.unit.angstrom**3),
-                expected_density.value_in_unit(
-                    openmm.unit.gram / openmm.unit.item / openmm.unit.milliliter
-                ),
-                expected_enthalpy.value_in_unit(openmm.unit.kilocalories_per_mole),
-            ]
+        with expected_output_path.open("rb") as file:
+            frames = [*unpack_frames(file)]
+
+        assert len(frames) == 1
+        coords, box_vectors, kinetic = frames[0]
+
+        assert coords == pytest.approx(expected_coords)
+        assert box_vectors == pytest.approx(expected_box_vectors)
+        assert kinetic == pytest.approx(
+            expected_kinetic.value_in_unit(openmm.unit.kilocalories_per_mole)
         )
-        assert reporter.values == [pytest.approx(expected_values)]
 
     @pytest.mark.parametrize(
         "potential, contains", [(numpy.nan, "nan"), (numpy.inf, "inf")]
     )
     def test_report_energy_check(self, potential, contains, mocker):
-        total_mass = 5.0 * openmm.unit.daltons
-        pressure = 1.0 * openmm.unit.atmospheres
-
-        reporter = TensorReporter(
-            report_interval=1, total_mass=total_mass, pressure=pressure
-        )
-
         potential = potential * openmm.unit.kilocalories_per_mole
         kinetic = 2.0 * openmm.unit.kilocalories_per_mole
 
@@ -84,4 +58,5 @@ class TestTensorReporter:
         mock_state.getKineticEnergy.return_value = kinetic
 
         with pytest.raises(ValueError, match=f"total energy is {contains}"):
+            reporter = TensorReporter(mocker.MagicMock(), 1)
             reporter.report(None, mock_state)

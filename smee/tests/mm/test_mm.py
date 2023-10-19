@@ -222,19 +222,12 @@ def test_run_simulation(mock_omm_topology, mock_omm_system):
 def test_simulate(mocker, mock_argon_tensors):
     tensor_ff, tensor_top = mock_argon_tensors
 
-    state = (
-        numpy.array([[0.0, 0.0, 0.0]]) * openmm.unit.angstrom,
-        numpy.eye(3) * 2.0 * openmm.unit.nanometer,
-    )
+    mock_coords = numpy.array([[0.0, 0.0, 0.0]]) * openmm.unit.angstrom
+    mock_box = numpy.eye(3) * 2.0 * openmm.unit.nanometer
 
     mock_state = mocker.MagicMock()
     mock_state.getPotentialEnergy.return_value = 1.0 * openmm.unit.kilocalorie_per_mole
-    mock_state.getPeriodicBoxVectors.return_value = state[1]
-
-    mock_gen_coords = mocker.patch(
-        "smee.mm._mm.generate_system_coords", return_value=state
-    )
-    gen_coords_config = smee.mm.GenerateCoordsConfig()
+    mock_state.getPeriodicBoxVectors.return_value = mock_box
 
     spied_energy_minimize = mocker.spy(smee.mm._mm, "_energy_minimize")
     spied_run_simulation = mocker.spy(smee.mm._mm, "_run_simulation")
@@ -245,7 +238,8 @@ def test_simulate(mocker, mock_argon_tensors):
     simulate(
         tensor_top,
         tensor_ff,
-        gen_coords_config,
+        mock_coords,
+        mock_box,
         [
             smee.mm.MinimizationConfig(),
             smee.mm.SimulationConfig(
@@ -258,7 +252,6 @@ def test_simulate(mocker, mock_argon_tensors):
         [reporter],
     )
 
-    mock_gen_coords.assert_called_once_with(mocker.ANY, gen_coords_config)
     spied_energy_minimize.assert_called_once()
     assert spied_run_simulation.call_count == 2
 
@@ -274,7 +267,8 @@ def test_simulate_invalid_pressure(mock_argon_tensors):
         simulate(
             tensor_top,
             tensor_ff,
-            smee.mm.GenerateCoordsConfig(),
+            numpy.zeros((0, 3)),
+            numpy.eye(3),
             [],
             smee.mm.SimulationConfig(
                 temperature=1.0 * openmm.unit.kelvin,

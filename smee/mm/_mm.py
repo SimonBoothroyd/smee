@@ -272,7 +272,8 @@ def _run_simulation(
 def simulate(
     system: smee.TensorSystem | smee.TensorTopology,
     force_field: smee.TensorForceField,
-    coords_config: "smee.mm.GenerateCoordsConfig",
+    coords: openmm.unit.Quantity,
+    box_vectors: openmm.unit.Quantity | None,
     equilibrate_configs: list[
         typing.Union["smee.mm.MinimizationConfig", "smee.mm.SimulationConfig"]
     ],
@@ -284,8 +285,8 @@ def simulate(
     Args:
         system: The system / topology to simulate.
         force_field: The force field to simulate with.
-        coords_config: The configuration defining how to generate the system
-            coordinates.
+        coords: The coordinates [Å] to use for the simulation.
+        box_vectors: The box vectors [Å] to use for the simulation if periodic.
         equilibrate_configs: A list of configurations defining the steps to run for
             equilibration. No data will be stored from these simulations.
         production_config: The configuration defining the production simulation to run.
@@ -310,7 +311,7 @@ def simulate(
 
     platform = _get_platform(system.is_periodic)
 
-    omm_state = generate_system_coords(system, coords_config)
+    omm_state = coords, box_vectors
 
     omm_system = smee.converters.convert_to_openmm_system(force_field, system)
     omm_topology = smee.converters.convert_to_openmm_topology(system)

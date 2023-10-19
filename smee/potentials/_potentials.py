@@ -64,7 +64,11 @@ def broadcast_parameters(
 
         parameters.append(topology_parameters)
 
-    return torch.vstack(parameters)
+    return (
+        torch.zeros((0, len(potential.parameter_cols)))
+        if len(parameters) == 0
+        else torch.vstack(parameters)
+    )
 
 
 def broadcast_idxs(
@@ -100,7 +104,11 @@ def broadcast_idxs(
 
         idx_offset += n_copies * topology.n_particles
 
-    return torch.vstack(per_topology_idxs)
+    return (
+        torch.zeros((0, 0))
+        if len(per_topology_idxs) == 0
+        else torch.vstack(per_topology_idxs)
+    )
 
 
 def _prepare_inputs(
