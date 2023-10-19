@@ -9,6 +9,11 @@ import smee
 import smee.converters
 import smee.converters.openmm
 
+_DENSITY_CONVERSION = 1.0e24 / openmm.unit.AVOGADRO_CONSTANT_NA.value_in_unit(
+    openmm.unit.mole**-1
+)
+"""Convert from g / mol / Å**3 to g / mL"""
+
 
 class _EnsembleAverageKwargs(typing.TypedDict):
     """The keyword arguments passed to the custom PyTorch op for computing ensemble
@@ -26,19 +31,6 @@ class _EnsembleAverageKwargs(typing.TypedDict):
     pressure: float | None
 
 
-class EnsembleAverages(typing.TypedDict):
-    """Ensemble averages computed over an MD trajectory.
-
-    The potential energy is in units of kcal/mol, the volume is in units of Å^3, the
-    density is in units of g/mL, and the enthalpy is in units of kcal/mol.
-    """
-
-    potential_energy: torch.Tensor
-    volume: torch.Tensor
-    density: torch.Tensor
-    enthalpy: torch.Tensor | None
-
-
 def _pack_force_field(
     force_field: smee.TensorForceField,
 ) -> tuple[tuple[torch.Tensor, ...], dict[str, int], dict[str, int]]:
@@ -53,6 +45,9 @@ def _pack_force_field(
         lookup tables mapping potential types to their corresponding parameters and
         attributes in the tuple.
     """
+    if force_field.v_sites is not None:
+        raise NotImplementedError
+
     potential_types = [potential.type for potential in force_field.potentials]
 
     parameters = [potential.parameters for potential in force_field.potentials]
@@ -159,7 +154,8 @@ def _compute_frame_observables(
     values["volume"] = volume
 
     total_mass = _compute_mass(system)
-    values["density"] = total_mass / volume
+
+    values["density"] = total_mass / volume * _DENSITY_CONVERSION
 
     if pressure is not None:
         pv_term = volume * pressure
@@ -218,7 +214,7 @@ def _compute_observables(
             du_d_theta[i].append(du_d_theta_subset[idx].float())
 
         frame = _compute_frame_observables(
-            system, box_vectors, potential, kinetic, pressure
+            system, box_vectors, potential.detach(), kinetic, pressure
         )
 
         if columns is None:
@@ -308,8 +304,8 @@ def compute_ensemble_averages(
     force_field: smee.TensorForceField,
     frames_path: pathlib.Path,
     temperature: openmm.unit.Quantity,
-    pressure: openmm.unit.Quantity | None = None,
-) -> EnsembleAverages:
+    pressure: openmm.unit.Quantity | None,
+) -> dict[str, torch.Tensor]:
     """Compute ensemble average of the potential energy, volume, density,
     and enthalpy (if running NPT) over an MD trajectory.
 
@@ -322,8 +318,7 @@ def compute_ensemble_averages(
 
     Returns:
         A dictionary containing the ensemble averages of the potential energy
-        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol] if running
-        NPT.
+        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].
     """
     tensors, parameter_lookup, attribute_lookup = _pack_force_field(force_field)
 
