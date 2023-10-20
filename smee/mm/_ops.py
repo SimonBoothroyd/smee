@@ -226,7 +226,7 @@ def _compute_observables(
 
         values.append(torch.tensor([frame[c] for c in columns]))
 
-    values = torch.stack(values)
+    values = torch.stack(values).to(theta[0].device)
 
     return (
         values,
