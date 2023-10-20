@@ -9,7 +9,7 @@ if typing.TYPE_CHECKING:
     import smee
 
 
-_size = torch.Size | list[int] | tuple[int, ...]
+_size = int | torch.Size | list[int] | tuple[int, ...]
 
 ExclusionType = typing.Literal["scale_12", "scale_13", "scale_14", "scale_15"]
 

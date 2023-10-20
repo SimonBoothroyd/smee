@@ -1,7 +1,30 @@
 import openff.interchange.models
+import pytest
 import torch
 
 import smee.tests.utils
+from smee._models import _cast
+
+
+@pytest.mark.parametrize(
+    "tensor, precision, expected_device, expected_dtype",
+    [
+        (torch.zeros(2, dtype=torch.float32), "single", "cpu", torch.float32),
+        (torch.zeros(2, dtype=torch.float64), "single", "cpu", torch.float32),
+        (torch.zeros(2, dtype=torch.float32), "double", "cpu", torch.float64),
+        (torch.zeros(2, dtype=torch.float64), "double", "cpu", torch.float64),
+        (torch.zeros(2, dtype=torch.int32), "single", "cpu", torch.int32),
+        (torch.zeros(2, dtype=torch.int64), "single", "cpu", torch.int32),
+        (torch.zeros(2, dtype=torch.int32), "double", "cpu", torch.int64),
+        (torch.zeros(2, dtype=torch.int64), "double", "cpu", torch.int64),
+    ],
+)
+def test_cast(tensor, precision, expected_device, expected_dtype):
+    output = _cast(tensor, precision=precision)
+
+    assert output.shape == tensor.shape
+    assert output.device.type == expected_device
+    assert output.dtype == expected_dtype
 
 
 def _add_v_sites(topology: smee.TensorTopology):

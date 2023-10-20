@@ -270,7 +270,9 @@ def compute_energy(
     system, conformer, box_vectors = _prepare_inputs(system, conformer, box_vectors)
     pairwise = _precompute_pairwise(system, force_field, conformer, box_vectors)
 
-    energy = torch.zeros(conformer.shape[0] if conformer.ndim == 3 else 1)
+    energy = smee.utils.zeros_like(
+        conformer.shape[0] if conformer.ndim == 3 else 1, conformer
+    )
 
     for potential in force_field.potentials:
         energy += compute_energy_potential(
