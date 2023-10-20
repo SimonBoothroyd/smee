@@ -11,6 +11,30 @@ _ANGSTROM = openff.units.unit.angstrom
 _RADIANS = openff.units.unit.radians
 
 
+DeviceType = typing.Literal["cpu", "cuda"]
+Precision = typing.Literal["single", "double"]
+
+
+def _cast(
+    tensor: torch.Tensor,
+    device: DeviceType | None = None,
+    precision: Precision | None = None,
+) -> torch.Tensor:
+    """Cast a tensor to the specified device."""
+
+    if precision is not None:
+        if tensor.dtype in (torch.float32, torch.float64):
+            dtype = torch.float32 if precision == "single" else torch.float64
+        elif tensor.dtype in (torch.int32, torch.int64):
+            dtype = torch.int32 if precision == "single" else torch.int64
+        else:
+            raise NotImplementedError(f"cannot cast {tensor.dtype} to {precision}")
+    else:
+        dtype = None
+
+    return tensor.to(device=device, dtype=dtype)
+
+
 @dataclasses.dataclass
 class ValenceParameterMap:
     """A map between atom indices part of a particular valence interaction (e.g.
@@ -25,6 +49,15 @@ class ValenceParameterMap:
     """A sparse tensor that yields the assigned parameters when multiplied with the
     corresponding handler parameters, with ``shape=(n_interacting, n_parameters)``.
     """
+
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "ValenceParameterMap":
+        """Cast this object to the specified device."""
+        return ValenceParameterMap(
+            _cast(self.particle_idxs, device, precision),
+            _cast(self.assignment_matrix, device, precision),
+        )
 
 
 @dataclasses.dataclass
@@ -47,6 +80,16 @@ class NonbondedParameterMap:
     with ``shape=(n_exclusions, 1)``.
     """
 
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "NonbondedParameterMap":
+        """Cast this object to the specified device."""
+        return NonbondedParameterMap(
+            _cast(self.assignment_matrix, device, precision),
+            _cast(self.exclusions, device, precision),
+            _cast(self.exclusion_scale_idxs, device, precision),
+        )
+
 
 ParameterMap = ValenceParameterMap | NonbondedParameterMap
 
@@ -66,6 +109,14 @@ class VSiteMap:
     """The indices of the corresponding v-site parameters with ``shape=(n_v_sites, 1)``
     """
 
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "VSiteMap":
+        """Cast this object to the specified device."""
+        return VSiteMap(
+            self.keys, self.key_to_idx, _cast(self.parameter_idxs, device, precision)
+        )
+
 
 @dataclasses.dataclass
 class TensorConstraints:
@@ -77,6 +128,15 @@ class TensorConstraints:
     ``shape=(n_constraints, 2)``"""
     distances: torch.Tensor
     """The distance [Å] between each pair of atoms with ``shape=(n_constraints,)``"""
+
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorConstraints":
+        """Cast this object to the specified device."""
+        return TensorConstraints(
+            _cast(self.idxs, device, precision),
+            _cast(self.distances, device, precision),
+        )
 
 
 @dataclasses.dataclass
@@ -123,6 +183,22 @@ class TensorTopology:
         """The number of atoms + v-sites in the topology."""
         return self.n_atoms + self.n_v_sites
 
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorTopology":
+        """Cast this object to the specified device."""
+        return TensorTopology(
+            self.atomic_nums,
+            self.formal_charges,
+            self.bond_idxs,
+            self.bond_orders,
+            {k: v.to(device, precision) for k, v in self.parameters.items()},
+            None if self.v_sites is None else self.v_sites.to(device, precision),
+            None
+            if self.constraints is None
+            else self.constraints.to(device, precision),
+        )
+
 
 @dataclasses.dataclass
 class TensorSystem:
@@ -157,6 +233,16 @@ class TensorSystem:
         """The number of atoms + v-sites in the system."""
         return self.n_atoms + self.n_v_sites
 
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorSystem":
+        """Cast this object to the specified device."""
+        return TensorSystem(
+            [topology.to(device, precision) for topology in self.topologies],
+            self.n_copies,
+            self.is_periodic,
+        )
+
 
 @dataclasses.dataclass
 class TensorPotential:
@@ -183,6 +269,24 @@ class TensorPotential:
     """The names of each column of ``attributes``."""
     attribute_units: tuple[openff.units.Unit, ...] | None = None
     """The units of each attribute in ``attributes``."""
+
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorPotential":
+        """Cast this object to the specified device."""
+        return TensorPotential(
+            self.type,
+            self.fn,
+            _cast(self.parameters, device, precision),
+            self.parameter_keys,
+            self.parameter_cols,
+            self.parameter_units,
+            None
+            if self.attributes is None
+            else _cast(self.attributes, device, precision),
+            self.attribute_cols,
+            self.attribute_units,
+        )
 
 
 @dataclasses.dataclass
@@ -212,6 +316,16 @@ class TensorVSites:
         """The units of each v-site parameter."""
         return {**TensorVSites.default_units()}
 
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorVSites":
+        """Cast this object to the specified device."""
+        return TensorVSites(
+            self.keys,
+            [_cast(weight, device, precision) for weight in self.weights],
+            _cast(self.parameters, device, precision),
+        )
+
 
 @dataclasses.dataclass
 class TensorForceField:
@@ -232,6 +346,15 @@ class TensorForceField:
         assert len(potentials) == len(self.potentials), "duplicate potentials found"
 
         return potentials
+
+    def to(
+        self, device: DeviceType | None = None, precision: Precision | None = None
+    ) -> "TensorForceField":
+        """Cast this object to the specified device."""
+        return TensorForceField(
+            [potential.to(device, precision) for potential in self.potentials],
+            None if self.v_sites is None else self.v_sites.to(device, precision),
+        )
 
 
 __all__ = [

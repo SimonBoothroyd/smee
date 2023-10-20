@@ -469,7 +469,11 @@ def compute_lj_energy(
 
     energy = energies.sum(-1)
     energy += _compute_dispersion_correction(
-        system, potential, switch_width, pairwise.cutoff, torch.det(box_vectors)
+        system,
+        potential.to(precision="double"),
+        switch_width.double(),
+        pairwise.cutoff.double(),
+        torch.det(box_vectors),
     )
 
     return energy
@@ -583,9 +587,7 @@ def _compute_coulomb_energy_periodic(
 
     assert system.is_periodic, "the system must be periodic."
 
-    charges = (
-        smee.potentials.broadcast_parameters(system, potential).squeeze(-1).float()
-    )
+    charges = smee.potentials.broadcast_parameters(system, potential).squeeze(-1)
 
     cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
     error_tol = torch.tensor(0.0001)
@@ -600,7 +602,7 @@ def _compute_coulomb_energy_periodic(
 
     energy_direct = torch.ops.pme.pme_direct(
         conformer.float(),
-        charges,
+        charges.float(),
         pairwise.idxs.T,
         pairwise.deltas,
         pairwise.distances,
@@ -613,7 +615,7 @@ def _compute_coulomb_energy_periodic(
     )
     energy_recip = energy_self + torch.ops.pme.pme_reciprocal(
         conformer.float(),
-        charges,
+        charges.float(),
         box_vectors.float(),
         pme.gridx,
         pme.gridy,

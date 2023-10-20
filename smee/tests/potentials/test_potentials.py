@@ -90,6 +90,7 @@ def test_broadcast_parameters():
     assert torch.allclose(parameters, expected_parameters)
 
 
+@pytest.mark.parametrize("precision", ["single", "double"])
 @pytest.mark.parametrize(
     "smiles",
     [
@@ -103,7 +104,7 @@ def test_broadcast_parameters():
         "CC(=O)NC1=CC=C(C=C1)O",
     ],
 )
-def test_compute_energy(smiles: str):
+def test_compute_energy(precision, smiles: str):
     molecule = openff.toolkit.Molecule.from_smiles(smiles, allow_undefined_stereo=True)
     molecule.generate_conformers(n_conformers=1)
 
@@ -116,14 +117,21 @@ def test_compute_energy(smiles: str):
     )
     tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
 
+    tensor_top = tensor_top.to(precision=precision)
+    tensor_ff = tensor_ff.to(precision=precision)
+
     energy_smee = compute_energy(tensor_top, tensor_ff, conformer, None)
     energy_openmm = _compute_openmm_energy(interchange, conformer)
 
-    assert torch.isclose(energy_smee, energy_openmm)
+    assert torch.isclose(energy_smee, energy_openmm.to(energy_smee.dtype))
 
 
-def test_compute_energy_periodic(etoh_water_system):
+@pytest.mark.parametrize("precision", ["single", "double"])
+def test_compute_energy_periodic(etoh_water_system, precision):
     tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
+
+    tensor_sys = tensor_sys.to(precision=precision)
+    tensor_ff = tensor_ff.to(precision=precision)
 
     energy_smee = compute_energy(tensor_sys, tensor_ff, coords, box_vectors)
 
@@ -145,7 +153,9 @@ def test_compute_energy_periodic(etoh_water_system):
         openmm.unit.kilocalorie_per_mole
     )
 
-    assert torch.isclose(energy_smee, torch.tensor(energy_openmm))
+    assert torch.isclose(
+        energy_smee, torch.tensor(energy_openmm, dtype=energy_smee.dtype)
+    )
 
 
 def test_compute_energy_v_sites():
@@ -179,4 +189,4 @@ def test_compute_energy_v_sites():
     energy_openmm = _compute_openmm_energy(interchange, conformer)
     energy_smee = compute_energy(tensor_top, tensor_ff, conformer)
 
-    assert torch.isclose(energy_smee, energy_openmm)
+    assert torch.isclose(energy_smee, energy_openmm.to(energy_smee.dtype))
