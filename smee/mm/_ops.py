@@ -199,6 +199,9 @@ def _compute_observables(
     columns = None
 
     for coords, box_vectors, kinetic in smee.mm._reporters.unpack_frames(frames_file):
+        coords = coords.to(theta[0].device)
+        box_vectors = box_vectors.to(theta[0].device)
+
         with torch.enable_grad():
             potential = smee.compute_energy(system, force_field, coords, box_vectors)
 

@@ -103,4 +103,4 @@ def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
         ``shape=(n_pairs * (n_pairs - 1) // 2,)``.
     """
     assert (i < j).all(), "i must be less than j"
-    return ((i * (2 * n - i - 1)) / 2 + j - i - 1).long()
+    return (i * (2 * n - i - 1)) // 2 + j - i - 1

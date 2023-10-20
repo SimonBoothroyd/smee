@@ -91,10 +91,18 @@ def broadcast_idxs(
     per_topology_idxs = []
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
-        offset = idx_offset + torch.arange(n_copies) * topology.n_particles
-
         parameter_map = topology.parameters[potential.type]
         n_interacting_particles = parameter_map.particle_idxs.shape[-1]
+
+        offset = (
+            idx_offset
+            + torch.arange(
+                n_copies,
+                dtype=parameter_map.particle_idxs.dtype,
+                device=parameter_map.particle_idxs.device,
+            )
+            * topology.n_particles
+        )
 
         idxs = parameter_map.particle_idxs
 
