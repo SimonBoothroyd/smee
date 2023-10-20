@@ -8,6 +8,7 @@ import torch
 import smee
 import smee.converters
 import smee.converters.openmm
+import smee.utils
 
 _DENSITY_CONVERSION = 1.0e24 / openmm.unit.AVOGADRO_CONSTANT_NA.value_in_unit(
     openmm.unit.mole**-1
@@ -208,7 +209,7 @@ def _compute_observables(
         du_d_theta_subset = torch.autograd.grad(
             potential,
             [theta[i] for i in needs_grad],
-            [torch.ones(1)],
+            [smee.utils.ones_like(1, potential)],
             retain_graph=False,
             allow_unused=True,
         )
