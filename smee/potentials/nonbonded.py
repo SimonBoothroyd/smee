@@ -205,6 +205,10 @@ def lorentz_berthelot(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Computes the Lorentz-Berthelot combination rules for the given parameters.
 
+    Notes:
+        A 'safe' geometric mean is used to avoid NaNs when the parameters are zero.
+        This will yield non-analytic gradients in some cases.
+
     Args:
         epsilon_a: The epsilon [kcal / mol] values of the first particle in each pair
             with ``shape=(n_pairs, 1)``.
@@ -219,7 +223,7 @@ def lorentz_berthelot(
         The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
         ``shape=(n_pairs, 1)``.
     """
-    return (epsilon_a * epsilon_b).sqrt(), 0.5 * (sigma_a + sigma_b)
+    return smee.utils.geometric_mean(epsilon_a, epsilon_b), 0.5 * (sigma_a + sigma_b)
 
 
 def _compute_dispersion_integral(

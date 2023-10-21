@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import smee
-from smee.utils import find_exclusions, to_upper_tri_idx
+import smee.utils
 
 
 def test_find_exclusions_simple():
@@ -14,7 +14,7 @@ def test_find_exclusions_simple():
     for i in range(5):
         molecule.add_bond(i, i + 1, 1, False)
 
-    exclusions = find_exclusions(molecule.to_topology())
+    exclusions = smee.utils.find_exclusions(molecule.to_topology())
     assert exclusions == {
         (0, 1): "scale_12",
         (0, 2): "scale_13",
@@ -44,7 +44,7 @@ def test_find_exclusions_rings():
         molecule.add_bond(i + 1, (i + 1) % 6 + 1, 1, False)
     molecule.add_bond(2, 7, 1, False)
 
-    exclusions = find_exclusions(molecule.to_topology())
+    exclusions = smee.utils.find_exclusions(molecule.to_topology())
     assert exclusions == {
         (0, 1): "scale_12",
         (0, 2): "scale_13",
@@ -89,7 +89,7 @@ def test_find_exclusions_dimer():
     topology.add_molecule(molecule)
     topology.add_molecule(molecule)
 
-    exclusions = find_exclusions(topology)
+    exclusions = smee.utils.find_exclusions(topology)
     assert exclusions == {
         (0, 1): "scale_12",
         (0, 2): "scale_13",
@@ -128,7 +128,7 @@ def test_find_exclusions_v_sites():
         parameter_idxs=torch.zeros((2, 1)),
     )
 
-    exclusions = find_exclusions(molecule.to_topology(), v_sites)
+    exclusions = smee.utils.find_exclusions(molecule.to_topology(), v_sites)
     assert exclusions == {
         (0, 1): "scale_12",
         (0, 2): "scale_13",
@@ -198,7 +198,57 @@ def test_to_upper_tri_idx(n):
     i, j = torch.triu_indices(n, n, 1)
     expected_idxs = torch.arange(len(i))
 
-    idxs = to_upper_tri_idx(i, j, n)
+    idxs = smee.utils.to_upper_tri_idx(i, j, n)
 
     assert idxs.shape == expected_idxs.shape
     assert (idxs == expected_idxs).all()
+
+
+def test_geometric_mean():
+    a = torch.tensor(2.0, requires_grad=True)
+    b = torch.tensor(3.0, requires_grad=True)
+
+    expected = torch.sqrt(a * b)
+    expected.backward()
+
+    expected_grad_a = a.grad
+    a.grad = None
+    expected_grad_b = b.grad
+    b.grad = None
+
+    actual = smee.utils.geometric_mean(a, b)
+    actual.backward()
+
+    assert actual.shape == expected.shape
+    assert torch.allclose(actual, expected)
+
+    assert a.grad.shape == expected_grad_a.shape
+    assert torch.allclose(a.grad, expected_grad_a)
+
+    assert b.grad.shape == expected_grad_b.shape
+    assert torch.allclose(b.grad, expected_grad_b)
+
+
+@pytest.mark.parametrize(
+    "a, b, expected_grad_a, expected_grad_b",
+    [
+        (0.0, 0.0, 0.0, 0.0),
+        (3.0, 0.0, 0.0, 3.0 / (2.0 * smee.utils.EPSILON)),
+        (0.0, 4.0, 4.0 / (2.0 * smee.utils.EPSILON), 0.0),
+    ],
+)
+def test_geometric_mean_zero(a, b, expected_grad_a, expected_grad_b):
+    a = torch.tensor(a, requires_grad=True)
+    b = torch.tensor(b, requires_grad=True)
+
+    v = smee.utils.geometric_mean(a, b)
+    v.backward()
+
+    expected_grad_a = torch.tensor(expected_grad_a)
+    expected_grad_b = torch.tensor(expected_grad_b)
+
+    assert a.grad.shape == expected_grad_a.shape
+    assert torch.allclose(a.grad, expected_grad_a)
+
+    assert b.grad.shape == expected_grad_b.shape
+    assert torch.allclose(b.grad, expected_grad_b)

@@ -14,6 +14,10 @@ _size = int | torch.Size | list[int] | tuple[int, ...]
 ExclusionType = typing.Literal["scale_12", "scale_13", "scale_14", "scale_15"]
 
 
+EPSILON = 1.0e-6
+"""A small epsilon value used to prevent divide by zero errors."""
+
+
 def find_exclusions(
     topology: openff.toolkit.Topology,
     v_sites: typing.Optional["smee.VSiteMap"] = None,
@@ -109,3 +113,40 @@ def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
     """
     assert (i < j).all(), "i must be less than j"
     return (i * (2 * n - i - 1)) // 2 + j - i - 1
+
+
+class _SafeGeometricMean(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, eps_a, eps_b):
+        eps = torch.sqrt(eps_a * eps_b)
+
+        ctx.save_for_backward(eps_a, eps_b, eps)
+        return torch.sqrt(eps_a * eps_b)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        eps_a, eps_b, eps = ctx.saved_tensors
+
+        eps = torch.where(eps == 0.0, EPSILON, eps)
+
+        grad_eps_a = grad_output * eps_b / (2 * eps)
+        grad_eps_b = grad_output * eps_a / (2 * eps)
+
+        return grad_eps_a, grad_eps_b
+
+
+def geometric_mean(eps_a: torch.Tensor, eps_b: torch.Tensor) -> torch.Tensor:
+    """Computes the geometric mean of two values 'safely'.
+
+    A small epsilon (``smee.utils.EPSILON``) is added when computing the gradient in
+    cases where the mean is zero to prevent divide by zero errors.
+
+    Args:
+        eps_a: The first value.
+        eps_b: The second value.
+
+    Returns:
+        The geometric mean of the two values.
+    """
+
+    return _SafeGeometricMean.apply(eps_a, eps_b)
