@@ -89,6 +89,11 @@ def tensor_like(data: typing.Any, other: torch.Tensor) -> torch.Tensor:
     return torch.tensor(data, dtype=other.dtype, device=other.device)
 
 
+def arange_like(end: int, other: torch.Tensor) -> torch.Tensor:
+    """Arange a tensor with the same device and type as another tensor."""
+    return torch.arange(end, dtype=other.dtype, device=other.device)
+
+
 def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
     """Converts pairs of 2D indices to 1D indices in an upper triangular matrix that
     excludes the diagonal.

@@ -65,10 +65,7 @@ def _broadcast_exclusions(
 
         exclusion_offset = (
             idx_offset
-            + torch.arange(
-                n_copies, dtype=exclusion_idxs.dtype, device=exclusion_idxs.device
-            )
-            * topology.n_particles
+            + smee.utils.arange_like(n_copies, exclusion_idxs) * topology.n_particles
         )
         idx_offset += n_copies * topology.n_particles
 

@@ -94,17 +94,11 @@ def broadcast_idxs(
         parameter_map = topology.parameters[potential.type]
         n_interacting_particles = parameter_map.particle_idxs.shape[-1]
 
-        offset = (
-            idx_offset
-            + torch.arange(
-                n_copies,
-                dtype=parameter_map.particle_idxs.dtype,
-                device=parameter_map.particle_idxs.device,
-            )
-            * topology.n_particles
-        )
-
         idxs = parameter_map.particle_idxs
+
+        offset = (
+            idx_offset + smee.utils.arange_like(n_copies, idxs) * topology.n_particles
+        )
 
         if len(idxs) > 0:
             idxs = offset[:, None, None] + idxs[None, :, :]
