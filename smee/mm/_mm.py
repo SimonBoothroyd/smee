@@ -285,8 +285,10 @@ def simulate(
     Args:
         system: The system / topology to simulate.
         force_field: The force field to simulate with.
-        coords: The coordinates [Å] to use for the simulation.
-        box_vectors: The box vectors [Å] to use for the simulation if periodic.
+        coords: The coordinates [Å] to use for the simulation. This should be
+            a unit wrapped numpy array with ``shape=(n_atoms, 3)``.
+        box_vectors: The box vectors [Å] to use for the simulation if periodic. This
+            should be a unit wrapped numpy array with ``shape=(3, 3)``.
         equilibrate_configs: A list of configurations defining the steps to run for
             equilibration. No data will be stored from these simulations.
         production_config: The configuration defining the production simulation to run.
@@ -294,11 +296,16 @@ def simulate(
             production simulation.
     """
 
+    assert isinstance(coords.value_in_unit(openmm.unit.angstrom), numpy.ndarray)
+    assert isinstance(box_vectors.value_in_unit(openmm.unit.angstrom), numpy.ndarray)
+
+    force_field = force_field.to("cpu")
+
     system: smee.TensorSystem = (
         system
         if isinstance(system, smee.TensorSystem)
         else smee.TensorSystem([system], [1], False)
-    )
+    ).to("cpu")
 
     requires_pbc = any(
         config.pressure is not None

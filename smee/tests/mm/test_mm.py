@@ -267,8 +267,8 @@ def test_simulate_invalid_pressure(mock_argon_tensors):
         simulate(
             tensor_top,
             tensor_ff,
-            numpy.zeros((0, 3)),
-            numpy.eye(3),
+            numpy.zeros((0, 3)) * openmm.unit.angstrom,
+            numpy.eye(3) * openmm.unit.angstrom,
             [],
             smee.mm.SimulationConfig(
                 temperature=1.0 * openmm.unit.kelvin,
