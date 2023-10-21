@@ -26,6 +26,9 @@ dependencies:
   - numpy
   - msgpack-python
 
+  ### Optimize
+  - scipy
+
   # Examples
   - jupyter
   - nbconvert

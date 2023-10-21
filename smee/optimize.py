@@ -26,6 +26,8 @@ LossFunction = typing.Callable[
 class LevenbergMarquardtConfig(pydantic.BaseModel):
     """Configuration for the Levenberg-Marquardt optimizer."""
 
+    type: typing.Literal["levenberg-marquardt"] = "levenberg-marquardt"
+
     trust_radius: float = pydantic.Field(
         0.2, description="Target trust radius.", gt=0.0
     )
@@ -259,19 +261,21 @@ def _update_trust_radius(
     return trust_radius
 
 
-def optimize(
-    x: torch.tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
+def _optimize_levenberg_marquardt(
+    x: torch.Tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
 ) -> torch.Tensor:
-    """
+    """Optimize a function using the Levenberg-Marquardt algorithm.
 
     Args:
-        x:
-        loss_fn:
-        config:
+        x: The initial guess of the parameters.
+        loss_fn: The loss function. This should return the loss, gradient (with
+            ``shape=(n,)``), and hessian (with ``shape=(n, n)``).
+        config: The optimizer config.
 
     Returns:
-
+        The optimized parameters.
     """
+
     history = [loss_fn(x)]
     iteration = 0
 
@@ -289,8 +293,6 @@ def optimize(
         x += dx
 
         loss, gradient, hessian = loss_fn(x)
-
-        loss_previous, gradient_previous, hessian_previous = history[-1]
         loss_delta = loss - loss_previous
 
         step_quality = loss_delta / expected_improvement
@@ -300,7 +302,11 @@ def optimize(
 
             # reject the 'bad' step and try again from where we were
             x = x_previous
-            loss, gradient, hessian = loss_previous, gradient_previous, hessian_previous
+            loss, gradient, hessian = (
+                loss_previous,
+                gradient_previous,
+                hessian_previous,
+            )
 
         else:
             trust_radius = _update_trust_radius(
@@ -309,5 +315,31 @@ def optimize(
 
         history.append((loss, gradient, hessian))
         iteration += 1
+
+        _LOGGER.info(f"step={iteration} loss={loss:.4e}")
+
+    return x
+
+
+def optimize(
+    x: torch.tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
+) -> torch.Tensor:
+    """Optimize a function using the Levenberg-Marquardt algorithm.
+
+    Args:
+        x: The initial guess of the parameters.
+        loss_fn: The loss function. This should return the loss, gradient (with
+            ``shape=(n,)``), and hessian (with ``shape=(n, n)``).
+        config: The optimizer config.
+
+    Returns:
+        The optimized parameters.
+    """
+
+    if config.type != "levenberg-marquardt":
+        raise NotImplementedError(f"unknown optimizer type {config.type}")
+
+    with torch.no_grad():
+        x = _optimize_levenberg_marquardt(x, loss_fn, config)
 
     return x

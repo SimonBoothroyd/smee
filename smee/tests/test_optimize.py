@@ -1,6 +1,11 @@
 import torch
 
-from smee.optimize import _levenberg_marquardt_solver, _levenberg_marquardt_step
+from smee.optimize import (
+    LevenbergMarquardtConfig,
+    _levenberg_marquardt_solver,
+    _levenberg_marquardt_step,
+    optimize,
+)
 
 
 def test_levenberg_marquardt_solver():
@@ -51,3 +56,31 @@ def test_levenberg_marquardt_step():
 
     assert torch.isclose(torch.norm(dx), torch.tensor(expected_trust_radius))
     assert adjusted is True
+
+
+def test_optimize():
+    expected = torch.tensor([5.0, 3.0, 2.0])
+
+    x_ref = torch.linspace(-2.0, 2.0, 100)
+    y_ref = expected[0] * x_ref**2 + expected[1] * x_ref + expected[2]
+
+    theta_0 = torch.tensor([0.0, 0.0, 0.0], requires_grad=True)
+
+    def loss_fn(theta: torch.Tensor) -> torch.Tensor:
+        y = theta[0] * x_ref**2 + theta[1] * x_ref + theta[2]
+        return torch.sum((y - y_ref) ** 2)
+
+    def target_fn(
+        theta: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        with torch.enable_grad():
+            loss = loss_fn(theta)
+            (grad,) = torch.autograd.grad(loss, theta, torch.tensor(1.0))
+            hess = torch.autograd.functional.hessian(loss_fn, theta)
+
+        return loss.detach(), grad.detach(), hess.detach()
+
+    x_final = optimize(theta_0, target_fn, LevenbergMarquardtConfig())
+
+    assert x_final.shape == expected.shape
+    assert torch.allclose(x_final, expected)
