@@ -61,10 +61,13 @@ def _broadcast_exclusions(
     per_topology_exclusion_scales = []
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
-        exclusion_offset = idx_offset + torch.arange(n_copies) * topology.n_particles
-        idx_offset += n_copies * topology.n_particles
-
         exclusion_idxs = topology.parameters[potential.type].exclusions
+
+        exclusion_offset = (
+            idx_offset
+            + smee.utils.arange_like(n_copies, exclusion_idxs) * topology.n_particles
+        )
+        idx_offset += n_copies * topology.n_particles
 
         if len(exclusion_idxs) == 0:
             continue
@@ -333,8 +336,8 @@ def _compute_dispersion_correction(
         for key, count in zip(potential.parameter_keys, parameter_counts):
             n_by_type[key] += count.item() * n_copies
 
-    counts = torch.tensor(
-        [n_by_type[key] for key in potential.parameter_keys], dtype=torch.float32
+    counts = smee.utils.tensor_like(
+        [n_by_type[key] for key in potential.parameter_keys], potential.parameters
     )
 
     # particles of the same type interacting
@@ -592,7 +595,7 @@ def _compute_coulomb_energy_periodic(
     cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
     error_tol = torch.tensor(0.0001)
 
-    exceptions = _compute_pme_exclusions(system, potential)
+    exceptions = _compute_pme_exclusions(system, potential).to(charges.device)
 
     grid_x, grid_y, grid_z, alpha = _compute_pme_grid(box_vectors, cutoff, error_tol)
 
@@ -623,9 +626,9 @@ def _compute_coulomb_energy_periodic(
         pme.order,
         pme.alpha,
         pme.coulomb,
-        pme.moduli[0],
-        pme.moduli[1],
-        pme.moduli[2],
+        pme.moduli[0].to(charges.device),
+        pme.moduli[1].to(charges.device),
+        pme.moduli[2].to(charges.device),
     )
 
     exclusion_idxs, exclusion_scales = _broadcast_exclusions(system, potential)

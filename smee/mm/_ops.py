@@ -8,6 +8,7 @@ import torch
 import smee
 import smee.converters
 import smee.converters.openmm
+import smee.utils
 
 _DENSITY_CONVERSION = 1.0e24 / openmm.unit.AVOGADRO_CONSTANT_NA.value_in_unit(
     openmm.unit.mole**-1
@@ -199,13 +200,16 @@ def _compute_observables(
     columns = None
 
     for coords, box_vectors, kinetic in smee.mm._reporters.unpack_frames(frames_file):
+        coords = coords.to(theta[0].device)
+        box_vectors = box_vectors.to(theta[0].device)
+
         with torch.enable_grad():
             potential = smee.compute_energy(system, force_field, coords, box_vectors)
 
         du_d_theta_subset = torch.autograd.grad(
             potential,
             [theta[i] for i in needs_grad],
-            [torch.ones(1)],
+            [smee.utils.ones_like(1, potential)],
             retain_graph=False,
             allow_unused=True,
         )
@@ -222,7 +226,7 @@ def _compute_observables(
 
         values.append(torch.tensor([frame[c] for c in columns]))
 
-    values = torch.stack(values)
+    values = torch.stack(values).to(theta[0].device)
 
     return (
         values,

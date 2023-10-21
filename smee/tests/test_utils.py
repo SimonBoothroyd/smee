@@ -1,5 +1,6 @@
 import openff.interchange.models
 import openff.toolkit
+import pytest
 import torch
 
 import smee
@@ -181,12 +182,23 @@ def test_tensor_like():
     assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
 
 
-def test_to_upper_tri_idx():
-    i = torch.tensor([0, 1, 0])
-    j = torch.tensor([1, 2, 2])
+def test_arrange_like():
+    expected_type = torch.int8
+    expected_data = [0, 1, 2, 3]
 
-    idxs = to_upper_tri_idx(i, j, 3)
+    other = torch.tensor([], dtype=expected_type, device="cpu")
+    tensor = smee.utils.arange_like(4, other)
 
-    expected_idxs = torch.tensor([0, 2, 1])
+    assert tensor.dtype == expected_type
+    assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
+
+
+@pytest.mark.parametrize("n", [7499, 7500, 7501])
+def test_to_upper_tri_idx(n):
+    i, j = torch.triu_indices(n, n, 1)
+    expected_idxs = torch.arange(len(i))
+
+    idxs = to_upper_tri_idx(i, j, n)
+
     assert idxs.shape == expected_idxs.shape
-    assert torch.allclose(idxs, expected_idxs)
+    assert (idxs == expected_idxs).all()
