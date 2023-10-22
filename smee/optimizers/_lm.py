@@ -93,7 +93,9 @@ def _solver(
         The step with ``shape=(n,)`` and the expected improvement with ``shape=()``.
     """
 
-    hessian_regular = hessian + (damping_factor - 1) ** 2 * torch.eye(len(hessian))
+    hessian_regular = hessian + (damping_factor - 1) ** 2 * torch.eye(
+        len(hessian), device=hessian.device
+    )
     hessian_inverse = _invert_svd(hessian_regular)
 
     dx = -(hessian_inverse @ gradient)
@@ -175,7 +177,7 @@ def _step(
             f"hessian has a small or negative eigenvalue ({eigenvalue_smallest:.1e}), "
             f"mixing in some steepest descent ({adjacency:.1e}) to correct this."
         )
-        hessian += adjacency * torch.eye(hessian.shape[0])
+        hessian += adjacency * torch.eye(hessian.shape[0], device=hessian.device)
 
     damping_factor = torch.tensor(1.0)
 
@@ -190,7 +192,11 @@ def _step(
         # meaningless steps.
         damping_factor = optimize.brent(
             _damping_factor_loss_fn,
-            (gradient, hessian, trust_radius),
+            (
+                gradient.detach().cpu(),
+                hessian.detach().cpu(),
+                trust_radius.detach().cpu(),
+            ),
             brack=(initial_damping_factor, initial_damping_factor * 4),
             tol=1e-6,
         )
@@ -285,7 +291,7 @@ def levenberg_marquardt(
     history = [loss_fn(x)]
     iteration = 0
 
-    trust_radius = config.trust_radius
+    trust_radius = torch.tensor(config.trust_radius)
 
     while iteration < config.max_iterations:
         loss_prev, gradient_prev, hessian_prev = history[-1]
@@ -295,8 +301,12 @@ def levenberg_marquardt(
         )
         dx_norm = torch.linalg.norm(dx)
 
-        x_prev = torch.tensor(x, requires_grad=x.requires_grad)
+        x_prev = x.clone().detach().clone()
+        x_prev.requires_grad = x.requires_grad
+
         x += dx
+
+        x = torch.where(x < 0.0, 0.0, x)
 
         loss, gradient, hessian = loss_fn(x)
         loss_delta = loss - loss_prev
