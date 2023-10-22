@@ -6,7 +6,7 @@ Notes:
     license which can be found in the LICENSE_3RD_PARTY file.
 
 References:
-    [1]: https://github.com/leeping/forcebalance/blob/b395fd4b3e2c87589475e5d63b94729fc6fdd0c3/src/optimizer.py
+    [1]: https://github.com/leeping/forcebalance/blob/b395fd4b/src/optimizer.py
 """
 import logging
 import math
@@ -41,7 +41,7 @@ class LevenbergMarquardtConfig(pydantic.BaseModel):
     )
 
     max_iterations: int = pydantic.Field(
-        15, description="The maximum number of iterations to perform.", ge=0
+        ..., description="The maximum number of iterations to perform.", ge=0
     )
 
     error_tolerance: float = pydantic.Field(
@@ -79,9 +79,9 @@ def _invert_svd(matrix: torch.Tensor, threshold: float = 1e-12) -> torch.Tensor:
     return vh.T @ torch.diag(s_inverse) @ u.T
 
 
-def _levenberg_marquardt_solver(
+def _solver(
     damping_factor: torch.Tensor, gradient: torch.Tensor, hessian: torch.Tensor
-):
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Solve the Levenberg–Marquardt step.
 
     Args:
@@ -102,14 +102,16 @@ def _levenberg_marquardt_solver(
     return dx, solution
 
 
-def _compute_trust_func_objective(
+def _damping_factor_loss_fn(
     damping_factor: torch.Tensor,
     gradient: torch.Tensor,
     hessian: torch.Tensor,
     trust_radius: float,
-):
+) -> torch.Tensor:
     """Computes the squared difference between the target trust radius and the step size
     proposed by the Levenberg–Marquardt solver.
+
+    This is used when finding the optimal damping factor.
 
     Args:
         damping_factor: The damping factor with ``shape=(1,)``.
@@ -118,9 +120,9 @@ def _compute_trust_func_objective(
         trust_radius: The target trust radius.
 
     Returns:
-
+        The squared difference.
     """
-    dx, _ = _levenberg_marquardt_solver(damping_factor, gradient, hessian)
+    dx, _ = _solver(damping_factor, gradient, hessian)
     dx_norm = torch.linalg.norm(dx)
 
     _LOGGER.info(
@@ -130,11 +132,11 @@ def _compute_trust_func_objective(
     return (dx_norm - trust_radius) ** 2
 
 
-def _levenberg_marquardt_step(
+def _step(
     gradient: torch.Tensor,
     hessian: torch.Tensor,
     trust_radius: float,
-    damping_factor_guess: float = 1.0,
+    initial_damping_factor: float = 1.0,
     min_eigenvalue: float = 1.0e-4,
 ) -> tuple[torch.Tensor, torch.Tensor, bool]:
     """Compute the Levenberg–Marquardt step.
@@ -143,9 +145,11 @@ def _levenberg_marquardt_step(
         gradient: The gradient with ``shape=(n,)``.
         hessian: The hessian with ``shape=(n, n)``.
         trust_radius: The target trust radius.
-        damping_factor_guess: An initial guess of the Levenberg-Marquardt damping factor
-        min_eigenvalue: Lower bound on Hessian eigenvalue (below this, we add in
-            steepest descent)
+        initial_damping_factor: An initial guess of the Levenberg-Marquardt damping
+            factor
+        min_eigenvalue: Lower bound on hessian eigenvalue. If the smallest eigenvalue
+            is smaller than this, a small amount of steepest descent is mixed in to
+            try and correct this.
 
     Notes:
         * the code to 'excise' certain parameters is for now removed until its clear
@@ -175,23 +179,23 @@ def _levenberg_marquardt_step(
 
     damping_factor = torch.tensor(1.0)
 
-    dx, improvement = _levenberg_marquardt_solver(damping_factor, gradient, hessian)
+    dx, improvement = _solver(damping_factor, gradient, hessian)
     dx_norm = torch.linalg.norm(dx)
 
     adjust_damping = (dx_norm > trust_radius).item()
 
     if adjust_damping:
         # LPW tried a few optimizers and found Brent works well, but also that the
-        # tolerance is fractional and if the optimized value is zero it takes a lot of
+        # tolerance is fractional - if the optimized value is zero it takes a lot of
         # meaningless steps.
         damping_factor = optimize.brent(
-            _compute_trust_func_objective,
+            _damping_factor_loss_fn,
             (gradient, hessian, trust_radius),
-            brack=(damping_factor_guess, damping_factor_guess * 4),
+            brack=(initial_damping_factor, initial_damping_factor * 4),
             tol=1e-6,
         )
 
-        dx, improvement = _levenberg_marquardt_solver(damping_factor, gradient, hessian)
+        dx, improvement = _solver(damping_factor, gradient, hessian)
         dx_norm = torch.linalg.norm(dx)
 
     _LOGGER.info(f"trust-radius step found (length {dx_norm:.4e})")
@@ -261,7 +265,8 @@ def _update_trust_radius(
     return trust_radius
 
 
-def _optimize_levenberg_marquardt(
+@torch.no_grad()
+def levenberg_marquardt(
     x: torch.Tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
 ) -> torch.Tensor:
     """Optimize a function using the Levenberg-Marquardt algorithm.
@@ -275,6 +280,7 @@ def _optimize_levenberg_marquardt(
     Returns:
         The optimized parameters.
     """
+    x = torch.tensor(x, requires_grad=x.requires_grad)
 
     history = [loss_fn(x)]
     iteration = 0
@@ -282,31 +288,27 @@ def _optimize_levenberg_marquardt(
     trust_radius = config.trust_radius
 
     while iteration < config.max_iterations:
-        loss_previous, gradient_previous, hessian_previous = history[-1]
+        loss_prev, gradient_prev, hessian_prev = history[-1]
 
-        dx, expected_improvement, damping_adjusted = _levenberg_marquardt_step(
-            gradient_previous, hessian_previous, trust_radius
+        dx, expected_improvement, damping_adjusted = _step(
+            gradient_prev, hessian_prev, trust_radius
         )
         dx_norm = torch.linalg.norm(dx)
 
-        x_previous = x
+        x_prev = torch.tensor(x, requires_grad=x.requires_grad)
         x += dx
 
         loss, gradient, hessian = loss_fn(x)
-        loss_delta = loss - loss_previous
+        loss_delta = loss - loss_prev
 
         step_quality = loss_delta / expected_improvement
 
-        if loss > (loss_previous + config.error_tolerance):
+        if loss > (loss_prev + config.error_tolerance):
             trust_radius = _reduce_trust_radius(dx_norm, config)
 
             # reject the 'bad' step and try again from where we were
-            x = x_previous
-            loss, gradient, hessian = (
-                loss_previous,
-                gradient_previous,
-                hessian_previous,
-            )
+            x = x_prev
+            loss, gradient, hessian = (loss_prev, gradient_prev, hessian_prev)
 
         else:
             trust_radius = _update_trust_radius(
@@ -317,29 +319,5 @@ def _optimize_levenberg_marquardt(
         iteration += 1
 
         _LOGGER.info(f"step={iteration} loss={loss:.4e}")
-
-    return x
-
-
-def optimize(
-    x: torch.tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
-) -> torch.Tensor:
-    """Optimize a function using the Levenberg-Marquardt algorithm.
-
-    Args:
-        x: The initial guess of the parameters.
-        loss_fn: The loss function. This should return the loss, gradient (with
-            ``shape=(n,)``), and hessian (with ``shape=(n, n)``).
-        config: The optimizer config.
-
-    Returns:
-        The optimized parameters.
-    """
-
-    if config.type != "levenberg-marquardt":
-        raise NotImplementedError(f"unknown optimizer type {config.type}")
-
-    with torch.no_grad():
-        x = _optimize_levenberg_marquardt(x, loss_fn, config)
 
     return x
