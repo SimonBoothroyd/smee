@@ -15,10 +15,12 @@ import typing
 import pydantic
 import torch
 
+import smee.utils
+
 _LOGGER = logging.getLogger(__name__)
 
 
-LossFunction = typing.Callable[
+ClosureFn = typing.Callable[
     [torch.Tensor], tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 ]
 
@@ -38,10 +40,6 @@ class LevenbergMarquardtConfig(pydantic.BaseModel):
     )
     adaptive_damping: float = pydantic.Field(
         1.0, description="Adaptive trust radius adjustment damping.", gt=0.0
-    )
-
-    max_iterations: int = pydantic.Field(
-        ..., description="The maximum number of iterations to perform.", ge=0
     )
 
     error_tolerance: float = pydantic.Field(
@@ -94,7 +92,7 @@ def _solver(
     """
 
     hessian_regular = hessian + (damping_factor - 1) ** 2 * torch.eye(
-        len(hessian), device=hessian.device
+        len(hessian), device=hessian.device, dtype=hessian.dtype
     )
     hessian_inverse = _invert_svd(hessian_regular)
 
@@ -137,7 +135,7 @@ def _damping_factor_loss_fn(
 def _step(
     gradient: torch.Tensor,
     hessian: torch.Tensor,
-    trust_radius: float,
+    trust_radius: torch.Tensor,
     initial_damping_factor: float = 1.0,
     min_eigenvalue: float = 1.0e-4,
 ) -> tuple[torch.Tensor, torch.Tensor, bool]:
@@ -211,7 +209,7 @@ def _step(
 
 def _reduce_trust_radius(
     dx_norm: torch.Tensor, config: LevenbergMarquardtConfig
-) -> float:
+) -> torch.Tensor:
     """Reduce the trust radius.
 
     Args:
@@ -226,16 +224,16 @@ def _reduce_trust_radius(
     )
     _LOGGER.info(f"reducing trust radius to {trust_radius:.4e}")
 
-    return trust_radius
+    return smee.utils.tensor_like(trust_radius, dx_norm)
 
 
 def _update_trust_radius(
     dx_norm: torch.Tensor,
     step_quality: float,
-    trust_radius: float,
+    trust_radius: torch.Tensor,
     damping_adjusted: bool,
     config: LevenbergMarquardtConfig,
-) -> float:
+) -> torch.Tensor:
     """Adjust the trust radius based on the quality of the previous step.
 
     Args:
@@ -252,7 +250,8 @@ def _update_trust_radius(
 
     if step_quality <= config.quality_threshold_low:
         trust_radius = max(
-            dx_norm * (1.0 / (1.0 + config.adaptive_factor)), config.min_trust_radius
+            dx_norm * (1.0 / (1.0 + config.adaptive_factor)),
+            smee.utils.tensor_like(config.min_trust_radius, dx_norm),
         )
         _LOGGER.info(
             f"low quality step detected - reducing trust radius to {trust_radius:.4e}"
@@ -271,63 +270,69 @@ def _update_trust_radius(
     return trust_radius
 
 
-@torch.no_grad()
-def levenberg_marquardt(
-    x: torch.Tensor, loss_fn: LossFunction, config: LevenbergMarquardtConfig
-) -> torch.Tensor:
-    """Optimize a function using the Levenberg-Marquardt algorithm.
+class LevenbergMarquardt:
+    """A Levenberg-Marquardt optimizer.
 
-    Args:
-        x: The initial guess of the parameters.
-        loss_fn: The loss function. This should return the loss, gradient (with
-            ``shape=(n,)``), and hessian (with ``shape=(n, n)``).
-        config: The optimizer config.
-
-    Returns:
-        The optimized parameters.
+    Notes:
+        This is a reimplementation of the Levenberg-Marquardt optimizer from the
+        ForceBalance package, and so may differ from a standard implementation.
     """
-    x = torch.tensor(x, requires_grad=x.requires_grad)
 
-    history = [loss_fn(x)]
-    iteration = 0
+    def __init__(self, config: LevenbergMarquardtConfig | None = None):
+        self.config = config if config is not None else LevenbergMarquardtConfig()
 
-    trust_radius = torch.tensor(config.trust_radius)
+        self._closure_prev = None
+        self._trust_radius = torch.tensor(self.config.trust_radius)
 
-    while iteration < config.max_iterations:
-        loss_prev, gradient_prev, hessian_prev = history[-1]
+    @torch.no_grad()
+    def step(
+        self, x: torch.Tensor, closure: ClosureFn
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Performs a single optimization step.
+
+        Args:
+            x: The initial guess of the parameters.
+            closure: The closure that computes the loss (``shape=()``), its
+                gradient (``shape=(n,)``), and hessian (``shape=(n, n)``)..
+
+        Returns:
+            The optimized parameters.
+        """
+
+        if self._closure_prev is None:
+            # compute the initial loss, gradient and hessian
+            self._closure_prev = closure(x)
+
+        if self._trust_radius.device != x.device:
+            self._trust_radius = self._trust_radius.to(x.device)
+
+        loss_prev, gradient_prev, hessian_prev = self._closure_prev
 
         dx, expected_improvement, damping_adjusted = _step(
-            gradient_prev, hessian_prev, trust_radius
+            gradient_prev, hessian_prev, self._trust_radius
         )
         dx_norm = torch.linalg.norm(dx)
 
-        x_prev = x.clone().detach().clone()
-        x_prev.requires_grad = x.requires_grad
+        x_next = (x + dx).requires_grad_(x.requires_grad)
 
-        x += dx
-
-        x = torch.where(x < 0.0, 0.0, x)
-
-        loss, gradient, hessian = loss_fn(x)
-        loss_delta = loss - loss_prev
+        loss_next, gradient_next, hessian_next = closure(x_next)
+        loss_delta = loss_next - loss_prev
 
         step_quality = loss_delta / expected_improvement
 
-        if loss > (loss_prev + config.error_tolerance):
-            trust_radius = _reduce_trust_radius(dx_norm, config)
-
+        if loss_next > (loss_prev + self.config.error_tolerance):
             # reject the 'bad' step and try again from where we were
-            x = x_prev
             loss, gradient, hessian = (loss_prev, gradient_prev, hessian_prev)
 
+            self._trust_radius = _reduce_trust_radius(dx_norm, self.config)
         else:
-            trust_radius = _update_trust_radius(
-                dx_norm, step_quality, trust_radius, damping_adjusted, config
+            # accept the step
+            loss, gradient, hessian = (loss_next, gradient_next, hessian_next)
+            x.data.copy_(x_next.data)
+
+            self._trust_radius = _update_trust_radius(
+                dx_norm, step_quality, self._trust_radius, damping_adjusted, self.config
             )
 
-        history.append((loss, gradient, hessian))
-        iteration += 1
-
-        _LOGGER.info(f"step={iteration} loss={loss:.4e}")
-
-    return x
+        self._closure_prev = (loss, gradient, hessian)
+        return self._closure_prev

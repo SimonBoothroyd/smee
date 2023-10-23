@@ -4,11 +4,10 @@ import pytest
 import torch
 
 from smee.optimizers._lm import (
-    LevenbergMarquardtConfig,
+    LevenbergMarquardt,
     _damping_factor_loss_fn,
     _solver,
     _step,
-    levenberg_marquardt,
 )
 
 
@@ -47,7 +46,7 @@ def test_step():
         ]
     )
 
-    expected_trust_radius = 0.123
+    expected_trust_radius = torch.tensor(0.123)
 
     dx, solution, adjusted = _step(
         gradient, hessian, trust_radius=expected_trust_radius
@@ -155,18 +154,17 @@ def test_levenberg_marquardt_adaptive(mocker, caplog):
 
     x_traj = []
 
-    def mock_loss_fn(x):
-        x_traj.append(x.clone())
+    def mock_loss_fn(_x):
+        x_traj.append(_x.clone())
         return mock_loss_traj.pop(0)
 
-    x_0 = torch.tensor([0.0, 0.0])
+    x = torch.tensor([0.0, 0.0])
+
+    optimizer = LevenbergMarquardt()
 
     with caplog.at_level(logging.INFO):
-        x_final = levenberg_marquardt(
-            x_0, mock_loss_fn, LevenbergMarquardtConfig(max_iterations=3)
-        )
-
-    assert torch.allclose(x_0, torch.tensor([0.0, 0.0]))
+        for _ in range(3):
+            optimizer.step(x, mock_loss_fn)
 
     expected_x_traj = [
         torch.tensor([0.0, 0.0]),
@@ -175,8 +173,8 @@ def test_levenberg_marquardt_adaptive(mocker, caplog):
         torch.tensor([0.1, 0.2]),
         torch.tensor([0.15, 0.21]),
     ]
-    assert x_final.shape == expected_x_traj[-1].shape
-    assert torch.allclose(x_final, expected_x_traj[-1])
+    assert x.shape == expected_x_traj[-1].shape
+    assert torch.allclose(x, expected_x_traj[-1])
 
     trust_radius_messages = [m for m in caplog.messages if "trust radius" in m]
 
@@ -202,24 +200,26 @@ def test_levenberg_marquardt():
     x_ref = torch.linspace(-2.0, 2.0, 100)
     y_ref = expected[0] * x_ref**2 + expected[1] * x_ref + expected[2]
 
-    theta_0 = torch.tensor([0.0, 0.0, 0.0], requires_grad=True)
+    theta = torch.tensor([0.0, 0.0, 0.0], requires_grad=True)
 
-    def loss_fn(theta: torch.Tensor) -> torch.Tensor:
-        y = theta[0] * x_ref**2 + theta[1] * x_ref + theta[2]
+    def loss_fn(_theta: torch.Tensor) -> torch.Tensor:
+        y = _theta[0] * x_ref**2 + _theta[1] * x_ref + _theta[2]
         return torch.sum((y - y_ref) ** 2)
 
+    @torch.enable_grad()
     def target_fn(
-        theta: torch.Tensor,
+        _theta: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        with torch.enable_grad():
-            loss = loss_fn(theta)
-            (grad,) = torch.autograd.grad(loss, theta, torch.tensor(1.0))
-            hess = torch.autograd.functional.hessian(loss_fn, theta)
+        loss = loss_fn(_theta)
+        (grad,) = torch.autograd.grad(loss, _theta, torch.tensor(1.0))
+        hess = torch.autograd.functional.hessian(loss_fn, _theta)
 
         return loss.detach(), grad.detach(), hess.detach()
 
-    config = LevenbergMarquardtConfig(max_iterations=15)
-    x_final = levenberg_marquardt(theta_0, target_fn, config)
+    optimizer = LevenbergMarquardt()
 
-    assert x_final.shape == expected.shape
-    assert torch.allclose(x_final, expected)
+    for _ in range(15):
+        optimizer.step(theta, target_fn)
+
+    assert theta.shape == expected.shape
+    assert torch.allclose(theta, expected)
