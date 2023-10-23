@@ -175,7 +175,9 @@ def _step(
             f"hessian has a small or negative eigenvalue ({eigenvalue_smallest:.1e}), "
             f"mixing in some steepest descent ({adjacency:.1e}) to correct this."
         )
-        hessian += adjacency * torch.eye(hessian.shape[0], device=hessian.device)
+        hessian += adjacency * torch.eye(
+            hessian.shape[0], device=hessian.device, dtype=hessian.dtype
+        )
 
     damping_factor = torch.tensor(1.0)
 
