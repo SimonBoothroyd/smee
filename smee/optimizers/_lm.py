@@ -23,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 ClosureFn = typing.Callable[
     [torch.Tensor], tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 ]
+CorrectFn = typing.Callable[[torch.Tensor], torch.Tensor]
 
 
 class LevenbergMarquardtConfig(pydantic.BaseModel):
@@ -288,22 +289,31 @@ class LevenbergMarquardt:
 
     @torch.no_grad()
     def step(
-        self, x: torch.Tensor, closure: ClosureFn
+        self,
+        x: torch.Tensor,
+        closure_fn: ClosureFn,
+        correct_fn: CorrectFn | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Performs a single optimization step.
 
         Args:
             x: The initial guess of the parameters.
-            closure: The closure that computes the loss (``shape=()``), its
+            closure_fn: The closure that computes the loss (``shape=()``), its
                 gradient (``shape=(n,)``), and hessian (``shape=(n, n)``)..
+            correct_fn: A function that can be used to correct the parameters after
+                each step is taken and before the new loss is computed. This may
+                include, for example, ensuring that vdW parameters are all positive.
 
         Returns:
             The optimized parameters.
         """
 
+        correct_fn = correct_fn if correct_fn is not None else lambda x: x
+        closure_fn = torch.enable_grad()(closure_fn)
+
         if self._closure_prev is None:
             # compute the initial loss, gradient and hessian
-            self._closure_prev = closure(x)
+            self._closure_prev = closure_fn(x)
 
         if self._trust_radius.device != x.device:
             self._trust_radius = self._trust_radius.to(x.device)
@@ -315,9 +325,9 @@ class LevenbergMarquardt:
         )
         dx_norm = torch.linalg.norm(dx)
 
-        x_next = (x + dx).requires_grad_(x.requires_grad)
+        x_next = correct_fn(x + dx).requires_grad_(x.requires_grad)
 
-        loss_next, gradient_next, hessian_next = closure(x_next)
+        loss_next, gradient_next, hessian_next = closure_fn(x_next)
         loss_delta = loss_next - loss_prev
 
         step_quality = loss_delta / expected_improvement
