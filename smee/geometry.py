@@ -300,10 +300,13 @@ def compute_v_site_coords(
     if not is_batched:
         conformer = torch.unsqueeze(conformer, 0)
 
-    local_frame_coords = force_field.v_sites.parameters[v_sites.parameter_idxs]
-    local_coord_frames = _build_v_site_coord_frames(v_sites, conformer, force_field)
+    if len(v_sites.parameter_idxs) > 0:
+        local_frame_coords = force_field.v_sites.parameters[v_sites.parameter_idxs]
+        local_coord_frames = _build_v_site_coord_frames(v_sites, conformer, force_field)
 
-    v_site_coords = _convert_v_site_coords(local_frame_coords, local_coord_frames)
+        v_site_coords = _convert_v_site_coords(local_frame_coords, local_coord_frames)
+    else:
+        v_site_coords = smee.utils.zeros_like((len(conformer), 0, 3), other=conformer)
 
     if not is_batched:
         v_site_coords = torch.squeeze(v_site_coords, 0)

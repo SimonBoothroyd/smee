@@ -397,6 +397,22 @@ def test_compute_v_site_coords(smiles, v_site_force_field):
     assert torch.allclose(v_site_coords, openmm_v_site_coords, atol=1e-5)
 
 
+def test_compute_v_site_coords_empty(v_site_force_field):
+    molecule = openff.toolkit.Molecule.from_mapped_smiles("[Cl:1][Cl:2]")
+    molecule.generate_conformers(n_conformers=1)
+
+    conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
+
+    interchange = _apply_v_site_force_field(molecule, conformer, v_site_force_field)
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
+
+    assert topology.v_sites is not None
+    assert len(topology.v_sites.keys) == 0
+
+    v_site_coords = compute_v_site_coords(topology.v_sites, conformer, force_field)
+    assert v_site_coords.shape == (0, 3)
+
+
 def test_compute_v_site_coords_batched(v_site_force_field):
     molecule = openff.toolkit.Molecule.from_mapped_smiles("[H:2][O:1][H:3]")
 
@@ -432,6 +448,7 @@ def test_compute_v_site_coords_batched(v_site_force_field):
     [
         (torch.randn((5, 3)), torch.randn((3, 3)), 0),
         (torch.randn((4, 5, 3)), torch.randn((4, 3, 3)), 1),
+        (torch.randn((4, 5, 3)), torch.randn((4, 0, 3)), 1),
     ],
 )
 def test_add_v_site_coords(conformer, v_site_coords, cat_dim, mocker):
