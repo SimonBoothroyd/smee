@@ -182,7 +182,7 @@ def test_tensor_like():
     assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
 
 
-def test_arrange_like():
+def test_arange_like():
     expected_type = torch.int8
     expected_data = [0, 1, 2, 3]
 
@@ -191,6 +191,49 @@ def test_arrange_like():
 
     assert tensor.dtype == expected_type
     assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
+
+
+@pytest.mark.parametrize(
+    "a, b, dim, keepdim",
+    [
+        (torch.tensor([1.0, 2.0, 3.0]), None, 0, False),
+        (torch.tensor([1.0, 2.0, 3.0]), None, 0, True),
+        (torch.tensor([1.0, 2.0, 3.0]), torch.tensor(0.0), 0, False),
+        (torch.tensor([1.0, 2.0, 3.0]), torch.tensor(2.0), 0, False),
+        (torch.tensor([1.0, 2.0, 3.0]), torch.tensor([3.0, 2.0, 1.0]), 0, False),
+        (torch.tensor([1.0, 2.0, 3.0]), torch.tensor(2.0), 0, True),
+        (torch.tensor([1.0, 2.0, 3.0]), torch.tensor([3.0, 2.0, 1.0]), 0, True),
+        (
+            torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            torch.tensor([[6.0, 5.0, 4.0], [3.0, 2.0, 1.0]]),
+            0,
+            False,
+        ),
+        (
+            torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            torch.tensor([[6.0, 5.0, 4.0], [3.0, 2.0, 1.0]]),
+            1,
+            False,
+        ),
+        (
+            torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]),
+            torch.tensor([[6.0, 5.0, 4.0], [3.0, 2.0, 1.0]]),
+            1,
+            True,
+        ),
+        (torch.tensor(-torch.inf), torch.tensor(1.0), 0, True),
+    ],
+)
+def test_logsumexp(a, b, dim, keepdim):
+    from scipy.special import logsumexp
+
+    actual = smee.utils.logsumexp(a, dim, keepdim, b)
+    expected = torch.tensor(
+        logsumexp(a.numpy(), dim, b if b is None else b.numpy(), keepdim)
+    )
+
+    assert actual.shape == expected.shape
+    assert torch.allclose(actual.double(), expected.double())
 
 
 @pytest.mark.parametrize("n", [7499, 7500, 7501])

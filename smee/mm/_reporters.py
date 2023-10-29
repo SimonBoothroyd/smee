@@ -38,15 +38,29 @@ def _decoder(obj, chain=None):
 class TensorReporter:
     """A reporter which stores coords, box vectors, and kinetic energy using msgpack."""
 
-    def __init__(self, output_file: typing.BinaryIO, report_interval: int):
+    def __init__(
+        self,
+        output_file: typing.BinaryIO,
+        report_interval: int,
+        beta: openmm.unit.Quantity,
+        pressure: openmm.unit.Quantity | None,
+    ):
         """
 
         Args:
             output_file: The file to write the frames to.
             report_interval: The interval (in steps) at which to write frames.
+            beta: The inverse temperature the simulation is being run at.
+            pressure: The pressure the simulation is being run at, or None if NVT /
+                vacuum.
         """
         self._output_file = output_file
         self._report_interval = report_interval
+
+        self._beta = beta
+        self._pressure = (
+            None if pressure is None else pressure * openmm.unit.AVOGADRO_CONSTANT_NA
+        )
 
     def describeNextReport(self, simulation: openmm.app.Simulation):
         steps = self._report_interval - simulation.currentStep % self._report_interval
@@ -64,12 +78,24 @@ class TensorReporter:
         if math.isinf(total_energy.value_in_unit(_KCAL_PER_MOL)):
             raise ValueError("total energy is infinite")
 
+        unreduced_potential = potential_energy
+
+        if self._pressure is not None:
+            unreduced_potential += self._pressure * state.getPeriodicBoxVolume()
+
+        reduced_potential = unreduced_potential * self._beta
+
         coords = state.getPositions(asNumpy=True).value_in_unit(_ANGSTROM)
         coords = torch.from_numpy(coords).float()
         box_vectors = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(_ANGSTROM)
         box_vectors = torch.from_numpy(box_vectors).float()
 
-        frame = (coords, box_vectors, kinetic_energy.value_in_unit(_KCAL_PER_MOL))
+        frame = (
+            coords,
+            box_vectors,
+            reduced_potential,
+            kinetic_energy.value_in_unit(_KCAL_PER_MOL),
+        )
         self._output_file.write(msgpack.dumps(frame, default=_encoder))
 
 
