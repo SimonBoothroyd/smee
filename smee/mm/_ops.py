@@ -16,6 +16,10 @@ _DENSITY_CONVERSION = 1.0e24 / openmm.unit.AVOGADRO_CONSTANT_NA.value_in_unit(
 """Convert from g / mol / Å**3 to g / mL"""
 
 
+class NotEnoughSamplesError(ValueError):
+    """An error raised when an ensemble average is attempted with too few samples."""
+
+
 class _EnsembleAverageKwargs(typing.TypedDict):
     """The keyword arguments passed to the custom PyTorch op for computing ensemble
     averages."""
@@ -30,6 +34,13 @@ class _EnsembleAverageKwargs(typing.TypedDict):
 
     beta: float
     pressure: float | None
+
+
+class _ReweightAverageKwargs(_EnsembleAverageKwargs):
+    """The keyword arguments passed to the custom PyTorch op for computing re-weighted
+    ensemble averages."""
+
+    min_samples: int
 
 
 def _pack_force_field(
@@ -127,6 +138,7 @@ def _compute_frame_observables(
     box_vectors: torch.Tensor,
     potential_energy: float,
     kinetic_energy: float,
+    beta: float,
     pressure: float | None,
 ) -> dict[str, float]:
     """Compute observables for a given frame in a trajectory.
@@ -140,6 +152,7 @@ def _compute_frame_observables(
         box_vectors: The box vectors [Å] of this frame.
         potential_energy: The potential energy [kcal / mol] of this frame.
         kinetic_energy: The kinetic energy [kcal / mol] of this frame.
+        beta: The inverse temperature [mol / kcal].
         pressure: The pressure [kcal / mol / Å^3] if NPT.
 
     Returns:
@@ -147,8 +160,10 @@ def _compute_frame_observables(
     """
 
     values = {"potential_energy": potential_energy}
+    reduced_potential = beta * potential_energy
 
     if not system.is_periodic:
+        values["reduced_potential"] = reduced_potential
         return values
 
     volume = torch.det(box_vectors)
@@ -162,6 +177,10 @@ def _compute_frame_observables(
         pv_term = volume * pressure
         values["enthalpy"] = potential_energy + kinetic_energy + pv_term
 
+        reduced_potential += beta * pv_term
+
+    values["reduced_potential"] = reduced_potential
+
     return values
 
 
@@ -170,8 +189,9 @@ def _compute_observables(
     force_field: smee.TensorForceField,
     frames_file: typing.BinaryIO,
     theta: tuple[torch.Tensor],
+    beta: float,
     pressure: float | None = None,
-) -> tuple[torch.Tensor, list[str], list[torch.Tensor]]:
+) -> tuple[torch.Tensor, list[str], torch.Tensor, list[torch.Tensor]]:
     """Computes the standard set of 'observables', and the gradient of the potential
     energy with respect to ``theta`` over a given trajectory.
 
@@ -182,24 +202,30 @@ def _compute_observables(
 
     Args:
         system: The system that was simulated.
-        force_field: The force field used to simulate the trajectory.
+        force_field: The force field to evaluate energies with.
         frames_file: The file containing the trajectory.
         theta: The parameters to compute the gradient with respect to.
+        beta: The inverse temperature [mol / kcal].
         pressure: The pressure [kcal / mol / Å^3] if NPT.
 
     Returns:
-        The observables at each frame, the columns of the observable tensor, and the
-        gradients of the potential energy with respect to each tensor in theta with
+        The observables at each frame, the columns of the observable tensor, the
+        reduced potential energy at each frame, and the gradients of the potential
+        energy with respect to each tensor in theta with
         ``shape=(n_parameters, n_parameter_cols)``.
     """
 
     needs_grad = [i for i, v in enumerate(theta) if v is not None and v.requires_grad]
     du_d_theta = [None if i not in needs_grad else [] for i in range(len(theta))]
 
+    reduced_potentials = []
+
     values = []
     columns = None
 
-    for coords, box_vectors, kinetic in smee.mm._reporters.unpack_frames(frames_file):
+    for coords, box_vectors, _, kinetic in smee.mm._reporters.unpack_frames(
+        frames_file
+    ):
         coords = coords.to(theta[0].device)
         box_vectors = box_vectors.to(theta[0].device)
 
@@ -218,8 +244,10 @@ def _compute_observables(
             du_d_theta[i].append(du_d_theta_subset[idx].float())
 
         frame = _compute_frame_observables(
-            system, box_vectors, potential.detach(), kinetic, pressure
+            system, box_vectors, potential.detach(), kinetic, beta, pressure
         )
+
+        reduced_potentials.append(frame.pop("reduced_potential"))
 
         if columns is None:
             columns = [*frame]
@@ -227,10 +255,12 @@ def _compute_observables(
         values.append(torch.tensor([frame[c] for c in columns]))
 
     values = torch.stack(values).to(theta[0].device)
+    reduced_potentials = smee.utils.tensor_like(reduced_potentials, theta[0])
 
     return (
         values,
         columns,
+        reduced_potentials,
         [v if v is None else torch.stack(v, dim=-1) for v in du_d_theta],
     )
 
@@ -249,8 +279,8 @@ class _EnsembleAverageOp(torch.autograd.Function):
         system = kwargs["system"]
 
         with kwargs["frames_path"].open("rb") as file:
-            values, columns, du_d_theta = _compute_observables(
-                system, force_field, file, theta, pressure=kwargs["pressure"]
+            values, columns, _, du_d_theta = _compute_observables(
+                system, force_field, file, theta, kwargs["beta"], kwargs["pressure"]
             )
 
         avg_values = values.mean(dim=0)
@@ -303,6 +333,95 @@ class _EnsembleAverageOp(torch.autograd.Function):
         return tuple([None] + grads + [None])
 
 
+class _ReweightAverageOp(torch.autograd.Function):
+    """A custom PyTorch op for computing ensemble averages over MD trajectories."""
+
+    @staticmethod
+    def forward(ctx, kwargs: _ReweightAverageKwargs, *theta: torch.Tensor):
+        force_field = _unpack_force_field(
+            theta,
+            kwargs["parameter_lookup"],
+            kwargs["attribute_lookup"],
+            kwargs["force_field"],
+        )
+        system = kwargs["system"]
+
+        with kwargs["frames_path"].open("rb") as file:
+            values, columns, reduced_pot, du_d_theta = _compute_observables(
+                system, force_field, file, theta, kwargs["beta"], kwargs["pressure"]
+            )
+
+        with kwargs["frames_path"].open("rb") as file:
+            reduced_pot_0 = smee.utils.tensor_like(
+                [v for _, _, v, _ in smee.mm._reporters.unpack_frames(file)],
+                reduced_pot,
+            )
+
+        delta = (reduced_pot_0 - reduced_pot).double()
+
+        ln_weights = delta - torch.logsumexp(delta, dim=0)
+        weights = torch.exp(ln_weights)
+
+        n_effective = torch.exp(-torch.sum(weights * ln_weights, dim=0))
+
+        if n_effective < kwargs["min_samples"]:
+            raise NotEnoughSamplesError
+
+        avg_values = (weights[:, None] * values).sum(dim=0)
+
+        ctx.beta = kwargs["beta"]
+        ctx.n_theta = len(theta)
+        ctx.columns = columns
+        ctx.save_for_backward(*theta, *du_d_theta, delta, weights, values)
+
+        return tuple([*avg_values, columns])
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        theta = ctx.saved_tensors[: ctx.n_theta]
+
+        du_d_theta = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+        d_reduced_d_theta = [ctx.beta * du for du in du_d_theta if du is not None]
+
+        values = ctx.saved_tensors[-1]
+        weights = ctx.saved_tensors[-2]
+        delta = ctx.saved_tensors[-3]
+
+        grads = [None] * len(theta)
+
+        for i in range(len(du_d_theta)):
+            if du_d_theta[i] is None:
+                continue
+
+            avg_d_reduced_d_theta_i = torch.exp(
+                smee.utils.logsumexp(delta[None, None, :], -1, b=d_reduced_d_theta[i])
+                - torch.logsumexp(delta, 0)
+            )
+
+            d_ln_weight_d_theta_i = (
+                -d_reduced_d_theta[i] + avg_d_reduced_d_theta_i[:, :, None]
+            )
+            d_weight_d_theta_i = weights[None, None, :] * d_ln_weight_d_theta_i
+
+            d_output_d_theta_i = {
+                "potential_energy": du_d_theta[i],
+                "volume": torch.zeros_like(du_d_theta[i]),
+                "density": torch.zeros_like(du_d_theta[i]),
+                "enthalpy": du_d_theta[i],
+            }
+            d_output_d_theta_i = torch.stack(
+                [d_output_d_theta_i[column] for column in ctx.columns], dim=-1
+            )
+
+            grads[i] = (
+                d_weight_d_theta_i[:, :, :, None] * values[None, None, :, :]
+                + weights[None, None, :, None] * d_output_d_theta_i
+            ).sum(-2) @ torch.stack(grad_outputs[:-1])
+
+        # we need to return one extra 'gradient' for kwargs.
+        return tuple([None] + grads + [None])
+
+
 def compute_ensemble_averages(
     system: smee.TensorSystem,
     force_field: smee.TensorForceField,
@@ -345,4 +464,56 @@ def compute_ensemble_averages(
     }
 
     *avg_outputs, columns = _EnsembleAverageOp.apply(kwargs, *tensors)
+    return {column: avg for avg, column in zip(avg_outputs, columns)}
+
+
+def reweight_ensemble_averages(
+    system: smee.TensorSystem,
+    force_field: smee.TensorForceField,
+    frames_path: pathlib.Path,
+    temperature: openmm.unit.Quantity,
+    pressure: openmm.unit.Quantity | None,
+    min_samples: int = 50,
+) -> dict[str, torch.Tensor]:
+    """Compute the ensemble average of the potential energy, volume, density,
+    and enthalpy (if running NPT) by re-weighting an existing MD trajectory.
+
+    Args:
+        system: The system that was simulated.
+        force_field: The new force field to use.
+        frames_path: The path to the trajectory to compute the average over.
+        temperature: The temperature that the trajectory was simulated at.
+        pressure: The pressure that the trajectory was simulated at.
+        min_samples: The minimum number of samples required to compute the average.
+
+    Raises:
+        NotEnoughSamplesError: If the number of effective samples is less than
+            ``min_samples``.
+
+    Returns:
+        A dictionary containing the ensemble averages of the potential energy
+        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].
+    """
+    tensors, parameter_lookup, attribute_lookup = _pack_force_field(force_field)
+
+    beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
+    beta = beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1)
+
+    if pressure is not None:
+        pressure = (pressure * openmm.unit.AVOGADRO_CONSTANT_NA).value_in_unit(
+            openmm.unit.kilocalorie_per_mole / openmm.unit.angstrom**3
+        )
+
+    kwargs: _ReweightAverageKwargs = {
+        "force_field": force_field,
+        "parameter_lookup": parameter_lookup,
+        "attribute_lookup": attribute_lookup,
+        "system": system,
+        "frames_path": frames_path,
+        "beta": beta,
+        "pressure": pressure,
+        "min_samples": min_samples,
+    }
+
+    *avg_outputs, columns = _ReweightAverageOp.apply(kwargs, *tensors)
     return {column: avg for avg, column in zip(avg_outputs, columns)}

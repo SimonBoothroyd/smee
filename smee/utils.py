@@ -98,6 +98,57 @@ def arange_like(end: int, other: torch.Tensor) -> torch.Tensor:
     return torch.arange(end, dtype=other.dtype, device=other.device)
 
 
+def logsumexp(
+    a: torch.Tensor,
+    dim: int,
+    keepdim: bool = False,
+    b: torch.Tensor | None = None,
+):
+    """Compute the log of the sum of the exponential of the input elements, optionally
+    with each element multiplied by a scaling factor.
+
+    Notes:
+        This should be removed if torch.logsumexp is updated to support scaling factors.
+
+    Args:
+        a: The elements that should be summed over.
+        dim: The dimension to sum over.
+        keepdim: Whether to keep the summed dimension.
+        b: The scaling factor to multiply each element by.
+
+    Returns:
+        The log of the sum of exponential of the a elements.
+    """
+    a_type = a.dtype
+
+    if b is None:
+        return torch.logsumexp(a, dim, keepdim)
+
+    a = a.double()
+    b = b if b is not None else b.double()
+
+    a, b = torch.broadcast_tensors(a, b)
+
+    if torch.any(b == 0):
+        a[b == 0] = -torch.inf
+
+    a_max = torch.amax(a, dim=dim, keepdim=True)
+
+    if a_max.ndim > 0:
+        a_max[~torch.isfinite(a_max)] = 0
+    elif not torch.isfinite(a_max):
+        a_max = 0
+
+    out = torch.log(torch.sum(b * torch.exp(a - a_max), dim=dim, keepdim=keepdim))
+
+    if not keepdim:
+        a_max = torch.squeeze(a_max, dim=dim)
+
+    out += a_max
+
+    return out.to(a_type)
+
+
 def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
     """Converts pairs of 2D indices to 1D indices in an upper triangular matrix that
     excludes the diagonal.

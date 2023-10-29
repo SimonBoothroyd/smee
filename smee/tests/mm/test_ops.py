@@ -15,6 +15,7 @@ from smee.mm._ops import (
     _pack_force_field,
     _unpack_force_field,
     compute_ensemble_averages,
+    reweight_ensemble_averages,
 )
 from smee.mm._reporters import _encoder
 
@@ -115,15 +116,20 @@ def test_compute_frame_observables_non_periodic(mocker):
         [smee.tests.utils.topology_from_smiles("[Ar]")], [1], False
     )
 
+    beta = 2.0
+
     expected_potential = 1.2345
 
     values = _compute_frame_observables(
-        system, mocker.MagicMock(), expected_potential, mocker.MagicMock(), None
+        system, mocker.MagicMock(), expected_potential, mocker.MagicMock(), beta, None
     )
-    assert values == {"potential_energy": expected_potential}
+    assert values == {
+        "potential_energy": expected_potential,
+        "reduced_potential": beta * expected_potential,
+    }
 
 
-def test_compute_frame_observables(mocker):
+def test_compute_frame_observables():
     system = smee.TensorSystem(
         [smee.tests.utils.topology_from_smiles("[Ar]")], [1], True
     )
@@ -136,6 +142,7 @@ def test_compute_frame_observables(mocker):
     expected_potential = 1.2345
     expected_kinetic = 5.4321
 
+    beta = 2.0 / openmm.unit.kilocalories_per_mole
     pressure = 1.0 * openmm.unit.bar
 
     mass_ar = 39.9481 * openmm.unit.daltons
@@ -151,11 +158,19 @@ def test_compute_frame_observables(mocker):
         * openmm.unit.AVOGADRO_CONSTANT_NA
     ).value_in_unit(openmm.unit.kilocalorie_per_mole)
 
+    expected_reduced_potential = beta * (
+        expected_potential * openmm.unit.kilocalorie_per_mole
+        + pressure
+        * (expected_volume * openmm.unit.angstrom**3)
+        * openmm.unit.AVOGADRO_CONSTANT_NA
+    )
+
     values = _compute_frame_observables(
         system,
         box_vectors,
         expected_potential,
         expected_kinetic,
+        beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1),
         (pressure * openmm.unit.AVOGADRO_CONSTANT_NA).value_in_unit(
             openmm.unit.kilocalorie_per_mole / openmm.unit.angstrom**3
         ),
@@ -165,10 +180,11 @@ def test_compute_frame_observables(mocker):
         "volume": pytest.approx(torch.tensor(expected_volume)),
         "density": pytest.approx(torch.tensor(expected_density)),
         "enthalpy": pytest.approx(torch.tensor(expected_enthalpy)),
+        "reduced_potential": pytest.approx(torch.tensor(expected_reduced_potential)),
     }
 
 
-def test_compute_observables(mocker, tmp_path, mock_argon_tensors, mock_argon_params):
+def test_compute_observables(tmp_path, mock_argon_tensors, mock_argon_params):
     eps, sig = mock_argon_params
 
     eps = eps.m_as("kilocalorie / mole")
@@ -201,10 +217,13 @@ def test_compute_observables(mocker, tmp_path, mock_argon_tensors, mock_argon_pa
                 torch.tensor(coord).float(),
                 torch.tensor(box_vector).float(),
                 0.0,
+                0.0,
             )
             file.write(msgpack.dumps(frame, default=_encoder))
 
     distances = numpy.linalg.norm(coords[:, 1] - coords[:, 0], axis=-1)
+
+    beta = 2.0
 
     expected_du_d_eps = 4.0 * ((sig / distances) ** 12 - (sig / distances) ** 6)
     expected_du_d_sig = (
@@ -214,14 +233,17 @@ def test_compute_observables(mocker, tmp_path, mock_argon_tensors, mock_argon_pa
     expected_potential = eps * expected_du_d_eps
 
     with frames_path.open("rb") as file:
-        values, columns, du_d_theta = _compute_observables(
-            tensor_system, tensor_ff, file, theta, None
+        values, columns, reduced_potential, du_d_theta = _compute_observables(
+            tensor_system, tensor_ff, file, theta, beta, None
         )
 
     assert columns == ["potential_energy"]
 
     assert values.shape == (len(expected_potential), 1)
     numpy.allclose(values.numpy().flatten(), expected_potential)
+
+    assert reduced_potential.shape == (len(expected_potential),)
+    assert numpy.allclose(reduced_potential.numpy(), beta * expected_potential)
 
     assert len(du_d_theta) == 2
     assert du_d_theta[1] is None
@@ -250,7 +272,7 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     mock_compute_observables = mocker.patch(
         "smee.mm._ops._compute_observables",
         autospec=True,
-        return_value=(mock_outputs, mock_columns, mock_du_d_theta),
+        return_value=(mock_outputs, mock_columns, None, mock_du_d_theta),
     )
 
     temperature = 86.0 * openmm.unit.kelvin
@@ -300,3 +322,56 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     assert torch.isclose(expected_d_avg_energy_d_eps.double(), energy_grad[0, 0])
     assert torch.isclose(expected_d_avg_volume_d_eps.double(), volume_grad[0, 0])
     assert torch.isclose(expected_d_avg_density_d_eps.double(), density_grad[0, 0])
+
+
+def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
+    tensor_ff, tensor_top = mock_argon_tensors
+    tensor_system = smee.TensorSystem([tensor_top], [2], False)
+
+    temperature = 86.0 * openmm.unit.kelvin
+    beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
+
+    mock_outputs = torch.stack(
+        [torch.tensor([1.0, 2.0, 3.0]), torch.tensor([5.0, 6.0, 20.0])]
+    )
+    mock_reduced = (
+        beta.value_in_unit(openmm.unit.kilocalories_per_mole**-1) * mock_outputs[:, 0]
+    )
+
+    mock_columns = ["potential_energy", "volume", "density"]
+    mock_du_d_theta = (torch.tensor([[[9.0, 10.0], [11.0, 12.0]]]), None)
+
+    mocker.patch(
+        "smee.mm._ops._compute_observables",
+        autospec=True,
+        return_value=(mock_outputs, mock_columns, mock_reduced, mock_du_d_theta),
+    )
+
+    output_path = tmp_path / "traj.msgpack"
+    output_path.write_bytes(b"")
+
+    with output_path.open("wb") as file:
+        for reduced_potential in mock_reduced:
+            frame = (None, None, reduced_potential, 0.0)
+            file.write(msgpack.dumps(frame, default=_encoder))
+
+    vdw_parameters = tensor_ff.potentials_by_type["vdW"].parameters
+    vdw_parameters.requires_grad = True
+
+    ensemble_averages = compute_ensemble_averages(
+        tensor_system, tensor_ff, output_path, temperature, None
+    )
+    reweight_averages = reweight_ensemble_averages(
+        tensor_system, tensor_ff, output_path, temperature, None, 0
+    )
+
+    for observable in ensemble_averages:
+        (ensemble_grad,) = torch.autograd.grad(
+            ensemble_averages[observable], vdw_parameters, retain_graph=True
+        )
+        (reweight_grad,) = torch.autograd.grad(
+            reweight_averages[observable], vdw_parameters, retain_graph=True
+        )
+
+        assert reweight_grad.shape == ensemble_grad.shape
+        assert torch.allclose(reweight_grad, ensemble_grad)
