@@ -236,6 +236,24 @@ def test_logsumexp(a, b, dim, keepdim):
     assert torch.allclose(actual.double(), expected.double())
 
 
+def test_logsumexp_with_sign():
+    from scipy.special import logsumexp
+
+    a = torch.tensor([1.0, 2.0, 3.0])
+    b = torch.tensor(-2.0)
+
+    actual, actual_sign = smee.utils.logsumexp(a, -1, True, b, return_sign=True)
+    expected, expected_sign = torch.tensor(
+        logsumexp(a.numpy(), -1, b.numpy(), True, return_sign=True)
+    )
+
+    assert actual.shape == expected.shape
+    assert torch.allclose(actual.double(), expected.double())
+
+    assert actual_sign.shape == expected_sign.shape
+    assert torch.allclose(actual_sign.double(), expected_sign.double())
+
+
 @pytest.mark.parametrize("n", [7499, 7500, 7501])
 def test_to_upper_tri_idx(n):
     i, j = torch.triu_indices(n, n, 1)

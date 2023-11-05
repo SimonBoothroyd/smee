@@ -103,7 +103,8 @@ def logsumexp(
     dim: int,
     keepdim: bool = False,
     b: torch.Tensor | None = None,
-):
+    return_sign: bool = False,
+) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
     """Compute the log of the sum of the exponential of the input elements, optionally
     with each element multiplied by a scaling factor.
 
@@ -122,6 +123,7 @@ def logsumexp(
     a_type = a.dtype
 
     if b is None:
+        assert return_sign is False
         return torch.logsumexp(a, dim, keepdim)
 
     a = a.double()
@@ -139,14 +141,25 @@ def logsumexp(
     elif not torch.isfinite(a_max):
         a_max = 0
 
-    out = torch.log(torch.sum(b * torch.exp(a - a_max), dim=dim, keepdim=keepdim))
+    exp_sum = torch.sum(b * torch.exp(a - a_max), dim=dim, keepdim=keepdim)
+    sign = None
+
+    if return_sign:
+        sign = torch.sign(exp_sum)
+        exp_sum = exp_sum * sign
+
+    ln_exp_sum = torch.log(exp_sum)
 
     if not keepdim:
         a_max = torch.squeeze(a_max, dim=dim)
 
-    out += a_max
+    ln_exp_sum += a_max
+    ln_exp_sum = ln_exp_sum.to(a_type)
 
-    return out.to(a_type)
+    if return_sign:
+        return ln_exp_sum, sign.to(a_type)
+    else:
+        return ln_exp_sum
 
 
 def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:

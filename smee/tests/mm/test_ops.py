@@ -339,7 +339,7 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     )
 
     mock_columns = ["potential_energy", "volume", "density"]
-    mock_du_d_theta = (torch.tensor([[[9.0, 10.0], [11.0, 12.0]]]), None)
+    mock_du_d_theta = (torch.tensor([[[-9.0, 10.0], [11.0, -12.0]]]), None)
 
     mocker.patch(
         "smee.mm._ops._compute_observables",
