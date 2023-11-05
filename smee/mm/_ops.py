@@ -381,7 +381,7 @@ class _ReweightAverageOp(torch.autograd.Function):
         theta = ctx.saved_tensors[: ctx.n_theta]
 
         du_d_theta = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
-        d_reduced_d_theta = [ctx.beta * du for du in du_d_theta if du is not None]
+        d_reduced_d_theta = [None if du is None else ctx.beta * du for du in du_d_theta]
 
         values = ctx.saved_tensors[-1]
         weights = ctx.saved_tensors[-2]
@@ -393,9 +393,11 @@ class _ReweightAverageOp(torch.autograd.Function):
             if du_d_theta[i] is None:
                 continue
 
-            avg_d_reduced_d_theta_i = torch.exp(
-                smee.utils.logsumexp(delta[None, None, :], -1, b=d_reduced_d_theta[i])
-                - torch.logsumexp(delta, 0)
+            log_exp_sum, log_exp_sign = smee.utils.logsumexp(
+                delta[None, None, :], -1, b=d_reduced_d_theta[i], return_sign=True
+            )
+            avg_d_reduced_d_theta_i = log_exp_sign * torch.exp(
+                log_exp_sum - torch.logsumexp(delta, 0)
             )
 
             d_ln_weight_d_theta_i = (
