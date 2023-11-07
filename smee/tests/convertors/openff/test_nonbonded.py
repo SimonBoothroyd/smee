@@ -5,6 +5,7 @@ import openff.units
 import torch
 
 import smee
+import smee.converters
 from smee.converters.openff.nonbonded import convert_electrostatics, convert_vdw
 
 
@@ -134,9 +135,9 @@ def test_convert_electrostatics_v_site():
     assert parameter_map.assignment_matrix.shape == (n_particles, len(expected_keys))
     expected_assignment_matrix = torch.tensor(
         [
-            [0.0, 1.0, 0.0, -1.0],
-            [1.0, 0.0, -1.0, 0.0],
-            [0.0, 0.0, 1.0, 1.0],
+            [0.0, 1.0, 0.0, 1.0],
+            [1.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, -1.0, -1.0],
         ],
         dtype=torch.float64,
     )
@@ -153,6 +154,32 @@ def test_convert_electrostatics_v_site():
 
     expected_scales = torch.zeros((n_expected_exclusions, 1), dtype=torch.long)
     assert torch.allclose(parameter_map.exclusion_scale_idxs, expected_scales)
+
+
+def test_convert_electrostatics_tip4p():
+    """Explicitly test the case of TIP4P (FB) water to make sure v-site charges are
+    correct.
+    """
+
+    force_field = openff.toolkit.ForceField("tip4p_fb.offxml")
+    molecule = openff.toolkit.Molecule.from_mapped_smiles("[H:2][O:1][H:3]")
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        force_field, molecule.to_topology(), allow_nonintegral_charges=True
+    )
+
+    tensor_top: smee.TensorTopology
+    tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
+
+    q = 0.5258681106763
+    expected_charges = torch.tensor([[0.0], [q], [q], [-2.0 * q]], dtype=torch.float64)
+
+    charges = (
+        tensor_top.parameters["Electrostatics"].assignment_matrix
+        @ tensor_ff.potentials_by_type["Electrostatics"].parameters
+    )
+    assert charges.shape == expected_charges.shape
+    assert torch.allclose(charges, expected_charges)
 
 
 def test_convert_vdw(ethanol, ethanol_interchange):

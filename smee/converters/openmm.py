@@ -83,7 +83,7 @@ def _convert_lj_potential(
                     scale * eps * _KCAL_PER_MOL,
                 )
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
     return force
 
@@ -121,7 +121,7 @@ def _convert_electrostatics_potential(
                     0.0,
                 )
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
     return force
 
@@ -149,7 +149,7 @@ def _convert_bond_potential(
                     constant * _KCAL_PER_MOL / _ANGSTROM**2,
                 )
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
     return force
 
@@ -178,7 +178,7 @@ def _convert_angle_potential(
                     constant * _KCAL_PER_MOL / _RADIANS**2,
                 )
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
     return force
 
@@ -211,7 +211,7 @@ def _convert_torsion_potential(
                     constant / idivf * _KCAL_PER_MOL,
                 )
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
     return force
 
@@ -308,7 +308,7 @@ def _apply_constraints(omm_system: openmm.System, system: smee.TensorSystem):
             for (i, j), distance in zip(atom_idxs, topology.constraints.distances):
                 omm_system.addConstraint(i, j, distance * _ANGSTROM)
 
-            idx_offset += topology.n_atoms
+            idx_offset += topology.n_particles
 
 
 def convert_to_openmm_force(
@@ -402,6 +402,11 @@ def convert_to_openmm_topology(system: smee.TensorSystem) -> openmm.app.Topology
                     else f"{element_counter[element.symbol]}"
                 )
                 atoms[i] = omm_topology.addAtom(name, element, residue)
+
+            for i in range(topology.n_v_sites):
+                omm_topology.addAtom(
+                    "X", openmm.app.Element.getByAtomicNumber(82), residue
+                )
 
             for bond_idxs, bond_order in zip(topology.bond_idxs, topology.bond_orders):
                 idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
