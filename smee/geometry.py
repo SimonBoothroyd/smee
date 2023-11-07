@@ -232,28 +232,20 @@ def _build_v_site_coord_frames(
     return local_frames
 
 
-def _convert_v_site_coords(
-    local_frame_coords: torch.Tensor, local_coord_frames: torch.Tensor
-) -> torch.Tensor:
-    """Converts a set of local virtual site coordinates defined in a spherical
-    coordinate system into a full set of cartesian coordinates.
+def polar_to_cartesian_coords(polar_coords: torch.Tensor) -> torch.Tensor:
+    """Converts a set of polar coordinates into cartesian coordinates.
 
     Args:
-        local_frame_coords: The local coordinates with ``shape=(n_v_sites, 3)`` and
-            with columns of distance [Å], 'in plane angle' [rad] and 'out of plane'
+        polar_coords: The polar coordinates with ``shape=(n_coords, 3)`` and with
+            columns of distance [Å], 'in plane angle' [rad] and 'out of plane'
             angle [rad].
-        local_coord_frames: The orthonormal basis associated with each of the
-            virtual sites with ``shape=(n_batches, 4, n_v_sites, 3)``.
 
     Returns:
-        An array of the cartesian coordinates of the virtual sites with
-        ``shape=(n_batches, n_v_sites, 3)`` and units of [Å].
+        An array of the cartesian coordinates with ``shape=(n_coords, 3)`` and units
+        of [Å].
     """
 
-    d = local_frame_coords[:, 0].reshape(-1, 1)
-
-    theta = (local_frame_coords[:, 1]).reshape(-1, 1)
-    phi = (local_frame_coords[:, 2]).reshape(-1, 1)
+    d, theta, phi = polar_coords[:, 0], polar_coords[:, 1], polar_coords[:, 2]
 
     cos_theta = torch.cos(theta)
     sin_theta = torch.sin(theta)
@@ -264,14 +256,38 @@ def _convert_v_site_coords(
     # Here we use cos(phi) in place of sin(phi) and sin(phi) in place of cos(phi)
     # this is because we want phi=0 to represent a 0 degree angle from the x-y plane
     # rather than 0 degrees from the z-axis.
-    vsite_positions = (
-        local_coord_frames[:, 0]
-        + d * cos_theta * cos_phi * local_coord_frames[:, 1]
-        + d * sin_theta * cos_phi * local_coord_frames[:, 2]
-        + d * sin_phi * local_coord_frames[:, 3]
+    coords = torch.stack(
+        [d * cos_theta * cos_phi, d * sin_theta * cos_phi, d * sin_phi], dim=-1
     )
+    return coords
 
-    return vsite_positions
+
+def _convert_v_site_coords(
+    local_frame_coords: torch.Tensor, local_coord_frames: torch.Tensor
+) -> torch.Tensor:
+    """Converts a set of local virtual site coordinates defined in a spherical
+    coordinate system into a full set of cartesian coordinates.
+
+    Args:
+        local_frame_coords: The local coordinates with ``shape=(n_v_sites, 3)`` and
+            with columns of distance [Å], 'in-plane angle' [rad] and 'out-of-plane'
+            angle [rad].
+        local_coord_frames: The orthonormal basis associated with each of the
+            virtual sites with ``shape=(n_batches, 4, n_v_sites, 3)``.
+
+    Returns:
+        An array of the cartesian coordinates of the virtual sites with
+        ``shape=(n_batches, n_v_sites, 3)`` and units of [Å].
+    """
+
+    local_frame_coords = polar_to_cartesian_coords(local_frame_coords)
+
+    return (
+        local_coord_frames[:, 0]
+        + local_frame_coords[:, 0, None] * local_coord_frames[:, 1]
+        + local_frame_coords[:, 1, None] * local_coord_frames[:, 2]
+        + local_frame_coords[:, 2, None] * local_coord_frames[:, 3]
+    )
 
 
 def compute_v_site_coords(

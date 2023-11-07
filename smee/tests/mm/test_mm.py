@@ -1,4 +1,7 @@
 import numpy
+import openff.interchange
+import openff.interchange.models
+import openff.toolkit
 import openmm.app
 import openmm.unit
 import pytest
@@ -6,6 +9,7 @@ import torch
 from rdkit import Chem
 
 import smee
+import smee.converters
 import smee.mm
 import smee.tests.utils
 from smee.mm._mm import (
@@ -16,6 +20,7 @@ from smee.mm._mm import (
     _get_state_log,
     _run_simulation,
     _topology_to_rdkit,
+    _topology_to_xyz,
     generate_system_coords,
     simulate,
 )
@@ -72,6 +77,39 @@ def test_topology_to_rdkit():
     assert atomic_nums == expected_atomic_nums
 
     assert mol.GetNumConformers() == 1
+
+
+def test_topology_to_xyz(mocker):
+    mock_molecule: Chem.Mol = Chem.AddHs(Chem.MolFromSmiles("O"))
+    mock_molecule.RemoveAllConformers()
+
+    conformer = Chem.Conformer(mock_molecule.GetNumAtoms())
+    conformer.SetAtomPosition(0, (0.0, 0.0, 0.0))
+    conformer.SetAtomPosition(1, (1.0, 0.0, 0.0))
+    conformer.SetAtomPosition(2, (0.0, 1.0, 0.0))
+
+    mock_molecule.AddConformer(conformer)
+
+    mocker.patch("smee.mm._mm._topology_to_rdkit", return_value=mock_molecule)
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        openff.toolkit.ForceField("tip4p_fb.offxml"),
+        openff.toolkit.Molecule.from_rdkit(mock_molecule).to_topology(),
+    )
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
+
+    xyz = _topology_to_xyz(topology, force_field)
+
+    expected_xyz = (
+        "4\n"
+        "\n"
+        "O 0.000000 0.000000 0.000000\n"
+        "H 1.000000 0.000000 0.000000\n"
+        "H 0.000000 1.000000 0.000000\n"
+        "X 0.074440 0.074440 0.000000"
+    )
+
+    assert xyz == expected_xyz
 
 
 def test_approximate_box_size():
@@ -152,6 +190,23 @@ def test_generate_system_coords():
     assert isinstance(box_vectors, numpy.ndarray)
     assert box_vectors.shape == (3, 3)
     assert not numpy.allclose(box_vectors, 0.0)
+
+
+def test_generate_system_coords_with_v_sites():
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        openff.toolkit.ForceField("tip4p_fb.offxml"),
+        openff.toolkit.Molecule.from_mapped_smiles("[H:2][O:1][H:3]").to_topology(),
+    )
+
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
+    system = smee.TensorSystem([topology], [1], False)
+
+    coords, box_vectors = generate_system_coords(system, force_field)
+    assert isinstance(coords, openmm.unit.Quantity)
+    coords = coords.value_in_unit(openmm.unit.angstrom)
+    assert isinstance(coords, numpy.ndarray)
+    assert coords.shape == (3 + 1, 3)
+    assert not numpy.allclose(coords, 0.0)
 
 
 def test_get_state_log(mocker):

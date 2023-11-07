@@ -30,7 +30,7 @@ def _compute_openmm_energy(
 
     omm_force = smee.converters.convert_to_openmm_force(potential, system)
 
-    omm_system = smee.converters.openmm.create_openmm_system(system)
+    omm_system = smee.converters.openmm.create_openmm_system(system, None)
     omm_system.addForce(omm_force)
 
     if box_vectors is not None:
@@ -230,7 +230,7 @@ def test_compute_lj_energy_non_periodic():
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(["CCC", "O"], [2, 3])
     tensor_sys.is_periodic = False
 
-    coords, _ = smee.mm.generate_system_coords(tensor_sys)
+    coords, _ = smee.mm.generate_system_coords(tensor_sys, None)
     coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
 
     vdw_potential = tensor_ff.potentials_by_type["vdW"]
@@ -309,7 +309,7 @@ def test_compute_coulomb_energy_non_periodic():
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(["CCC", "O"], [2, 3])
     tensor_sys.is_periodic = False
 
-    coords, _ = smee.mm.generate_system_coords(tensor_sys)
+    coords, _ = smee.mm.generate_system_coords(tensor_sys, None)
     coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
 
     coulomb_potential = tensor_ff.potentials_by_type["Electrostatics"]
