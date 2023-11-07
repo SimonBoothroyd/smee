@@ -3,10 +3,15 @@ import openff.interchange
 import openff.toolkit
 import openff.units
 import openmm
+import pytest
 
 import smee
 import smee.mm
-from smee.converters.openmm import convert_to_openmm_system, convert_to_openmm_topology
+from smee.converters.openmm import (
+    convert_to_openmm_system,
+    convert_to_openmm_topology,
+    create_openmm_system,
+)
 
 
 def _compute_energy(
@@ -51,6 +56,91 @@ def _compare_smee_and_interchange(
     assert numpy.isclose(energy_smee, energy_interchange)
 
 
+def test_create_openmm_system_v_sites(v_site_force_field):
+    smiles = [
+        "[H:3][C:2]([H:4])=[O:1]",
+        "[Cl:3][C:2]([H:4])=[O:1]",
+        "[H:2][O:1][H:3]",
+        "[H:2][N:1]([H:3])[H:4]",
+    ]
+
+    interchange_full = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field,
+        openff.toolkit.Topology.from_molecules(
+            [openff.toolkit.Molecule.from_mapped_smiles(pattern) for pattern in smiles]
+        ),
+    )
+
+    system_interchange = interchange_full.to_openmm()
+    n_particles = system_interchange.getNumParticles()
+
+    force_field, topologies = smee.converters.convert_interchange(
+        [
+            openff.interchange.Interchange.from_smirnoff(
+                v_site_force_field,
+                openff.toolkit.Molecule.from_mapped_smiles(pattern).to_topology(),
+            )
+            for pattern in smiles
+        ]
+    )
+
+    system_smee = create_openmm_system(
+        smee.TensorSystem(topologies, [1] * len(smiles), False), force_field.v_sites
+    )
+
+    expected_v_site_idxs = [4, 9, 13, 14, 19]
+    actual_v_site_idxs = [
+        i for i in range(system_smee.getNumParticles()) if system_smee.isVirtualSite(i)
+    ]
+    assert actual_v_site_idxs == expected_v_site_idxs
+
+    v_sites_interchange = [
+        # interchange puts all v-sites at the end of a topology
+        system_interchange.getVirtualSite(n_particles - 5 + i)
+        for i in range(5)
+    ]
+    v_sites_smee = [system_smee.getVirtualSite(i) for i in expected_v_site_idxs]
+
+    def compare_vec3(a: openmm.Vec3, b: openmm.Vec3):
+        assert a.unit == b.unit
+        assert numpy.allclose(
+            numpy.array([*a.value_in_unit(a.unit)]),
+            numpy.array([*b.value_in_unit(a.unit)]),
+            atol=1.0e-5,
+        )
+
+    expected_particle_idxs = [
+        [0, 1],
+        [5, 6, 8],
+        [10, 11, 12],
+        [10, 12, 11],
+        [15, 16, 17, 18],
+    ]
+
+    for i, (v_site_interchange, v_site_smee) in enumerate(
+        zip(v_sites_interchange, v_sites_smee)
+    ):
+        assert v_site_smee.getNumParticles() == v_site_interchange.getNumParticles()
+
+        particles_smee = [
+            v_site_smee.getParticle(i) for i in range(v_site_smee.getNumParticles())
+        ]
+        assert particles_smee == expected_particle_idxs[i]
+
+        compare_vec3(
+            v_site_smee.getLocalPosition(), v_site_interchange.getLocalPosition()
+        )
+        assert v_site_smee.getOriginWeights() == pytest.approx(
+            v_site_interchange.getOriginWeights()
+        )
+        assert v_site_smee.getXWeights() == pytest.approx(
+            v_site_interchange.getXWeights()
+        )
+        assert v_site_smee.getYWeights() == pytest.approx(
+            v_site_interchange.getYWeights()
+        )
+
+
 def test_convert_to_openmm_system_vacuum():
     # carbonic acid has impropers, 1-5 interactions so should test most convertors
     mol = openff.toolkit.Molecule.from_smiles("OC(=O)O")
@@ -93,7 +183,7 @@ def test_convert_to_openmm_system_periodic():
     tensor_system = smee.TensorSystem(tensor_tops, n_copies_per_mol, True)
 
     coords, _ = smee.mm.generate_system_coords(
-        tensor_system, smee.mm.GenerateCoordsConfig()
+        tensor_system, None, smee.mm.GenerateCoordsConfig()
     )
     box_vectors = numpy.eye(3) * 20.0 * openmm.unit.angstrom
 

@@ -11,6 +11,8 @@ _KCAL_PER_MOL = openmm.unit.kilocalorie_per_mole
 _ANGSTROM = openmm.unit.angstrom
 _RADIANS = openmm.unit.radians
 
+_ANGSTROM_TO_NM = 1.0 / 10.0
+
 
 def _create_nonbonded_force(
     potential: smee.TensorPotential, system: smee.TensorSystem
@@ -248,14 +250,47 @@ def _combine_nonbonded(
     return force
 
 
-def create_openmm_system(system: smee.TensorSystem) -> openmm.System:
+def create_openmm_system(
+    system: smee.TensorSystem, v_sites: smee.TensorVSites | None
+) -> openmm.System:
     omm_system = openmm.System()
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
         for _ in range(n_copies):
+            start_idx = omm_system.getNumParticles()
+
             for atomic_num in topology.atomic_nums:
                 mass = openmm.app.Element.getByAtomicNumber(int(atomic_num)).mass
                 omm_system.addParticle(mass)
+
+            if topology.v_sites is None:
+                continue
+
+            for _ in range(topology.n_v_sites):
+                omm_system.addParticle(0.0)
+
+            for key, parameter_idx in zip(
+                topology.v_sites.keys, topology.v_sites.parameter_idxs
+            ):
+                system_idx = start_idx + topology.v_sites.key_to_idx[key]
+                assert system_idx >= start_idx
+
+                parent_idxs = [i + start_idx for i in key.orientation_atom_indices]
+
+                local_frame_coords = smee.geometry.polar_to_cartesian_coords(
+                    v_sites.parameters[[parameter_idx], :]
+                )
+                origin, x_dir, y_dir = v_sites.weights[parameter_idx]
+
+                v_site = openmm.LocalCoordinatesSite(
+                    parent_idxs,
+                    origin.numpy(),
+                    x_dir.numpy(),
+                    y_dir.numpy(),
+                    local_frame_coords.numpy().flatten() * _ANGSTROM_TO_NM,
+                )
+
+                omm_system.setVirtualSite(system_idx, v_site)
 
     return omm_system
 
@@ -321,7 +356,7 @@ def convert_to_openmm_system(
         potential_type: convert_to_openmm_force(potential, system)
         for potential_type, potential in force_field.potentials_by_type.items()
     }
-    omm_system = create_openmm_system(system)
+    omm_system = create_openmm_system(system, force_field.v_sites)
 
     if "Electrostatics" in omm_forces and "vdW" in omm_forces:
         electrostatic_force = omm_forces.pop("Electrostatics")

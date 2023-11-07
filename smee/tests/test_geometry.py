@@ -1,5 +1,3 @@
-import copy
-
 import numpy
 import openff.interchange.models
 import openff.toolkit
@@ -21,126 +19,6 @@ from smee.geometry import (
     compute_dihedrals,
     compute_v_site_coords,
 )
-
-
-@pytest.fixture
-def v_site_force_field() -> openff.toolkit.ForceField:
-    force_field = openff.toolkit.ForceField()
-
-    force_field.get_parameter_handler("Electrostatics")
-
-    vdw_handler = force_field.get_parameter_handler("vdW")
-    vdw_handler.add_parameter(
-        {
-            "smirks": "[*:1]",
-            "epsilon": 0.0 * unit.kilojoules / unit.mole,
-            "sigma": 1.0 * unit.angstrom,
-        }
-    )
-
-    charge_handler = force_field.get_parameter_handler("LibraryCharges")
-    charge_handler.add_parameter(
-        {"smirks": "[*:1]", "charge1": 0.0 * openff.units.unit.e}
-    )
-
-    vsite_handler = force_field.get_parameter_handler("VirtualSites")
-
-    vsite_handler.add_parameter(
-        parameter_kwargs={
-            "smirks": "[H][#6:2]([H])=[#8:1]",
-            "name": "EP",
-            "type": "BondCharge",
-            "distance": 7.0 * unit.angstrom,
-            "match": "all_permutations",
-            "charge_increment1": 0.2 * unit.elementary_charge,
-            "charge_increment2": 0.1 * unit.elementary_charge,
-            "sigma": 1.0 * unit.angstrom,
-            "epsilon": 2.0 / 4.184 * unit.kilocalorie_per_mole,
-        }
-    )
-    vsite_handler.add_parameter(
-        parameter_kwargs={
-            "smirks": "[#8:1]=[#6X3:2](-[#17])-[#1:3]",
-            "name": "EP",
-            "type": "MonovalentLonePair",
-            "distance": 1.234 * unit.angstrom,
-            "outOfPlaneAngle": 25.67 * unit.degrees,
-            "inPlaneAngle": 134.0 * unit.degrees,
-            "match": "all_permutations",
-            "charge_increment1": 0.0 * unit.elementary_charge,
-            "charge_increment2": 1.0552 * 0.5 * unit.elementary_charge,
-            "charge_increment3": 1.0552 * 0.5 * unit.elementary_charge,
-            "sigma": 0.0 * unit.nanometers,
-            "epsilon": 0.5 * unit.kilojoules_per_mole,
-        }
-    )
-    vsite_handler.add_parameter(
-        parameter_kwargs={
-            "smirks": "[#1:2]-[#8X2H2+0:1]-[#1:3]",
-            "name": "EP",
-            "type": "DivalentLonePair",
-            "distance": -3.21 * unit.nanometers,
-            "outOfPlaneAngle": 37.43 * unit.degrees,
-            "match": "all_permutations",
-            "charge_increment1": 0.0 * unit.elementary_charge,
-            "charge_increment2": 1.0552 * 0.5 * unit.elementary_charge,
-            "charge_increment3": 1.0552 * 0.5 * unit.elementary_charge,
-            "sigma": 1.0 * unit.angstrom,
-            "epsilon": 0.5 * unit.kilojoules_per_mole,
-        }
-    )
-    vsite_handler.add_parameter(
-        parameter_kwargs={
-            "smirks": "[#1:2][#7:1]([#1:3])[#1:4]",
-            "name": "EP",
-            "type": "TrivalentLonePair",
-            "distance": 0.5 * unit.nanometers,
-            "match": "once",
-            "charge_increment1": 0.2 * unit.elementary_charge,
-            "charge_increment2": 0.0 * unit.elementary_charge,
-            "charge_increment3": 0.0 * unit.elementary_charge,
-            "charge_increment4": 0.0 * unit.elementary_charge,
-            "sigma": 1.0 * unit.angstrom,
-            "epsilon": 0.5 * unit.kilojoules_per_mole,
-        }
-    )
-    return force_field
-
-
-def _apply_v_site_force_field(
-    molecule: openff.toolkit.Molecule,
-    conformer: torch.Tensor,
-    force_field: openff.toolkit.ForceField,
-) -> openff.interchange.Interchange:
-    force_field = copy.deepcopy(force_field)
-
-    # newer interchange versions map to specific openmm v-site types. this requires
-    # information about the geometry of the molecule / topology, which it looks up
-    # directly from equilibrium bond lengths and constraint distances. this seems
-    # like it could be problematic?
-    constraint_handler = force_field.get_parameter_handler("Constraints")
-    found_smirks = set()
-
-    for bond in molecule.bonds:
-        i, j = bond.atom1_index, bond.atom2_index
-
-        molecule.properties["atom_map"] = {i: 0, j: 1}
-        smirks = molecule.to_smiles(mapped=True)
-
-        if smirks in found_smirks:
-            continue
-
-        found_smirks.add(smirks)
-
-        distance = torch.norm(conformer[i, :] - conformer[j, :])
-
-        constraint_handler.add_parameter(
-            {"smirks": smirks, "distance": distance * unit.angstrom}
-        )
-
-    return openff.interchange.Interchange.from_smirnoff(
-        force_field, molecule.to_topology()
-    )
 
 
 def compute_openmm_v_sites(
@@ -384,7 +262,9 @@ def test_compute_v_site_coords(smiles, v_site_force_field):
 
     conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
 
-    interchange = _apply_v_site_force_field(molecule, conformer, v_site_force_field)
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field, molecule.to_topology()
+    )
     force_field, [topology] = smee.converters.convert_interchange(interchange)
 
     assert topology.v_sites is not None
@@ -403,7 +283,9 @@ def test_compute_v_site_coords_empty(v_site_force_field):
 
     conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
 
-    interchange = _apply_v_site_force_field(molecule, conformer, v_site_force_field)
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field, molecule.to_topology()
+    )
     force_field, [topology] = smee.converters.convert_interchange(interchange)
 
     assert topology.v_sites is not None
@@ -424,7 +306,9 @@ def test_compute_v_site_coords_batched(v_site_force_field):
         dtype=torch.float64,
     )
 
-    interchange = _apply_v_site_force_field(molecule, conformers[0], v_site_force_field)
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field, molecule.to_topology()
+    )
     force_field, [topology] = smee.converters.convert_interchange(interchange)
 
     assert topology.v_sites is not None
@@ -432,7 +316,9 @@ def test_compute_v_site_coords_batched(v_site_force_field):
 
     openmm_v_site_coords_0 = compute_openmm_v_sites(conformers[0], interchange)
 
-    interchange = _apply_v_site_force_field(molecule, conformers[1], v_site_force_field)
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field, molecule.to_topology()
+    )
     openmm_v_site_coords_1 = compute_openmm_v_sites(conformers[1], interchange)
 
     openmm_v_site_coords = torch.stack([openmm_v_site_coords_0, openmm_v_site_coords_1])

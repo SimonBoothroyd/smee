@@ -10,6 +10,7 @@ import typing
 import numpy
 import openmm.app
 import openmm.unit
+import torch
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
@@ -44,6 +45,34 @@ def _topology_to_rdkit(topology: smee.TensorTopology) -> Chem.Mol:
     AllChem.EmbedMolecule(mol)
 
     return mol
+
+
+def _topology_to_xyz(
+    topology: smee.TensorTopology, force_field: smee.TensorForceField | None
+) -> str:
+    """Convert a topology to an RDKit molecule."""
+    mol = _topology_to_rdkit(topology)
+
+    elements = [atom.GetSymbol() for atom in mol.GetAtoms()]
+    coords = torch.tensor(mol.GetConformer().GetPositions())
+
+    if topology.n_v_sites > 0:
+        assert force_field is not None, "v-sites require a force field"
+        coords = coords.to(force_field.v_sites.weights[0].dtype)
+
+        coords = smee.geometry.add_v_site_coords(topology.v_sites, coords, force_field)
+        elements += ["X"] * topology.n_v_sites
+
+    return "\n".join(
+        [
+            f"{len(elements)}",
+            "",
+            *[
+                f"{element} {x:f} {y:f} {z:f}"
+                for (element, (x, y, z)) in zip(elements, coords)
+            ],
+        ]
+    )
 
 
 def _approximate_box_size(
@@ -115,12 +144,14 @@ def _generate_packmol_input(
 
 def generate_system_coords(
     system: smee.TensorSystem,
+    force_field: smee.TensorForceField | None,
     config: typing.Optional["smee.mm.GenerateCoordsConfig"] = None,
 ) -> tuple[openmm.unit.Quantity, openmm.unit.Quantity]:
     """Generate coordinates for a system of molecules using PACKMOL.
 
     Args:
         system: The system to generate coordinates for.
+        force_field: The force field that describes the geometry of any virtual sites.
         config: Configuration of how to generate the system coordinates.
 
     Raises:
@@ -139,12 +170,8 @@ def generate_system_coords(
         tmp_dir = pathlib.Path(tmp_dir)
 
         for i, topology in enumerate(system.topologies):
-            mol = _topology_to_rdkit(topology)
-
-            if topology.v_sites is not None:
-                raise NotImplementedError("v-sites are not yet supported")
-
-            Chem.MolToXYZFile(mol, str(tmp_dir / f"{i}.xyz"))
+            xyz = _topology_to_xyz(topology, force_field)
+            (tmp_dir / f"{i}.xyz").write_text(xyz)
 
         input_file = tmp_dir / "input.txt"
         input_file.write_text(

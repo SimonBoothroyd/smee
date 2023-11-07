@@ -13,7 +13,7 @@ def _etoh_water_system() -> (
     tuple[smee.TensorSystem, smee.TensorForceField, torch.Tensor, torch.Tensor]
 ):
     system, force_field = smee.tests.utils.system_from_smiles(["CCO", "O"], [67, 123])
-    coords, box_vectors = smee.mm.generate_system_coords(system)
+    coords, box_vectors = smee.mm.generate_system_coords(system, None)
 
     return (
         system,
