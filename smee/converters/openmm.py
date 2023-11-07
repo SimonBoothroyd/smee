@@ -403,6 +403,11 @@ def convert_to_openmm_topology(system: smee.TensorSystem) -> openmm.app.Topology
                 )
                 atoms[i] = omm_topology.addAtom(name, element, residue)
 
+            for i in range(topology.n_v_sites):
+                omm_topology.addAtom(
+                    "X", openmm.app.Element.getByAtomicNumber(82), residue
+                )
+
             for bond_idxs, bond_order in zip(topology.bond_idxs, topology.bond_orders):
                 idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
 
