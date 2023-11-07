@@ -91,8 +91,8 @@ def convert_nonbonded_handlers(
                     mult_key = copy.deepcopy(parameter_key)
                     mult_key.mult = i
 
-                    assignment_map[atom_idx][parameter_key_to_idx[mult_key]] += -1.0
-                    assignment_map[v_site_idx][parameter_key_to_idx[mult_key]] += 1.0
+                    assignment_map[atom_idx][parameter_key_to_idx[mult_key]] += 1.0
+                    assignment_map[v_site_idx][parameter_key_to_idx[mult_key]] += -1.0
 
         assignment_matrix = torch.zeros(
             (n_particles, len(potential.parameters)), dtype=torch.float64
