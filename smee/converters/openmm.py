@@ -253,6 +253,9 @@ def _combine_nonbonded(
 def create_openmm_system(
     system: smee.TensorSystem, v_sites: smee.TensorVSites | None
 ) -> openmm.System:
+    v_sites = None if v_sites is None else v_sites.to("cpu")
+    system = system.to("cpu")
+
     omm_system = openmm.System()
 
     for topology, n_copies in zip(system.topologies, system.n_copies):
@@ -314,6 +317,9 @@ def _apply_constraints(omm_system: openmm.System, system: smee.TensorSystem):
 def convert_to_openmm_force(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.Force:
+    potential = potential.to("cpu")
+    system = system.to("cpu")
+
     if potential.type == "Electrostatics":
         return _convert_electrostatics_potential(potential, system)
     if potential.type == "vdW":
@@ -351,6 +357,9 @@ def convert_to_openmm_system(
         if isinstance(system, smee.TensorSystem)
         else smee.TensorSystem([system], [1], False)
     )
+
+    force_field = force_field.to("cpu")
+    system = system.to("cpu")
 
     omm_forces = {
         potential_type: convert_to_openmm_force(potential, system)

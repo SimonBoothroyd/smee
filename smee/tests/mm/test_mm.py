@@ -176,6 +176,7 @@ def test_generate_system_coords():
             [1, 2],
             True,
         ),
+        None,
         smee.mm.GenerateCoordsConfig(),
     )
 

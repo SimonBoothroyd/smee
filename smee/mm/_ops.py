@@ -27,6 +27,7 @@ class _EnsembleAverageKwargs(typing.TypedDict):
     force_field: smee.TensorForceField
     parameter_lookup: dict[str, int]
     attribute_lookup: dict[str, int]
+    has_v_sites: bool
 
     system: smee.TensorSystem
 
@@ -45,7 +46,7 @@ class _ReweightAverageKwargs(_EnsembleAverageKwargs):
 
 def _pack_force_field(
     force_field: smee.TensorForceField,
-) -> tuple[tuple[torch.Tensor, ...], dict[str, int], dict[str, int]]:
+) -> tuple[tuple[torch.Tensor, ...], dict[str, int], dict[str, int], bool]:
     """Pack a SMEE force field into a tuple that can be consumed by a custom PyTorch op.
 
     Notes:
@@ -53,19 +54,19 @@ def _pack_force_field(
         so we have to flatten the force field into an args tuple.
 
     Returns:
-        A tuple of tensors containing the force field parameters and attributes, and
+        A tuple of tensors containing the force field parameters and attributes,
         lookup tables mapping potential types to their corresponding parameters and
-        attributes in the tuple.
+        attributes in the tuple, and a flag indicating if v-sites are present.
     """
-    if force_field.v_sites is not None:
-        raise NotImplementedError
-
     potential_types = [potential.type for potential in force_field.potentials]
 
     parameters = [potential.parameters for potential in force_field.potentials]
     attributes = [potential.attributes for potential in force_field.potentials]
 
-    tensors = tuple(parameters + attributes)
+    has_v_sites = force_field.v_sites is not None
+    v_sites = [force_field.v_sites.parameters] if has_v_sites else []
+
+    tensors = tuple(parameters + attributes + v_sites)
 
     parameter_lookup = {
         potential_type: i for i, potential_type in enumerate(potential_types)
@@ -75,13 +76,14 @@ def _pack_force_field(
         for i, potential_type in enumerate(potential_types)
     }
 
-    return tensors, parameter_lookup, attribute_lookup
+    return tensors, parameter_lookup, attribute_lookup, has_v_sites
 
 
 def _unpack_force_field(
     tensors: tuple[torch.Tensor, ...],
     parameter_lookup: dict[str, int],
     attribute_lookup: dict[str, int],
+    has_v_sites: bool,
     force_field: smee.TensorForceField,
 ) -> smee.TensorForceField:
     """Unpack a SMEE force field from its packed tensor and lookup representation.
@@ -116,7 +118,14 @@ def _unpack_force_field(
         )
         potentials.append(potential)
 
-    return smee.TensorForceField(potentials, force_field.v_sites)
+    v_sites = None
+
+    if has_v_sites:
+        v_sites = smee.TensorVSites(
+            force_field.v_sites.keys, force_field.v_sites.weights, tensors[-1]
+        )
+
+    return smee.TensorForceField(potentials, v_sites)
 
 
 def _compute_mass(system: smee.TensorSystem) -> float:
@@ -274,6 +283,7 @@ class _EnsembleAverageOp(torch.autograd.Function):
             theta,
             kwargs["parameter_lookup"],
             kwargs["attribute_lookup"],
+            kwargs["has_v_sites"],
             kwargs["force_field"],
         )
         system = kwargs["system"]
@@ -342,6 +352,7 @@ class _ReweightAverageOp(torch.autograd.Function):
             theta,
             kwargs["parameter_lookup"],
             kwargs["attribute_lookup"],
+            kwargs["has_v_sites"],
             kwargs["force_field"],
         )
         system = kwargs["system"]
@@ -445,7 +456,9 @@ def compute_ensemble_averages(
         A dictionary containing the ensemble averages of the potential energy
         [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].
     """
-    tensors, parameter_lookup, attribute_lookup = _pack_force_field(force_field)
+    tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
+        force_field
+    )
 
     beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
     beta = beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1)
@@ -459,6 +472,7 @@ def compute_ensemble_averages(
         "force_field": force_field,
         "parameter_lookup": parameter_lookup,
         "attribute_lookup": attribute_lookup,
+        "has_v_sites": has_v_sites,
         "system": system,
         "frames_path": frames_path,
         "beta": beta,
@@ -496,7 +510,9 @@ def reweight_ensemble_averages(
         A dictionary containing the ensemble averages of the potential energy
         [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].
     """
-    tensors, parameter_lookup, attribute_lookup = _pack_force_field(force_field)
+    tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
+        force_field
+    )
 
     beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
     beta = beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1)
@@ -510,6 +526,7 @@ def reweight_ensemble_averages(
         "force_field": force_field,
         "parameter_lookup": parameter_lookup,
         "attribute_lookup": attribute_lookup,
+        "has_v_sites": has_v_sites,
         "system": system,
         "frames_path": frames_path,
         "beta": beta,
