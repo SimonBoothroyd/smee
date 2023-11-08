@@ -37,25 +37,36 @@ def _mock_potential(type_, parameters, attributes) -> smee.TensorPotential:
     )
 
 
-def test_pack_unpack_force_field():
+def test_pack_unpack_force_field(mocker):
     parameters_a = torch.randn(4).reshape(2, 2)
     attributes_a = torch.randn(2)
 
     parameters_b = torch.randn(6).reshape(2, 3)
     attributes_b = torch.randn(3)
 
+    v_site_keys = [mocker.Mock()]
+    v_site_weights = [mocker.Mock()]
+    v_site_parameters = torch.randn(12).reshape(4, 3)
+
     force_field = smee.TensorForceField(
         [
             _mock_potential("vdw", parameters_a, attributes_a),
             _mock_potential("bond", parameters_b, attributes_b),
         ],
-        None,
+        smee.TensorVSites(v_site_keys, v_site_weights, v_site_parameters),
     )
 
-    tensors, param_lookup, attr_lookup = _pack_force_field(force_field)
+    tensors, param_lookup, attr_lookup, has_v_sites = _pack_force_field(force_field)
 
-    expected_tensors = (parameters_a, parameters_b, attributes_a, attributes_b)
+    expected_tensors = (
+        parameters_a,
+        parameters_b,
+        attributes_a,
+        attributes_b,
+        v_site_parameters,
+    )
     assert tensors == expected_tensors
+    assert has_v_sites is True
 
     expected_param_lookup = {"vdw": 0, "bond": 1}
     assert param_lookup == expected_param_lookup
@@ -65,13 +76,14 @@ def test_pack_unpack_force_field():
     updated_tensors = tuple(v + 1.0 for v in tensors)
 
     unpacked_force_field = _unpack_force_field(
-        updated_tensors, param_lookup, attr_lookup, force_field
+        updated_tensors, param_lookup, attr_lookup, has_v_sites, force_field
     )
 
     assert len(unpacked_force_field.potentials) == 2
 
     expected_params = updated_tensors[:2]
-    expected_attrs = updated_tensors[2:]
+    expected_attrs = updated_tensors[2:-1]
+    expected_v_site = updated_tensors[-1]
 
     for i, (original, unpacked) in enumerate(
         zip(force_field.potentials, unpacked_force_field.potentials)
@@ -93,6 +105,13 @@ def test_pack_unpack_force_field():
 
         assert original.attribute_cols == unpacked.attribute_cols
         assert original.attribute_units == unpacked.attribute_units
+
+    assert unpacked_force_field.v_sites.keys == v_site_keys
+    assert unpacked_force_field.v_sites.weights == v_site_weights
+    assert force_field.v_sites.parameters.shape == v_site_parameters.shape
+    assert torch.allclose(force_field.v_sites.parameters, tensors[-1])
+    assert unpacked_force_field.v_sites.parameters.shape == v_site_parameters.shape
+    assert torch.allclose(unpacked_force_field.v_sites.parameters, expected_v_site)
 
 
 def test_compute_mass():

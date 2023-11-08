@@ -162,6 +162,9 @@ def generate_system_coords(
         ``shape=(3, 3)``
     """
 
+    system = system.to("cpu")
+    force_field = None if force_field is None else force_field.to("cpu")
+
     config = config if config is not None else smee.mm.GenerateCoordsConfig()
 
     box_size = _approximate_box_size(system, config)
