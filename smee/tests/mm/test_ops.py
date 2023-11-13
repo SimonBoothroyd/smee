@@ -298,15 +298,15 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     tensor_ff.potentials_by_type["vdW"].parameters.requires_grad = True
 
-    ensemble_avgs = compute_ensemble_averages(
+    ensemble_avgs, ensemble_stds = compute_ensemble_averages(
         tensor_system, tensor_ff, output_path, temperature, None
     )
 
     assert mock_compute_observables.call_count == 1
 
-    assert ensemble_avgs["potential_energy_std"].grad_fn is None
+    assert ensemble_stds["potential_energy"].grad_fn is None
     assert torch.isclose(
-        ensemble_avgs["potential_energy_std"], torch.std(torch.tensor([1.0, 5.0]))
+        ensemble_stds["potential_energy"], torch.std(torch.tensor([1.0, 5.0]))
     )
 
     ensemble_avgs["potential_energy"].backward(retain_graph=True)
@@ -315,10 +315,8 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     mock_compute_observables.assert_called_once()
 
-    assert ensemble_avgs["volume_std"].grad_fn is None
-    assert torch.isclose(
-        ensemble_avgs["volume_std"], torch.std(torch.tensor([2.0, 6.0]))
-    )
+    assert ensemble_stds["volume"].grad_fn is None
+    assert torch.isclose(ensemble_stds["volume"], torch.std(torch.tensor([2.0, 6.0])))
 
     ensemble_avgs["volume"].backward(retain_graph=True)
     volume_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
@@ -326,10 +324,8 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     mock_compute_observables.assert_called_once()
 
-    assert ensemble_avgs["density_std"].grad_fn is None
-    assert torch.isclose(
-        ensemble_avgs["density_std"], torch.std(torch.tensor([3.0, 20.0]))
-    )
+    assert ensemble_stds["density"].grad_fn is None
+    assert torch.isclose(ensemble_stds["density"], torch.std(torch.tensor([3.0, 20.0])))
 
     ensemble_avgs["density"].backward(retain_graph=False)
     density_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
@@ -392,7 +388,7 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     vdw_parameters = tensor_ff.potentials_by_type["vdW"].parameters
     vdw_parameters.requires_grad = True
 
-    ensemble_averages = compute_ensemble_averages(
+    ensemble_averages, _ = compute_ensemble_averages(
         tensor_system, tensor_ff, output_path, temperature, None
     )
     reweight_averages = reweight_ensemble_averages(
@@ -400,9 +396,6 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     )
 
     for observable in ensemble_averages:
-        if observable.endswith("_std"):
-            continue
-
         (ensemble_grad,) = torch.autograd.grad(
             ensemble_averages[observable], vdw_parameters, retain_graph=True
         )

@@ -446,7 +446,7 @@ def compute_ensemble_averages(
     frames_path: pathlib.Path,
     temperature: openmm.unit.Quantity,
     pressure: openmm.unit.Quantity | None,
-) -> dict[str, torch.Tensor]:
+) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
     """Compute ensemble average of the potential energy, volume, density,
     and enthalpy (if running NPT) over an MD trajectory.
 
@@ -460,7 +460,7 @@ def compute_ensemble_averages(
     Returns:
         A dictionary containing the ensemble averages of the potential energy
         [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol],
-        as well as their standard deviations.
+        and a dictionary containing their standard deviations.
     """
     tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
         force_field
@@ -486,9 +486,14 @@ def compute_ensemble_averages(
     }
 
     *avg_outputs, columns = _EnsembleAverageOp.apply(kwargs, *tensors)
-    columns = [*columns, *[f"{c}_std" for c in columns]]
 
-    return {column: avg for avg, column in zip(avg_outputs, columns)}
+    avg_values = avg_outputs[: len(avg_outputs) // 2]
+    avg_std = avg_outputs[len(avg_outputs) // 2 :]
+
+    return (
+        {column: avg for avg, column in zip(avg_values, columns)},
+        {column: avg for avg, column in zip(avg_std, columns)},
+    )
 
 
 def reweight_ensemble_averages(
