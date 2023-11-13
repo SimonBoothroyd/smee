@@ -182,6 +182,18 @@ def test_tensor_like():
     assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
 
 
+def test_tensor_like_copy():
+    expected_type = torch.float16
+    expected_data = torch.tensor([[3.0], [2.0], [1.0]], requires_grad=True)
+
+    other = torch.tensor(expected_data, dtype=expected_type, device="cpu")
+    tensor = smee.utils.tensor_like(expected_data, other)
+
+    assert tensor.requires_grad is False
+    assert tensor.dtype == expected_type
+    assert torch.allclose(tensor, torch.tensor(expected_data, dtype=expected_type))
+
+
 def test_arange_like():
     expected_type = torch.int8
     expected_data = [0, 1, 2, 3]

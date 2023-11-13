@@ -90,6 +90,10 @@ def zeros_like(size: _size, other: torch.Tensor) -> torch.Tensor:
 
 def tensor_like(data: typing.Any, other: torch.Tensor) -> torch.Tensor:
     """Create a tensor with the same device and type as another tensor."""
+
+    if isinstance(data, torch.Tensor):
+        return data.clone().detach().to(other.device, other.dtype)
+
     return torch.tensor(data, dtype=other.dtype, device=other.device)
 
 

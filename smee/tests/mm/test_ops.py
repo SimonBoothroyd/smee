@@ -304,17 +304,32 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     assert mock_compute_observables.call_count == 1
 
+    assert ensemble_avgs["potential_energy_std"].grad_fn is None
+    assert torch.isclose(
+        ensemble_avgs["potential_energy_std"], torch.std(torch.tensor([1.0, 5.0]))
+    )
+
     ensemble_avgs["potential_energy"].backward(retain_graph=True)
     energy_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
     tensor_ff.potentials_by_type["vdW"].parameters.grad = None
 
     mock_compute_observables.assert_called_once()
 
+    assert ensemble_avgs["volume_std"].grad_fn is None
+    assert torch.isclose(
+        ensemble_avgs["volume_std"], torch.std(torch.tensor([2.0, 6.0]))
+    )
+
     ensemble_avgs["volume"].backward(retain_graph=True)
     volume_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
     tensor_ff.potentials_by_type["vdW"].parameters.grad = None
 
     mock_compute_observables.assert_called_once()
+
+    assert ensemble_avgs["density_std"].grad_fn is None
+    assert torch.isclose(
+        ensemble_avgs["density_std"], torch.std(torch.tensor([3.0, 20.0]))
+    )
 
     ensemble_avgs["density"].backward(retain_graph=False)
     density_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
