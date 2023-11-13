@@ -400,6 +400,9 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     )
 
     for observable in ensemble_averages:
+        if observable.endswith("_std"):
+            continue
+
         (ensemble_grad,) = torch.autograd.grad(
             ensemble_averages[observable], vdw_parameters, retain_graph=True
         )
