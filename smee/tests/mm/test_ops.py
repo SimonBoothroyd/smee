@@ -298,11 +298,16 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     tensor_ff.potentials_by_type["vdW"].parameters.requires_grad = True
 
-    ensemble_avgs = compute_ensemble_averages(
+    ensemble_avgs, ensemble_stds = compute_ensemble_averages(
         tensor_system, tensor_ff, output_path, temperature, None
     )
 
     assert mock_compute_observables.call_count == 1
+
+    assert ensemble_stds["potential_energy"].grad_fn is None
+    assert torch.isclose(
+        ensemble_stds["potential_energy"], torch.std(torch.tensor([1.0, 5.0]))
+    )
 
     ensemble_avgs["potential_energy"].backward(retain_graph=True)
     energy_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
@@ -310,11 +315,17 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
     mock_compute_observables.assert_called_once()
 
+    assert ensemble_stds["volume"].grad_fn is None
+    assert torch.isclose(ensemble_stds["volume"], torch.std(torch.tensor([2.0, 6.0])))
+
     ensemble_avgs["volume"].backward(retain_graph=True)
     volume_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
     tensor_ff.potentials_by_type["vdW"].parameters.grad = None
 
     mock_compute_observables.assert_called_once()
+
+    assert ensemble_stds["density"].grad_fn is None
+    assert torch.isclose(ensemble_stds["density"], torch.std(torch.tensor([3.0, 20.0])))
 
     ensemble_avgs["density"].backward(retain_graph=False)
     density_grad = tensor_ff.potentials_by_type["vdW"].parameters.grad
@@ -377,7 +388,7 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     vdw_parameters = tensor_ff.potentials_by_type["vdW"].parameters
     vdw_parameters.requires_grad = True
 
-    ensemble_averages = compute_ensemble_averages(
+    ensemble_averages, _ = compute_ensemble_averages(
         tensor_system, tensor_ff, output_path, temperature, None
     )
     reweight_averages = reweight_ensemble_averages(

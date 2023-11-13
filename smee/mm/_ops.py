@@ -294,18 +294,23 @@ class _EnsembleAverageOp(torch.autograd.Function):
             )
 
         avg_values = values.mean(dim=0)
+        avg_stds = [*values.std(dim=0)]
 
         ctx.beta = kwargs["beta"]
         ctx.n_theta = len(theta)
         ctx.columns = columns
         ctx.save_for_backward(*theta, *du_d_theta, values, avg_values)
 
-        return tuple([*avg_values, columns])
+        ctx.mark_non_differentiable(*avg_stds)
+
+        return tuple([*avg_values, *avg_stds, tuple(columns)])
 
     @staticmethod
     def backward(ctx, *grad_outputs):
         theta = ctx.saved_tensors[: ctx.n_theta]
         du_d_theta = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+
+        grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
 
         values = ctx.saved_tensors[-2]
         avg_values = ctx.saved_tensors[-1]
@@ -337,10 +342,10 @@ class _EnsembleAverageOp(torch.autograd.Function):
                 avg_output_du_d_theta_i - avg_du_d_theta_i_avg_output
             )
 
-            grads[i] = d_avg_output_d_theta_i @ torch.stack(grad_outputs[:-1])
+            grads[i] = d_avg_output_d_theta_i @ grad_outputs
 
         # we need to return one extra 'gradient' for kwargs.
-        return tuple([None] + grads + [None])
+        return tuple([None] + grads)
 
 
 class _ReweightAverageOp(torch.autograd.Function):
@@ -441,7 +446,7 @@ def compute_ensemble_averages(
     frames_path: pathlib.Path,
     temperature: openmm.unit.Quantity,
     pressure: openmm.unit.Quantity | None,
-) -> dict[str, torch.Tensor]:
+) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor]]:
     """Compute ensemble average of the potential energy, volume, density,
     and enthalpy (if running NPT) over an MD trajectory.
 
@@ -454,7 +459,8 @@ def compute_ensemble_averages(
 
     Returns:
         A dictionary containing the ensemble averages of the potential energy
-        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].
+        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol],
+        and a dictionary containing their standard deviations.
     """
     tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
         force_field
@@ -480,7 +486,14 @@ def compute_ensemble_averages(
     }
 
     *avg_outputs, columns = _EnsembleAverageOp.apply(kwargs, *tensors)
-    return {column: avg for avg, column in zip(avg_outputs, columns)}
+
+    avg_values = avg_outputs[: len(avg_outputs) // 2]
+    avg_std = avg_outputs[len(avg_outputs) // 2 :]
+
+    return (
+        {column: avg for avg, column in zip(avg_values, columns)},
+        {column: avg for avg, column in zip(avg_std, columns)},
+    )
 
 
 def reweight_ensemble_averages(
