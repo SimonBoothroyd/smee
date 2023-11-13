@@ -26,6 +26,50 @@ class PACKMOLRuntimeError(RuntimeError):
     """An error raised when PACKMOL fails to execute / converge for some reason."""
 
 
+def _apply_hmr(
+    system_openmm: openmm.System,
+    system_smee: smee.TensorSystem,
+    hydrogen_mass: openmm.unit.Quantity = 1.5 * openmm.unit.amu,
+):
+    """Apply HMR to a system.
+
+    Args:
+        system_openmm: The OpenMM system to modify.
+        system_smee: The SMEE system that defines the system topology.
+        hydrogen_mass: The mass to use for hydrogen atoms.
+    """
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system_smee.topologies, system_smee.n_copies):
+        for _ in range(n_copies):
+            for idx_a, idx_b in topology.bond_idxs:
+                if topology.atomic_nums[idx_a] == 1:
+                    (idx_a, idx_b) = (idx_b, idx_a)
+
+                if topology.atomic_nums[idx_b] != 1:
+                    continue
+                if topology.atomic_nums[idx_a] == 1:
+                    continue
+
+                elements = sorted(topology.atomic_nums.tolist())
+
+                if elements == [1, 1, 8]:
+                    continue
+
+                mass_delta = hydrogen_mass - system_openmm.getParticleMass(
+                    idx_b + idx_offset
+                )
+
+                system_openmm.setParticleMass(idx_b + idx_offset, hydrogen_mass)
+                system_openmm.setParticleMass(
+                    idx_a + idx_offset,
+                    system_openmm.getParticleMass(idx_a) - mass_delta,
+                )
+
+            idx_offset += topology.n_particles
+
+
 def _topology_to_rdkit(topology: smee.TensorTopology) -> Chem.Mol:
     """Convert a topology to an RDKit molecule."""
     mol = Chem.RWMol()
@@ -309,6 +353,7 @@ def simulate(
     ],
     production_config: "smee.mm.SimulationConfig",
     production_reporters: list[typing.Any] | None = None,
+    apply_hmr: bool = False,
 ):
     """Simulate a SMEE system of molecules or topology.
 
@@ -324,6 +369,8 @@ def simulate(
         production_config: The configuration defining the production simulation to run.
         production_reporters: A list of additional OpenMM reporters to use for the
             production simulation.
+        apply_hmr: Whether to apply Hydrogen Mass Repartitioning to the system prior
+            to simulation.
     """
 
     assert isinstance(coords.value_in_unit(openmm.unit.angstrom), numpy.ndarray)
@@ -352,6 +399,9 @@ def simulate(
 
     omm_system = smee.converters.convert_to_openmm_system(force_field, system)
     omm_topology = smee.converters.convert_to_openmm_topology(system)
+
+    if apply_hmr:
+        _apply_hmr(omm_system, system)
 
     for i, config in enumerate(equilibrate_configs):
         _LOGGER.info(f"running equilibration step {i + 1} / {len(equilibrate_configs)}")

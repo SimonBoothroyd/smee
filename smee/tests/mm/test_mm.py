@@ -13,6 +13,7 @@ import smee.converters
 import smee.mm
 import smee.tests.utils
 from smee.mm._mm import (
+    _apply_hmr,
     _approximate_box_size,
     _energy_minimize,
     _generate_packmol_input,
@@ -55,6 +56,68 @@ def mock_omm_system() -> openmm.System:
     system.addForce(force)
 
     return system
+
+
+def test_apply_hmr():
+    interchanges = [
+        openff.interchange.Interchange.from_smirnoff(
+            openff.toolkit.ForceField("tip4p_fb.offxml", "openff-2.1.0.offxml"),
+            openff.toolkit.Molecule.from_smiles(smiles).to_topology(),
+        )
+        for smiles in ["O", "CO"]
+    ]
+
+    force_field, [topology_water, topology_meoh] = smee.converters.convert_interchange(
+        interchanges
+    )
+
+    system_smee = smee.TensorSystem(
+        [topology_water, topology_meoh, topology_water],
+        [1, 2, 1],
+        False,
+    )
+    system_openmm = smee.converters.convert_to_openmm_system(force_field, system_smee)
+
+    for i in range(system_openmm.getNumParticles()):
+        # Round the masses to the nearest integer to make comparisons easier.
+        mass = system_openmm.getParticleMass(i).value_in_unit(openmm.unit.amu)
+        mass = float(int(mass + 0.5)) * openmm.unit.amu
+        system_openmm.setParticleMass(i, mass)
+
+    _apply_hmr(system_openmm, system_smee)
+
+    masses = [
+        system_openmm.getParticleMass(i).value_in_unit(openmm.unit.amu)
+        for i in range(system_openmm.getNumParticles())
+    ]
+
+    expected_masses = [
+        # Water 1
+        16.0,
+        1.0,
+        1.0,
+        0.0,
+        # MeOH 1
+        15.5,
+        0.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        # MeOH 2
+        15.5,
+        0.5,
+        1.5,
+        1.5,
+        1.5,
+        1.5,
+        # Water 2
+        16.0,
+        1.0,
+        1.0,
+        0.0,
+    ]
+    assert masses == expected_masses
 
 
 def test_topology_to_rdkit():
@@ -306,6 +369,7 @@ def test_simulate(mocker, mock_argon_tensors):
             temperature=86.0 * openmm.unit.kelvin, pressure=None, n_steps=2
         ),
         [reporter],
+        True,
     )
 
     spied_energy_minimize.assert_called_once()
