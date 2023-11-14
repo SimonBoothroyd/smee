@@ -58,7 +58,7 @@ class _OpenMMQuantityAnnotation:
         cls,
         _core_schema: pydantic_core.core_schema.CoreSchema,
         handler: pydantic.GetJsonSchemaHandler,
-    ) -> pydantic.json_schema.JsonSchemaValue:
+    ) -> "pydantic.json_schema.JsonSchemaValue":
         return handler(pydantic_core.core_schema.str_schema())
 
 
