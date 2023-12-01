@@ -50,3 +50,14 @@ dependencies:
   - pytest-mock
 
   - codecov
+
+  # Docs
+  - mkdocs
+  - mkdocs-material
+  - mkdocs-gen-files
+  - mkdocs-literate-nav
+  - mkdocs-jupyter
+  - mkdocstrings
+  - mkdocstrings-python
+  - black
+  - mike
