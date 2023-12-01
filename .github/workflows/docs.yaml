@@ -48,4 +48,6 @@ jobs:
         pip install git+https://${INSIDER_DOCS_TOKEN}@github.com/SimonBoothroyd/griffe-pydantic.git@fix-inheritence-static
         pip install git+https://${INSIDER_DOCS_TOKEN}@github.com/SimonBoothroyd/mkdocstrings-python.git
         
+        sed -i 's/# extensions/extensions/' mkdocs.yml
+        
         make docs-deploy VERSION="$VERSION"

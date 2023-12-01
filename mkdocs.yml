@@ -102,9 +102,7 @@ plugins:
       python:
         paths: [smee/]
         options:
-          extensions:
-            - griffe_pydantic:
-                schema: false
+          # extensions: [ griffe_pydantic ]
           docstring_options:
             ignore_init_summary: true
             returns_multiple_items: false
