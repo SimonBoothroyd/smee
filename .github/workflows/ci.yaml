@@ -25,6 +25,7 @@ jobs:
         make lint
         make test
         make test-examples
+        make docs-build
 
     - name: CodeCov
       uses: codecov/codecov-action@v3.1.1

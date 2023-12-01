@@ -334,7 +334,7 @@ def add_v_site_coords(
     v_sites: "smee.VSiteMap",
     conformer: torch.Tensor,
     force_field: "smee.TensorForceField",
-):
+) -> torch.Tensor:
     """Appends the coordinates of any virtual sites to a conformer (or batch of
     conformers) containing only atomic coordinates.
 

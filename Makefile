@@ -4,7 +4,7 @@ CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 EXAMPLES_SKIP := examples/md-simulations.ipynb
 EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
 
-.PHONY: pip-install env lint format test test-examples
+.PHONY: pip-install env lint format test test-examples docs-build docs-deploy
 
 pip-install:
 	$(CONDA_ENV_RUN) pip install --no-build-isolation --no-deps -e .
@@ -36,3 +36,12 @@ test:
 
 test-examples:
 	$(CONDA_ENV_RUN) jupyter nbconvert --to notebook --execute $(EXAMPLES)
+
+docs-build:
+	$(CONDA_ENV_RUN) mkdocs build
+
+docs-deploy:
+ifndef VERSION
+	$(error VERSION is not set)
+endif
+	$(CONDA_ENV_RUN) mike deploy --push --update-aliases $(VERSION)
