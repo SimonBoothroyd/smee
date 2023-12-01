@@ -4,7 +4,7 @@ CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 EXAMPLES_SKIP := examples/md-simulations.ipynb
 EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
 
-.PHONY: pip-install env lint format test test-examples docs-build docs-deploy
+.PHONY: pip-install env lint format test test-examples docs-build docs-deploy docs-insiders
 
 pip-install:
 	$(CONDA_ENV_RUN) pip install --no-build-isolation --no-deps -e .
@@ -45,3 +45,7 @@ ifndef VERSION
 	$(error VERSION is not set)
 endif
 	$(CONDA_ENV_RUN) mike deploy --push --update-aliases $(VERSION)
+
+docs-insiders:
+	$(CONDA_ENV_RUN) pip install git+https://$(INSIDER_DOCS_TOKEN)@github.com/SimonBoothroyd/mkdocstrings-python.git \
+                    			 git+https://$(INSIDER_DOCS_TOKEN)@github.com/SimonBoothroyd/griffe-pydantic.git@fix-inheritence-static

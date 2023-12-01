@@ -30,8 +30,6 @@ theme:
   name: material
   features:
   - announce.dismiss
-  - content.action.edit
-  - content.action.view
   - content.code.annotate
   - content.code.copy
   - content.tooltips
@@ -77,7 +75,6 @@ markdown_extensions:
 - pymdownx.superfences
 - pymdownx.magiclink
 - pymdownx.snippets:
-    base_path: [!relative $config_dir]
     check_paths: true
 - pymdownx.details
 - pymdownx.arithmatex:
