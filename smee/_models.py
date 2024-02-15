@@ -1,4 +1,5 @@
 """Tensor representations of force field parameters applied to molecules."""
+
 import dataclasses
 import typing
 
@@ -194,9 +195,11 @@ class TensorTopology:
             self.bond_orders,
             {k: v.to(device, precision) for k, v in self.parameters.items()},
             None if self.v_sites is None else self.v_sites.to(device, precision),
-            None
-            if self.constraints is None
-            else self.constraints.to(device, precision),
+            (
+                None
+                if self.constraints is None
+                else self.constraints.to(device, precision)
+            ),
         )
 
 
@@ -281,9 +284,11 @@ class TensorPotential:
             self.parameter_keys,
             self.parameter_cols,
             self.parameter_units,
-            None
-            if self.attributes is None
-            else _cast(self.attributes, device, precision),
+            (
+                None
+                if self.attributes is None
+                else _cast(self.attributes, device, precision)
+            ),
             self.attribute_cols,
             self.attribute_units,
         )

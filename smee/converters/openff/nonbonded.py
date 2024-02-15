@@ -1,4 +1,5 @@
 """Convert SMIRNOFF non-bonded parameters into tensors."""
+
 import collections
 import copy
 

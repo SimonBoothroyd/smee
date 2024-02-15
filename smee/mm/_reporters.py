@@ -1,4 +1,5 @@
 """OpenMM simulation reporters"""
+
 import math
 import typing
 

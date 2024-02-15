@@ -119,9 +119,13 @@ def _handlers_to_potential(
         ),
         attributes=attributes,
         attribute_cols=attribute_cols,
-        attribute_units=None
-        if attribute_cols is None
-        else tuple(_DEFAULT_UNITS[handler_type][column] for column in attribute_cols),
+        attribute_units=(
+            None
+            if attribute_cols is None
+            else tuple(
+                _DEFAULT_UNITS[handler_type][column] for column in attribute_cols
+            )
+        ),
     )
     return potential
 

@@ -1,4 +1,5 @@
 """Non-bonded potential energy functions."""
+
 import collections
 import math
 import typing
@@ -11,9 +12,7 @@ import smee.utils
 
 _UNIT = openff.units.unit
 
-_COULOMB_PRE_FACTOR_UNITS = (
-    _UNIT.kilocalorie / _UNIT.mole * _UNIT.angstrom / _UNIT.e**2
-)
+_COULOMB_PRE_FACTOR_UNITS = _UNIT.kilocalorie / _UNIT.mole * _UNIT.angstrom / _UNIT.e**2
 _COULOMB_PRE_FACTOR = (_UNIT.avogadro_constant / (4.0 * _UNIT.pi * _UNIT.eps0)).m_as(
     _COULOMB_PRE_FACTOR_UNITS
 )
@@ -617,9 +616,7 @@ def _compute_coulomb_energy_periodic(
         pme.alpha,
         pme.coulomb,
     )
-    energy_self = (
-        -torch.sum(charges**2) * pme.coulomb * pme.alpha / math.sqrt(torch.pi)
-    )
+    energy_self = -torch.sum(charges**2) * pme.coulomb * pme.alpha / math.sqrt(torch.pi)
     energy_recip = energy_self + torch.ops.pme.pme_reciprocal(
         conformer.float(),
         charges.float(),
