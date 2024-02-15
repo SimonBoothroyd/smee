@@ -1,4 +1,5 @@
 """Compute the potential energy of parameterized systems / topologies."""
+
 import importlib
 import inspect
 import typing

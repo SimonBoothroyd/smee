@@ -1,4 +1,5 @@
 """Tensor representations of SMIRNOFF force fields."""
+
 from smee.converters.openff._openff import (
     convert_handlers,
     convert_interchange,

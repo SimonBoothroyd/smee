@@ -1,4 +1,5 @@
 """General utility functions"""
+
 import typing
 
 import networkx
@@ -184,12 +185,18 @@ def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
 
 
 class _SafeGeometricMean(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, eps_a, eps_b):
-        eps = torch.sqrt(eps_a * eps_b)
+    generate_vmap_rule = True
 
-        ctx.save_for_backward(eps_a, eps_b, eps)
+    @staticmethod
+    def forward(eps_a, eps_b):
         return torch.sqrt(eps_a * eps_b)
+
+    @staticmethod
+    def setup_context(ctx, inputs, output):
+        eps_a, eps_b = inputs
+        eps = output
+        ctx.save_for_backward(eps_a, eps_b, eps)
+        ctx.save_for_forward(eps_a, eps_b, eps)
 
     @staticmethod
     def backward(ctx, grad_output):
@@ -201,6 +208,17 @@ class _SafeGeometricMean(torch.autograd.Function):
         grad_eps_b = grad_output * eps_a / (2 * eps)
 
         return grad_eps_a, grad_eps_b
+
+    @staticmethod
+    def jvp(ctx, *grad_inputs):
+        eps_a, eps_b, eps = ctx.saved_tensors
+
+        eps = torch.where(eps == 0.0, EPSILON, eps)
+
+        grad_eps_a = grad_inputs[0] * eps_b / (2 * eps)
+        grad_eps_b = grad_inputs[1] * eps_a / (2 * eps)
+
+        return grad_eps_a + grad_eps_b
 
 
 def geometric_mean(eps_a: torch.Tensor, eps_b: torch.Tensor) -> torch.Tensor:

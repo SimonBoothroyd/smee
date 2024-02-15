@@ -1,4 +1,5 @@
 """Compute internal coordinates (e.g. bond lengths)."""
+
 import typing
 
 import torch

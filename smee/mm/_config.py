@@ -1,4 +1,5 @@
 """Configuration from MM simulations."""
+
 import functools
 import typing
 
