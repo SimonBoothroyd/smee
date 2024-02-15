@@ -278,28 +278,14 @@ def test_to_upper_tri_idx(n):
 
 
 def test_geometric_mean():
-    a = torch.tensor(2.0, requires_grad=True)
-    b = torch.tensor(3.0, requires_grad=True)
+    a = torch.tensor(4.0, requires_grad=True).double()
+    b = torch.tensor(9.0, requires_grad=True).double()
 
-    expected = torch.sqrt(a * b)
-    expected.backward()
+    assert torch.autograd.gradcheck(
+        smee.utils.geometric_mean, (a, b), check_backward_ad=True, check_forward_ad=True
+    )
 
-    expected_grad_a = a.grad
-    a.grad = None
-    expected_grad_b = b.grad
-    b.grad = None
-
-    actual = smee.utils.geometric_mean(a, b)
-    actual.backward()
-
-    assert actual.shape == expected.shape
-    assert torch.allclose(actual, expected)
-
-    assert a.grad.shape == expected_grad_a.shape
-    assert torch.allclose(a.grad, expected_grad_a)
-
-    assert b.grad.shape == expected_grad_b.shape
-    assert torch.allclose(b.grad, expected_grad_b)
+    assert torch.isclose(smee.utils.geometric_mean(a, b), torch.tensor(6.0).double())
 
 
 @pytest.mark.parametrize(
