@@ -46,7 +46,7 @@ def _compare_smee_and_interchange(
 ):
     system_smee = convert_to_openmm_system(tensor_ff, tensor_system)
     assert isinstance(system_smee, openmm.System)
-    system_interchange = interchange.to_openmm(True, True)
+    system_interchange = interchange.to_openmm(False, True)
 
     coords += (numpy.random.randn(*coords.shape) * 0.1) * openmm.unit.angstrom
 
@@ -168,6 +168,45 @@ def test_convert_to_openmm_system_periodic():
 
     # carbonic acid has impropers, 1-5 interactions so should test most convertors
     for smiles, n_copies in zip(["OC(=O)O", "O"], n_copies_per_mol):
+        mol = openff.toolkit.Molecule.from_smiles(smiles)
+        mol.generate_conformers(n_conformers=1)
+
+        interchange = openff.interchange.Interchange.from_smirnoff(
+            ff, mol.to_topology()
+        )
+        interchanges.append(interchange)
+
+        for _ in range(n_copies):
+            top.add_molecule(mol)
+
+    tensor_ff, tensor_tops = smee.converters.convert_interchange(interchanges)
+    tensor_system = smee.TensorSystem(tensor_tops, n_copies_per_mol, True)
+
+    coords, _ = smee.mm.generate_system_coords(
+        tensor_system, None, smee.mm.GenerateCoordsConfig()
+    )
+    box_vectors = numpy.eye(3) * 20.0 * openmm.unit.angstrom
+
+    top.box_vectors = box_vectors
+
+    interchange_top = openff.interchange.Interchange.from_smirnoff(ff, top)
+
+    _compare_smee_and_interchange(
+        tensor_ff, tensor_system, interchange_top, coords, box_vectors
+    )
+
+
+def test_convert_to_openmm_system_dexp_periodic(test_data_dir):
+    ff = openff.toolkit.ForceField(
+        str(test_data_dir / "de-ff.offxml"), load_plugins=True
+    )
+    top = openff.toolkit.Topology()
+
+    interchanges = []
+
+    n_copies_per_mol = [5, 5]
+
+    for smiles, n_copies in zip(["OCCO", "O"], n_copies_per_mol):
         mol = openff.toolkit.Molecule.from_smiles(smiles)
         mol.generate_conformers(n_conformers=1)
 

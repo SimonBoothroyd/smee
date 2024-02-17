@@ -429,7 +429,7 @@ def convert_interchange(
         potential, parameter_map = convert_handlers(handlers, topologies, v_site_maps)
         potentials.append(potential)
 
-        parameter_maps_by_handler[handler_type] = parameter_map
+        parameter_maps_by_handler[potential.type] = parameter_map
 
     tensor_topologies = [
         _convert_topology(

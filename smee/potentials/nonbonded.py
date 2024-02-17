@@ -21,7 +21,13 @@ _COULOMB_POTENTIAL = "coul"
 _PME_MIN_NODES = torch.tensor(6)  # taken to match OpenMM 8.0.0
 _PME_ORDER = 5  # see OpenMM issue #2567
 
-_LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
+LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
+
+DEXP_POTENTIAL = (
+    "epsilon*("
+    "beta/(alpha-beta)*exp(alpha*(1-r/r_min))-"
+    "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
+)
 
 
 class PairwiseDistances(typing.NamedTuple):
@@ -401,7 +407,7 @@ def _compute_switch_fn(
     return switch_fn, switch_width
 
 
-@smee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
+@smee.potentials.potential_energy_fn("vdW", LJ_POTENTIAL)
 def compute_lj_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -466,6 +472,92 @@ def compute_lj_energy(
 
     x = (sigma / pairwise.distances) ** 6
     energies = pair_scales * 4.0 * epsilon * (x * (x - 1.0))
+
+    if not system.is_periodic:
+        return energies.sum(-1)
+
+    switch_fn, switch_width = _compute_switch_fn(potential, pairwise)
+    energies *= switch_fn
+
+    energy = energies.sum(-1)
+    energy += _compute_dispersion_correction(
+        system,
+        potential.to(precision="double"),
+        switch_width.double(),
+        pairwise.cutoff.double(),
+        torch.det(box_vectors),
+    )
+
+    return energy
+
+
+@smee.potentials.potential_energy_fn("vdW", DEXP_POTENTIAL)
+def compute_dexp_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
+) -> torch.Tensor:
+    """Compute the potential energy [kcal / mol] of the vdW interactions using the
+    double-exponential potential.
+
+    Notes:
+        * No cutoff function will be applied if the system is not periodic.
+
+    Args:
+        system: The system to compute the energy for.
+        potential: The potential energy function to evaluate.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs, 3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        pairwise: Pre-computed distances between each pair of particles
+            in the system.
+
+    Returns:
+        The evaluated potential energy [kcal / mol].
+    """
+    box_vectors = None if not system.is_periodic else box_vectors
+
+    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+
+    pairwise = (
+        pairwise
+        if pairwise is not None
+        else compute_pairwise(system, conformer, box_vectors, cutoff)
+    )
+
+    if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
+        raise ValueError("the pairwise cutoff does not match the potential.")
+
+    parameters = smee.potentials.broadcast_parameters(system, potential)
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    pairs_1d = smee.utils.to_upper_tri_idx(
+        pairwise.idxs[:, 0], pairwise.idxs[:, 1], len(parameters)
+    )
+    pair_scales = pair_scales[pairs_1d]
+
+    epsilon_column = potential.parameter_cols.index("epsilon")
+    r_min_column = potential.parameter_cols.index("r_min")
+
+    epsilon, r_min = smee.potentials.nonbonded.lorentz_berthelot(
+        parameters[pairwise.idxs[:, 0], epsilon_column],
+        parameters[pairwise.idxs[:, 1], epsilon_column],
+        parameters[pairwise.idxs[:, 0], r_min_column],
+        parameters[pairwise.idxs[:, 1], r_min_column],
+    )
+
+    alpha = potential.attributes[potential.attribute_cols.index("alpha")]
+    beta = potential.attributes[potential.attribute_cols.index("beta")]
+
+    x = pairwise.distances / r_min
+
+    energies_repulsion = beta / (alpha - beta) * torch.exp(alpha * (1.0 - x))
+    energies_attraction = alpha / (alpha - beta) * torch.exp(beta * (1.0 - x))
+
+    energies = pair_scales * epsilon * (energies_repulsion - energies_attraction)
 
     if not system.is_periodic:
         return energies.sum(-1)

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SMIRNOFF version="0.3" aromaticity_model="OEAroModel_MDL">
+    <Author>Test</Author>
+    <Date>2024-02-16</Date>
+    <Bonds version="0.4" potential="harmonic" fractional_bondorder_method="AM1-Wiberg" fractional_bondorder_interpolation="linear">
+        <Bond smirks="[*:1]~[*:2]" id="b1" length="1.523273863381 * angstrom" k="526.218350672 * angstrom**-2 * mole**-1 * kilocalorie"></Bond>
+    </Bonds>
+    <Angles version="0.3" potential="harmonic">
+        <Angle smirks="[*:1]~[*:2]~[*:3]" angle="115.764719919 * degree" k="105.6889077566 * mole**-1 * radian**-2 * kilocalorie" id="a1"></Angle>
+    </Angles>
+    <ProperTorsions version="0.4" potential="k*(1+cos(periodicity*theta-phase))" default_idivf="auto" fractional_bondorder_method="AM1-Wiberg" fractional_bondorder_interpolation="linear">
+        <Proper smirks="[*:1]~[*:2]~[*:3]~[*:4]" periodicity1="3" phase1="0.0 * degree" id="t1" k1="0.1176617029237 * mole**-1 * kilocalorie" idivf1="1.0"></Proper>
+    </ProperTorsions>
+    <Electrostatics version="0.3" scale12="0.0" scale13="0.0" scale14="0.8333333333" scale15="1.0" cutoff="9.0 * angstrom" switch_width="0.0 * angstrom" method="PME"></Electrostatics>
+    <LibraryCharges version="0.3">
+        <LibraryCharge smirks="[#1]-[#8X2H2+0:1]-[#1]" charge1="-0.834 * elementary_charge ** 1" id="q-tip3p-O"></LibraryCharge>
+        <LibraryCharge smirks="[#1:1]-[#8X2H2+0]-[#1]" charge1="0.417 * elementary_charge ** 1" id="q-tip3p-H"></LibraryCharge>
+    </LibraryCharges>
+    <ToolkitAM1BCC version="0.3"></ToolkitAM1BCC>
+    <DoubleExponential version="0.3" scale14="0.5" cutoff="9.0 * angstrom" periodic_method="cutoff" nonperiodic_method="no-cutoff" switch_width="1.0 * angstrom" alpha="16.76632136164" beta="4.426755081718">
+        <Atom smirks="[#1:1]-[#6X4]" r_min="2.843520958931 * angstrom" epsilon="0.01911727710372 * mole**-1 * kilocalorie"></Atom>
+        <Atom smirks="[#1:1]-[#8]" r_min="1.0 * angstrom" epsilon="0.0 * mole**-1 * kilojoule"></Atom>
+        <Atom smirks="[#6X4:1]" r_min="3.792495676752 * angstrom" epsilon="0.1121905471545 * mole**-1 * kilocalorie"></Atom>
+        <Atom smirks="[#8X2H1+0:1]" r_min="3.33353997586 * angstrom" epsilon="0.2093390737696 * mole**-1 * kilocalorie"></Atom>
+        <Atom smirks="[#1]-[#8X2H2+0:1]-[#1]" id="tip3p-de-O" r_min="3.538259263094 * angstrom" epsilon="0.2130260271865 * mole**-1 * kilocalorie"></Atom>
+        <Atom smirks="[#1:1]-[#8X2H2+0]-[#1]" id="tip3p-de-H" r_min="1 * angstrom" epsilon="0 * mole**-1 * kilocalorie"></Atom>
+    </DoubleExponential>
+</SMIRNOFF>

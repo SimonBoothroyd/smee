@@ -9,8 +9,10 @@ import smee.mm
 import smee.tests.utils
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
+    DEXP_POTENTIAL,
     _compute_pme_exclusions,
     compute_coulomb_energy,
+    compute_dexp_energy,
     compute_lj_energy,
     compute_pairwise,
     compute_pairwise_scales,
@@ -48,6 +50,26 @@ def _compute_openmm_energy(
     omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
 
     return torch.tensor(omm_energy, dtype=torch.float64)
+
+
+def _convert_lj_to_dexp(potential: smee.TensorPotential):
+    potential.fn = DEXP_POTENTIAL
+
+    parameter_cols = [*potential.parameter_cols]
+    sigma_idx = potential.parameter_cols.index("sigma")
+
+    sigma = potential.parameters[:, sigma_idx]
+    r_min = 2 ** (1 / 6) * sigma
+
+    potential.parameters[:, sigma_idx] = r_min
+
+    parameter_cols[sigma_idx] = "r_min"
+    potential.parameter_cols = tuple(parameter_cols)
+
+    potential.attribute_cols = (*potential.attribute_cols, "alpha", "beta")
+    potential.attributes = torch.cat([potential.attributes, torch.tensor([16.5, 5.0])])
+
+    return potential
 
 
 def test_compute_pairwise_scales():
@@ -208,13 +230,20 @@ def test_compute_pairwise_non_periodic(with_batch):
     assert pairwise.cutoff is None
 
 
-def test_compute_lj_energy_periodic(etoh_water_system):
+@pytest.mark.parametrize(
+    "energy_fn,convert_fn",
+    [
+        (compute_lj_energy, lambda p: p),
+        (compute_dexp_energy, _convert_lj_to_dexp),
+    ],
+)
+def test_compute_xxx_energy_periodic(energy_fn, convert_fn, etoh_water_system):
     tensor_sys, tensor_ff, coords, box_vectors = etoh_water_system
 
-    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential = convert_fn(tensor_ff.potentials_by_type["vdW"])
     vdw_potential.parameters.requires_grad = True
 
-    energy = compute_lj_energy(
+    energy = compute_dexp_energy(
         tensor_sys, vdw_potential, coords.float(), box_vectors.float()
     )
     energy.backward()
@@ -226,17 +255,24 @@ def test_compute_lj_energy_periodic(etoh_water_system):
     assert torch.isclose(energy, expected_energy, atol=1.0e-3)
 
 
-def test_compute_lj_energy_non_periodic():
+@pytest.mark.parametrize(
+    "energy_fn,convert_fn",
+    [
+        (compute_lj_energy, lambda p: p),
+        (compute_dexp_energy, _convert_lj_to_dexp),
+    ],
+)
+def test_compute_xxx_energy_non_periodic(energy_fn, convert_fn):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(["CCC", "O"], [2, 3])
     tensor_sys.is_periodic = False
 
     coords, _ = smee.mm.generate_system_coords(tensor_sys, None)
     coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
 
-    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential = convert_fn(tensor_ff.potentials_by_type["vdW"])
     vdw_potential.parameters.requires_grad = True
 
-    energy = compute_lj_energy(tensor_sys, vdw_potential, coords.float(), None)
+    energy = energy_fn(tensor_sys, vdw_potential, coords.float(), None)
     expected_energy = _compute_openmm_energy(tensor_sys, coords, None, vdw_potential)
 
     assert torch.isclose(energy, expected_energy, atol=1.0e-5)

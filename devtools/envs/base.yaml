@@ -35,6 +35,7 @@ dependencies:
   # Dev / Testing
   - ambertools
   - scipy  # test logsumexp implementation
+  - smirnoff-plugins
 
   - versioneer
 

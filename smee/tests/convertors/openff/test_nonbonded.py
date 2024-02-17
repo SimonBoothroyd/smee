@@ -6,7 +6,12 @@ import torch
 
 import smee
 import smee.converters
-from smee.converters.openff.nonbonded import convert_electrostatics, convert_vdw
+from smee.converters.openff.nonbonded import (
+    convert_dexp,
+    convert_electrostatics,
+    convert_vdw,
+)
+from smee.potentials.nonbonded import DEXP_POTENTIAL, LJ_POTENTIAL
 
 
 def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
@@ -190,4 +195,25 @@ def test_convert_vdw(ethanol, ethanol_interchange):
     )
 
     assert potential.type == "vdW"
-    assert potential.fn == "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
+    assert potential.fn == LJ_POTENTIAL
+
+
+def test_convert_dexp(ethanol, test_data_dir):
+    ff = openff.toolkit.ForceField(
+        str(test_data_dir / "de-ff.offxml"), load_plugins=True
+    )
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        ff, ethanol.to_topology()
+    )
+    vdw_collection = interchange.collections["DoubleExponential"]
+
+    potential, parameter_maps = convert_dexp(
+        [vdw_collection], [ethanol.to_topology()], [None]
+    )
+
+    assert potential.attribute_cols[-2:] == ("alpha", "beta")
+    assert potential.parameter_cols == ("epsilon", "r_min")
+
+    assert potential.type == "vdW"
+    assert potential.fn == DEXP_POTENTIAL
