@@ -27,6 +27,10 @@ The package currently supports evaluating the energy of force fields that contai
 
 parameter handlers in addition to limited support for registering custom handlers.
 
+It further supports a number of functional forms included in `smirnoff-plugins`, namely:
+
+* `DoubleExponential`
+
 ## Installation
 
 This package can be installed using `conda` (or `mamba`, a faster version of `conda`):
