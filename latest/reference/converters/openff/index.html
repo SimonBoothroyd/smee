@@ -536,11 +536,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/custom-handler/" class="md-nav__link">
+      <a href="../../../examples/custom-handler.ipynb" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Custom Parameter Handlers
+    None
   </span>
   
 
@@ -1732,7 +1732,7 @@ to corresponding handler parameters.</p>
 </span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="n">potential</span><span class="p">,</span> <span class="n">parameter_map</span> <span class="o">=</span> <span class="n">convert_handlers</span><span class="p">(</span><span class="n">handlers</span><span class="p">,</span> <span class="n">topologies</span><span class="p">,</span> <span class="n">v_site_maps</span><span class="p">)</span>
 </span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a>        <span class="n">potentials</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">potential</span><span class="p">)</span>
 </span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a>
-</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="n">parameter_maps_by_handler</span><span class="p">[</span><span class="n">handler_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameter_map</span>
+</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a>        <span class="n">parameter_maps_by_handler</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">type</span><span class="p">]</span> <span class="o">=</span> <span class="n">parameter_map</span>
 </span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a>
 </span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a>    <span class="n">tensor_topologies</span> <span class="o">=</span> <span class="p">[</span>
 </span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a>        <span class="n">_convert_topology</span><span class="p">(</span>

@@ -536,11 +536,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/custom-handler/" class="md-nav__link">
+      <a href="../../examples/custom-handler.ipynb" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Custom Parameter Handlers
+    None
   </span>
   
 
@@ -2581,7 +2581,7 @@ pressure: The pressure the simulation is being run at, or None if NVT /
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">production_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.mm.SimulationConfig" href="#smee.mm.SimulationConfig">SimulationConfig</a></span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">production_reporters</span><span class="p">:</span> <span class="n">list</span><span class="p">[</span><span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">apply_hmr</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="openmm.State">State</span></span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2753,7 +2753,9 @@ to simulation.</p>
 <span class="normal"><a href="#__codelineno-0-428">428</a></span>
 <span class="normal"><a href="#__codelineno-0-429">429</a></span>
 <span class="normal"><a href="#__codelineno-0-430">430</a></span>
-<span class="normal"><a href="#__codelineno-0-431">431</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-431">431</a></span>
+<span class="normal"><a href="#__codelineno-0-432">432</a></span>
+<span class="normal"><a href="#__codelineno-0-433">433</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="k">def</span> <span class="nf">simulate</span><span class="p">(</span>
 </span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>    <span class="n">system</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorSystem</span> <span class="o">|</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorTopology</span><span class="p">,</span>
 </span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">,</span>
 </span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>    <span class="n">coords</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span>
@@ -2764,7 +2766,7 @@ to simulation.</p>
 </span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>    <span class="n">production_config</span><span class="p">:</span> <span class="s2">&quot;smee.mm.SimulationConfig&quot;</span><span class="p">,</span>
 </span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a>    <span class="n">production_reporters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>    <span class="n">apply_hmr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="p">):</span>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">openmm</span><span class="o">.</span><span class="n">State</span><span class="p">:</span>
 </span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Simulate a SMEE system of molecules or topology.</span>
 </span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>
 </span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a><span class="sd">    Args:</span>
@@ -2838,6 +2840,8 @@ to simulation.</p>
 </span><span id="__span-0-429"><a id="__codelineno-0-429" name="__codelineno-0-429"></a>        <span class="n">production_reporters</span><span class="p">,</span>
 </span><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a>    <span class="p">)</span>
 </span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a>    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">_get_state_log</span><span class="p">(</span><span class="n">omm_state</span><span class="p">))</span>
+</span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a>
+</span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a>    <span class="k">return</span> <span class="n">omm_state</span>
 </span></code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -2931,18 +2935,7 @@ and a dictionary containing their standard deviations.</p>
 
           <details class="quote">
             <summary>Source code in <code>smee/mm/_ops.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-444">444</a></span>
-<span class="normal"><a href="#__codelineno-0-445">445</a></span>
-<span class="normal"><a href="#__codelineno-0-446">446</a></span>
-<span class="normal"><a href="#__codelineno-0-447">447</a></span>
-<span class="normal"><a href="#__codelineno-0-448">448</a></span>
-<span class="normal"><a href="#__codelineno-0-449">449</a></span>
-<span class="normal"><a href="#__codelineno-0-450">450</a></span>
-<span class="normal"><a href="#__codelineno-0-451">451</a></span>
-<span class="normal"><a href="#__codelineno-0-452">452</a></span>
-<span class="normal"><a href="#__codelineno-0-453">453</a></span>
-<span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-455">455</a></span>
 <span class="normal"><a href="#__codelineno-0-456">456</a></span>
 <span class="normal"><a href="#__codelineno-0-457">457</a></span>
 <span class="normal"><a href="#__codelineno-0-458">458</a></span>
@@ -2984,60 +2977,71 @@ and a dictionary containing their standard deviations.</p>
 <span class="normal"><a href="#__codelineno-0-494">494</a></span>
 <span class="normal"><a href="#__codelineno-0-495">495</a></span>
 <span class="normal"><a href="#__codelineno-0-496">496</a></span>
-<span class="normal"><a href="#__codelineno-0-497">497</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="k">def</span> <span class="nf">compute_ensemble_averages</span><span class="p">(</span>
-</span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="n">system</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorSystem</span><span class="p">,</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">,</span>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="n">frames_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="n">temperature</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>    <span class="n">pressure</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute ensemble average of the potential energy, volume, density,</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a><span class="sd">    and enthalpy (if running NPT) over an MD trajectory.</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="sd">        system: The system to simulate.</span>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a><span class="sd">        force_field: The force field to use.</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="sd">        frames_path: The path to the trajectory to compute the average over.</span>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="sd">        temperature: The temperature that the trajectory was simulated at.</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a><span class="sd">        pressure: The pressure that the trajectory was simulated at.</span>
-</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>
-</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="sd">        A dictionary containing the ensemble averages of the potential energy</span>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol],</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a><span class="sd">        and a dictionary containing their standard deviations.</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="n">tensors</span><span class="p">,</span> <span class="n">parameter_lookup</span><span class="p">,</span> <span class="n">attribute_lookup</span><span class="p">,</span> <span class="n">has_v_sites</span> <span class="o">=</span> <span class="n">_pack_force_field</span><span class="p">(</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="n">force_field</span>
-</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a>    <span class="p">)</span>
-</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a>
-</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span> <span class="o">*</span> <span class="n">temperature</span><span class="p">)</span>
-</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span><span class="o">**-</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a>
-</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a>    <span class="k">if</span> <span class="n">pressure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a>        <span class="n">pressure</span> <span class="o">=</span> <span class="p">(</span><span class="n">pressure</span> <span class="o">*</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span><span class="p">)</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span>
-</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a>            <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span> <span class="o">/</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">angstrom</span><span class="o">**</span><span class="mi">3</span>
-</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a>        <span class="p">)</span>
-</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a>
-</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="n">_EnsembleAverageKwargs</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a>        <span class="s2">&quot;force_field&quot;</span><span class="p">:</span> <span class="n">force_field</span><span class="p">,</span>
-</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a>        <span class="s2">&quot;parameter_lookup&quot;</span><span class="p">:</span> <span class="n">parameter_lookup</span><span class="p">,</span>
-</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>        <span class="s2">&quot;attribute_lookup&quot;</span><span class="p">:</span> <span class="n">attribute_lookup</span><span class="p">,</span>
-</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a>        <span class="s2">&quot;has_v_sites&quot;</span><span class="p">:</span> <span class="n">has_v_sites</span><span class="p">,</span>
-</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a>        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="n">system</span><span class="p">,</span>
-</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a>        <span class="s2">&quot;frames_path&quot;</span><span class="p">:</span> <span class="n">frames_path</span><span class="p">,</span>
-</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span>
-</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a>        <span class="s2">&quot;pressure&quot;</span><span class="p">:</span> <span class="n">pressure</span><span class="p">,</span>
-</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a>    <span class="p">}</span>
+<span class="normal"><a href="#__codelineno-0-497">497</a></span>
+<span class="normal"><a href="#__codelineno-0-498">498</a></span>
+<span class="normal"><a href="#__codelineno-0-499">499</a></span>
+<span class="normal"><a href="#__codelineno-0-500">500</a></span>
+<span class="normal"><a href="#__codelineno-0-501">501</a></span>
+<span class="normal"><a href="#__codelineno-0-502">502</a></span>
+<span class="normal"><a href="#__codelineno-0-503">503</a></span>
+<span class="normal"><a href="#__codelineno-0-504">504</a></span>
+<span class="normal"><a href="#__codelineno-0-505">505</a></span>
+<span class="normal"><a href="#__codelineno-0-506">506</a></span>
+<span class="normal"><a href="#__codelineno-0-507">507</a></span>
+<span class="normal"><a href="#__codelineno-0-508">508</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a><span class="k">def</span> <span class="nf">compute_ensemble_averages</span><span class="p">(</span>
+</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>    <span class="n">system</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorSystem</span><span class="p">,</span>
+</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">,</span>
+</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>    <span class="n">frames_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">temperature</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span>
+</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>    <span class="n">pressure</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]:</span>
+</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute ensemble average of the potential energy, volume, density,</span>
+</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a><span class="sd">    and enthalpy (if running NPT) over an MD trajectory.</span>
+</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>
+</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a><span class="sd">        system: The system to simulate.</span>
+</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a><span class="sd">        force_field: The force field to use.</span>
+</span><span id="__span-0-468"><a id="__codelineno-0-468" name="__codelineno-0-468"></a><span class="sd">        frames_path: The path to the trajectory to compute the average over.</span>
+</span><span id="__span-0-469"><a id="__codelineno-0-469" name="__codelineno-0-469"></a><span class="sd">        temperature: The temperature that the trajectory was simulated at.</span>
+</span><span id="__span-0-470"><a id="__codelineno-0-470" name="__codelineno-0-470"></a><span class="sd">        pressure: The pressure that the trajectory was simulated at.</span>
+</span><span id="__span-0-471"><a id="__codelineno-0-471" name="__codelineno-0-471"></a>
+</span><span id="__span-0-472"><a id="__codelineno-0-472" name="__codelineno-0-472"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-473"><a id="__codelineno-0-473" name="__codelineno-0-473"></a><span class="sd">        A dictionary containing the ensemble averages of the potential energy</span>
+</span><span id="__span-0-474"><a id="__codelineno-0-474" name="__codelineno-0-474"></a><span class="sd">        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol],</span>
+</span><span id="__span-0-475"><a id="__codelineno-0-475" name="__codelineno-0-475"></a><span class="sd">        and a dictionary containing their standard deviations.</span>
+</span><span id="__span-0-476"><a id="__codelineno-0-476" name="__codelineno-0-476"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-477"><a id="__codelineno-0-477" name="__codelineno-0-477"></a>    <span class="n">tensors</span><span class="p">,</span> <span class="n">parameter_lookup</span><span class="p">,</span> <span class="n">attribute_lookup</span><span class="p">,</span> <span class="n">has_v_sites</span> <span class="o">=</span> <span class="n">_pack_force_field</span><span class="p">(</span>
+</span><span id="__span-0-478"><a id="__codelineno-0-478" name="__codelineno-0-478"></a>        <span class="n">force_field</span>
+</span><span id="__span-0-479"><a id="__codelineno-0-479" name="__codelineno-0-479"></a>    <span class="p">)</span>
+</span><span id="__span-0-480"><a id="__codelineno-0-480" name="__codelineno-0-480"></a>
+</span><span id="__span-0-481"><a id="__codelineno-0-481" name="__codelineno-0-481"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span> <span class="o">*</span> <span class="n">temperature</span><span class="p">)</span>
+</span><span id="__span-0-482"><a id="__codelineno-0-482" name="__codelineno-0-482"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span><span class="o">**-</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-483"><a id="__codelineno-0-483" name="__codelineno-0-483"></a>
+</span><span id="__span-0-484"><a id="__codelineno-0-484" name="__codelineno-0-484"></a>    <span class="k">if</span> <span class="n">pressure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-485"><a id="__codelineno-0-485" name="__codelineno-0-485"></a>        <span class="n">pressure</span> <span class="o">=</span> <span class="p">(</span><span class="n">pressure</span> <span class="o">*</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span><span class="p">)</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span>
+</span><span id="__span-0-486"><a id="__codelineno-0-486" name="__codelineno-0-486"></a>            <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span> <span class="o">/</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">angstrom</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-0-487"><a id="__codelineno-0-487" name="__codelineno-0-487"></a>        <span class="p">)</span>
 </span><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a>
-</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="o">*</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">_EnsembleAverageOp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">*</span><span class="n">tensors</span><span class="p">)</span>
-</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>
-</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="n">avg_values</span> <span class="o">=</span> <span class="n">avg_outputs</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>    <span class="n">avg_std</span> <span class="o">=</span> <span class="n">avg_outputs</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:]</span>
-</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>
-</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>    <span class="k">return</span> <span class="p">(</span>
-</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_values</span><span class="p">,</span> <span class="n">columns</span><span class="p">)},</span>
-</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_std</span><span class="p">,</span> <span class="n">columns</span><span class="p">)},</span>
-</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>    <span class="p">)</span>
+</span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="n">_EnsembleAverageKwargs</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>        <span class="s2">&quot;force_field&quot;</span><span class="p">:</span> <span class="n">force_field</span><span class="p">,</span>
+</span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>        <span class="s2">&quot;parameter_lookup&quot;</span><span class="p">:</span> <span class="n">parameter_lookup</span><span class="p">,</span>
+</span><span id="__span-0-492"><a id="__codelineno-0-492" name="__codelineno-0-492"></a>        <span class="s2">&quot;attribute_lookup&quot;</span><span class="p">:</span> <span class="n">attribute_lookup</span><span class="p">,</span>
+</span><span id="__span-0-493"><a id="__codelineno-0-493" name="__codelineno-0-493"></a>        <span class="s2">&quot;has_v_sites&quot;</span><span class="p">:</span> <span class="n">has_v_sites</span><span class="p">,</span>
+</span><span id="__span-0-494"><a id="__codelineno-0-494" name="__codelineno-0-494"></a>        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="n">system</span><span class="p">,</span>
+</span><span id="__span-0-495"><a id="__codelineno-0-495" name="__codelineno-0-495"></a>        <span class="s2">&quot;frames_path&quot;</span><span class="p">:</span> <span class="n">frames_path</span><span class="p">,</span>
+</span><span id="__span-0-496"><a id="__codelineno-0-496" name="__codelineno-0-496"></a>        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span>
+</span><span id="__span-0-497"><a id="__codelineno-0-497" name="__codelineno-0-497"></a>        <span class="s2">&quot;pressure&quot;</span><span class="p">:</span> <span class="n">pressure</span><span class="p">,</span>
+</span><span id="__span-0-498"><a id="__codelineno-0-498" name="__codelineno-0-498"></a>    <span class="p">}</span>
+</span><span id="__span-0-499"><a id="__codelineno-0-499" name="__codelineno-0-499"></a>
+</span><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a>    <span class="o">*</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">_EnsembleAverageOp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">*</span><span class="n">tensors</span><span class="p">)</span>
+</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>
+</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="n">avg_values</span> <span class="o">=</span> <span class="n">avg_outputs</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
+</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">avg_std</span> <span class="o">=</span> <span class="n">avg_outputs</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="p">:]</span>
+</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>
+</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a>    <span class="k">return</span> <span class="p">(</span>
+</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>        <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_values</span><span class="p">,</span> <span class="n">columns</span><span class="p">)},</span>
+</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a>        <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_std</span><span class="p">,</span> <span class="n">columns</span><span class="p">)},</span>
+</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -3155,18 +3159,7 @@ and enthalpy (if running NPT) by re-weighting an existing MD trajectory.</p>
 
           <details class="quote">
             <summary>Source code in <code>smee/mm/_ops.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-500">500</a></span>
-<span class="normal"><a href="#__codelineno-0-501">501</a></span>
-<span class="normal"><a href="#__codelineno-0-502">502</a></span>
-<span class="normal"><a href="#__codelineno-0-503">503</a></span>
-<span class="normal"><a href="#__codelineno-0-504">504</a></span>
-<span class="normal"><a href="#__codelineno-0-505">505</a></span>
-<span class="normal"><a href="#__codelineno-0-506">506</a></span>
-<span class="normal"><a href="#__codelineno-0-507">507</a></span>
-<span class="normal"><a href="#__codelineno-0-508">508</a></span>
-<span class="normal"><a href="#__codelineno-0-509">509</a></span>
-<span class="normal"><a href="#__codelineno-0-510">510</a></span>
-<span class="normal"><a href="#__codelineno-0-511">511</a></span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-511">511</a></span>
 <span class="normal"><a href="#__codelineno-0-512">512</a></span>
 <span class="normal"><a href="#__codelineno-0-513">513</a></span>
 <span class="normal"><a href="#__codelineno-0-514">514</a></span>
@@ -3207,59 +3200,70 @@ and enthalpy (if running NPT) by re-weighting an existing MD trajectory.</p>
 <span class="normal"><a href="#__codelineno-0-549">549</a></span>
 <span class="normal"><a href="#__codelineno-0-550">550</a></span>
 <span class="normal"><a href="#__codelineno-0-551">551</a></span>
-<span class="normal"><a href="#__codelineno-0-552">552</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-500"><a id="__codelineno-0-500" name="__codelineno-0-500"></a><span class="k">def</span> <span class="nf">reweight_ensemble_averages</span><span class="p">(</span>
-</span><span id="__span-0-501"><a id="__codelineno-0-501" name="__codelineno-0-501"></a>    <span class="n">system</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorSystem</span><span class="p">,</span>
-</span><span id="__span-0-502"><a id="__codelineno-0-502" name="__codelineno-0-502"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">,</span>
-</span><span id="__span-0-503"><a id="__codelineno-0-503" name="__codelineno-0-503"></a>    <span class="n">frames_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
-</span><span id="__span-0-504"><a id="__codelineno-0-504" name="__codelineno-0-504"></a>    <span class="n">temperature</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span>
-</span><span id="__span-0-505"><a id="__codelineno-0-505" name="__codelineno-0-505"></a>    <span class="n">pressure</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-506"><a id="__codelineno-0-506" name="__codelineno-0-506"></a>    <span class="n">min_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-</span><span id="__span-0-507"><a id="__codelineno-0-507" name="__codelineno-0-507"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-</span><span id="__span-0-508"><a id="__codelineno-0-508" name="__codelineno-0-508"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the ensemble average of the potential energy, volume, density,</span>
-</span><span id="__span-0-509"><a id="__codelineno-0-509" name="__codelineno-0-509"></a><span class="sd">    and enthalpy (if running NPT) by re-weighting an existing MD trajectory.</span>
-</span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a>
-</span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">        system: The system that was simulated.</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">        force_field: The new force field to use.</span>
-</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">        frames_path: The path to the trajectory to compute the average over.</span>
-</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">        temperature: The temperature that the trajectory was simulated at.</span>
-</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">        pressure: The pressure that the trajectory was simulated at.</span>
-</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a><span class="sd">        min_samples: The minimum number of samples required to compute the average.</span>
-</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a>
-</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">        NotEnoughSamplesError: If the number of effective samples is less than</span>
-</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">            ``min_samples``.</span>
-</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a>
-</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="sd">        A dictionary containing the ensemble averages of the potential energy</span>
-</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="sd">        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].</span>
-</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a>    <span class="n">tensors</span><span class="p">,</span> <span class="n">parameter_lookup</span><span class="p">,</span> <span class="n">attribute_lookup</span><span class="p">,</span> <span class="n">has_v_sites</span> <span class="o">=</span> <span class="n">_pack_force_field</span><span class="p">(</span>
-</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a>        <span class="n">force_field</span>
-</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a>    <span class="p">)</span>
-</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a>
-</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span> <span class="o">*</span> <span class="n">temperature</span><span class="p">)</span>
-</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span><span class="o">**-</span><span class="mi">1</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-552">552</a></span>
+<span class="normal"><a href="#__codelineno-0-553">553</a></span>
+<span class="normal"><a href="#__codelineno-0-554">554</a></span>
+<span class="normal"><a href="#__codelineno-0-555">555</a></span>
+<span class="normal"><a href="#__codelineno-0-556">556</a></span>
+<span class="normal"><a href="#__codelineno-0-557">557</a></span>
+<span class="normal"><a href="#__codelineno-0-558">558</a></span>
+<span class="normal"><a href="#__codelineno-0-559">559</a></span>
+<span class="normal"><a href="#__codelineno-0-560">560</a></span>
+<span class="normal"><a href="#__codelineno-0-561">561</a></span>
+<span class="normal"><a href="#__codelineno-0-562">562</a></span>
+<span class="normal"><a href="#__codelineno-0-563">563</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a><span class="k">def</span> <span class="nf">reweight_ensemble_averages</span><span class="p">(</span>
+</span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a>    <span class="n">system</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorSystem</span><span class="p">,</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">,</span>
+</span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a>    <span class="n">frames_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+</span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a>    <span class="n">temperature</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span><span class="p">,</span>
+</span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a>    <span class="n">pressure</span><span class="p">:</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">Quantity</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-517"><a id="__codelineno-0-517" name="__codelineno-0-517"></a>    <span class="n">min_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+</span><span id="__span-0-518"><a id="__codelineno-0-518" name="__codelineno-0-518"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+</span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the ensemble average of the potential energy, volume, density,</span>
+</span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">    and enthalpy (if running NPT) by re-weighting an existing MD trajectory.</span>
+</span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a>
+</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="sd">        system: The system that was simulated.</span>
+</span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a><span class="sd">        force_field: The new force field to use.</span>
+</span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a><span class="sd">        frames_path: The path to the trajectory to compute the average over.</span>
+</span><span id="__span-0-526"><a id="__codelineno-0-526" name="__codelineno-0-526"></a><span class="sd">        temperature: The temperature that the trajectory was simulated at.</span>
+</span><span id="__span-0-527"><a id="__codelineno-0-527" name="__codelineno-0-527"></a><span class="sd">        pressure: The pressure that the trajectory was simulated at.</span>
+</span><span id="__span-0-528"><a id="__codelineno-0-528" name="__codelineno-0-528"></a><span class="sd">        min_samples: The minimum number of samples required to compute the average.</span>
+</span><span id="__span-0-529"><a id="__codelineno-0-529" name="__codelineno-0-529"></a>
+</span><span id="__span-0-530"><a id="__codelineno-0-530" name="__codelineno-0-530"></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-531"><a id="__codelineno-0-531" name="__codelineno-0-531"></a><span class="sd">        NotEnoughSamplesError: If the number of effective samples is less than</span>
+</span><span id="__span-0-532"><a id="__codelineno-0-532" name="__codelineno-0-532"></a><span class="sd">            ``min_samples``.</span>
 </span><span id="__span-0-533"><a id="__codelineno-0-533" name="__codelineno-0-533"></a>
-</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a>    <span class="k">if</span> <span class="n">pressure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a>        <span class="n">pressure</span> <span class="o">=</span> <span class="p">(</span><span class="n">pressure</span> <span class="o">*</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span><span class="p">)</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span>
-</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a>            <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span> <span class="o">/</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">angstrom</span><span class="o">**</span><span class="mi">3</span>
-</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a>        <span class="p">)</span>
-</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a>
-</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="n">_ReweightAverageKwargs</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a>        <span class="s2">&quot;force_field&quot;</span><span class="p">:</span> <span class="n">force_field</span><span class="p">,</span>
-</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a>        <span class="s2">&quot;parameter_lookup&quot;</span><span class="p">:</span> <span class="n">parameter_lookup</span><span class="p">,</span>
-</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a>        <span class="s2">&quot;attribute_lookup&quot;</span><span class="p">:</span> <span class="n">attribute_lookup</span><span class="p">,</span>
-</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a>        <span class="s2">&quot;has_v_sites&quot;</span><span class="p">:</span> <span class="n">has_v_sites</span><span class="p">,</span>
-</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a>        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="n">system</span><span class="p">,</span>
-</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>        <span class="s2">&quot;frames_path&quot;</span><span class="p">:</span> <span class="n">frames_path</span><span class="p">,</span>
-</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span>
-</span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>        <span class="s2">&quot;pressure&quot;</span><span class="p">:</span> <span class="n">pressure</span><span class="p">,</span>
-</span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="s2">&quot;min_samples&quot;</span><span class="p">:</span> <span class="n">min_samples</span><span class="p">,</span>
-</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>    <span class="p">}</span>
-</span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a>
-</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>    <span class="o">*</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">_ReweightAverageOp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">*</span><span class="n">tensors</span><span class="p">)</span>
-</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span><span class="p">)}</span>
+</span><span id="__span-0-534"><a id="__codelineno-0-534" name="__codelineno-0-534"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-535"><a id="__codelineno-0-535" name="__codelineno-0-535"></a><span class="sd">        A dictionary containing the ensemble averages of the potential energy</span>
+</span><span id="__span-0-536"><a id="__codelineno-0-536" name="__codelineno-0-536"></a><span class="sd">        [kcal/mol], volume [Å^3], density [g/mL], and enthalpy [kcal/mol].</span>
+</span><span id="__span-0-537"><a id="__codelineno-0-537" name="__codelineno-0-537"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-538"><a id="__codelineno-0-538" name="__codelineno-0-538"></a>    <span class="n">tensors</span><span class="p">,</span> <span class="n">parameter_lookup</span><span class="p">,</span> <span class="n">attribute_lookup</span><span class="p">,</span> <span class="n">has_v_sites</span> <span class="o">=</span> <span class="n">_pack_force_field</span><span class="p">(</span>
+</span><span id="__span-0-539"><a id="__codelineno-0-539" name="__codelineno-0-539"></a>        <span class="n">force_field</span>
+</span><span id="__span-0-540"><a id="__codelineno-0-540" name="__codelineno-0-540"></a>    <span class="p">)</span>
+</span><span id="__span-0-541"><a id="__codelineno-0-541" name="__codelineno-0-541"></a>
+</span><span id="__span-0-542"><a id="__codelineno-0-542" name="__codelineno-0-542"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">MOLAR_GAS_CONSTANT_R</span> <span class="o">*</span> <span class="n">temperature</span><span class="p">)</span>
+</span><span id="__span-0-543"><a id="__codelineno-0-543" name="__codelineno-0-543"></a>    <span class="n">beta</span> <span class="o">=</span> <span class="n">beta</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span><span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span><span class="o">**-</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-544"><a id="__codelineno-0-544" name="__codelineno-0-544"></a>
+</span><span id="__span-0-545"><a id="__codelineno-0-545" name="__codelineno-0-545"></a>    <span class="k">if</span> <span class="n">pressure</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>        <span class="n">pressure</span> <span class="o">=</span> <span class="p">(</span><span class="n">pressure</span> <span class="o">*</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">AVOGADRO_CONSTANT_NA</span><span class="p">)</span><span class="o">.</span><span class="n">value_in_unit</span><span class="p">(</span>
+</span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>            <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">kilocalorie_per_mole</span> <span class="o">/</span> <span class="n">openmm</span><span class="o">.</span><span class="n">unit</span><span class="o">.</span><span class="n">angstrom</span><span class="o">**</span><span class="mi">3</span>
+</span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>        <span class="p">)</span>
+</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>
+</span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a>    <span class="n">kwargs</span><span class="p">:</span> <span class="n">_ReweightAverageKwargs</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>        <span class="s2">&quot;force_field&quot;</span><span class="p">:</span> <span class="n">force_field</span><span class="p">,</span>
+</span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a>        <span class="s2">&quot;parameter_lookup&quot;</span><span class="p">:</span> <span class="n">parameter_lookup</span><span class="p">,</span>
+</span><span id="__span-0-553"><a id="__codelineno-0-553" name="__codelineno-0-553"></a>        <span class="s2">&quot;attribute_lookup&quot;</span><span class="p">:</span> <span class="n">attribute_lookup</span><span class="p">,</span>
+</span><span id="__span-0-554"><a id="__codelineno-0-554" name="__codelineno-0-554"></a>        <span class="s2">&quot;has_v_sites&quot;</span><span class="p">:</span> <span class="n">has_v_sites</span><span class="p">,</span>
+</span><span id="__span-0-555"><a id="__codelineno-0-555" name="__codelineno-0-555"></a>        <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="n">system</span><span class="p">,</span>
+</span><span id="__span-0-556"><a id="__codelineno-0-556" name="__codelineno-0-556"></a>        <span class="s2">&quot;frames_path&quot;</span><span class="p">:</span> <span class="n">frames_path</span><span class="p">,</span>
+</span><span id="__span-0-557"><a id="__codelineno-0-557" name="__codelineno-0-557"></a>        <span class="s2">&quot;beta&quot;</span><span class="p">:</span> <span class="n">beta</span><span class="p">,</span>
+</span><span id="__span-0-558"><a id="__codelineno-0-558" name="__codelineno-0-558"></a>        <span class="s2">&quot;pressure&quot;</span><span class="p">:</span> <span class="n">pressure</span><span class="p">,</span>
+</span><span id="__span-0-559"><a id="__codelineno-0-559" name="__codelineno-0-559"></a>        <span class="s2">&quot;min_samples&quot;</span><span class="p">:</span> <span class="n">min_samples</span><span class="p">,</span>
+</span><span id="__span-0-560"><a id="__codelineno-0-560" name="__codelineno-0-560"></a>    <span class="p">}</span>
+</span><span id="__span-0-561"><a id="__codelineno-0-561" name="__codelineno-0-561"></a>
+</span><span id="__span-0-562"><a id="__codelineno-0-562" name="__codelineno-0-562"></a>    <span class="o">*</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">_ReweightAverageOp</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="o">*</span><span class="n">tensors</span><span class="p">)</span>
+</span><span id="__span-0-563"><a id="__codelineno-0-563" name="__codelineno-0-563"></a>    <span class="k">return</span> <span class="p">{</span><span class="n">column</span><span class="p">:</span> <span class="n">avg</span> <span class="k">for</span> <span class="n">avg</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">avg_outputs</span><span class="p">,</span> <span class="n">columns</span><span class="p">)}</span>
 </span></code></pre></div></td></tr></table></div>
           </details>
   </div>
