@@ -1,3 +1,5 @@
+import pathlib
+
 import openff.interchange
 import openff.toolkit
 import openff.units
@@ -13,6 +15,11 @@ _KJ_PER_MOLE = openff.units.unit.kilojoules / openff.units.unit.mole
 _KCAL_PER_MOLE = openff.units.unit.kilocalories / openff.units.unit.mole
 
 _E = openff.units.unit.elementary_charge
+
+
+@pytest.fixture
+def test_data_dir() -> pathlib.Path:
+    return pathlib.Path(__file__).parent / "data"
 
 
 @pytest.fixture(scope="module")

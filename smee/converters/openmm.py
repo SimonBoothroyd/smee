@@ -2,11 +2,15 @@
 
 import collections
 import copy
+import math
+import typing
 
 import openmm
 import openmm.app
+import torch
 
 import smee
+import smee.utils
 
 _KCAL_PER_MOL = openmm.unit.kilocalorie_per_mole
 _ANGSTROM = openmm.unit.angstrom
@@ -14,13 +18,23 @@ _RADIANS = openmm.unit.radians
 
 _ANGSTROM_TO_NM = 1.0 / 10.0
 
+_T = typing.TypeVar("_T", bound=openmm.NonbondedForce | openmm.CustomNonbondedForce)
+
 
 def _create_nonbonded_force(
-    potential: smee.TensorPotential, system: smee.TensorSystem
-) -> openmm.NonbondedForce:
-    force = openmm.NonbondedForce()
-    force.setUseDispersionCorrection(system.is_periodic)
-    force.setEwaldErrorTolerance(1.0e-4)  # TODO: interchange hardcoded value
+    potential: smee.TensorPotential,
+    system: smee.TensorSystem,
+    cls: typing.Type[_T] = openmm.NonbondedForce,
+) -> _T:
+    if cls == openmm.NonbondedForce:
+        force = openmm.NonbondedForce()
+        force.setUseDispersionCorrection(system.is_periodic)
+        force.setEwaldErrorTolerance(1.0e-4)  # TODO: interchange hardcoded value
+    elif cls == openmm.CustomNonbondedForce:
+        force = openmm.CustomNonbondedForce("")
+        force.setUseLongRangeCorrection(system.is_periodic)
+    else:
+        raise NotImplementedError(f"unsupported force class {cls}")
 
     cutoff_idx = potential.attribute_cols.index("cutoff")
     switch_idx = (
@@ -30,15 +44,21 @@ def _create_nonbonded_force(
     )
 
     if not system.is_periodic:
-        force.setNonbondedMethod(openmm.NonbondedForce.NoCutoff)
+        force.setNonbondedMethod(cls.NoCutoff)
     else:
-        cutoff = potential.attributes[cutoff_idx] * _ANGSTROM
+        cutoff = float(potential.attributes[cutoff_idx]) * _ANGSTROM
 
-        force.setNonbondedMethod(openmm.NonbondedForce.PME)
-        force.setCutoffDistance(potential.attributes[cutoff_idx] * _ANGSTROM)
+        method = (
+            openmm.NonbondedForce.PME
+            if cls == openmm.NonbondedForce
+            else openmm.CustomNonbondedForce.CutoffPeriodic
+        )
+
+        force.setNonbondedMethod(method)
+        force.setCutoffDistance(cutoff)
 
         if switch_idx is not None:
-            switch_width = potential.attributes[switch_idx] * _ANGSTROM
+            switch_width = float(potential.attributes[switch_idx]) * _ANGSTROM
             switch_distance = cutoff - switch_width
 
             if switch_distance > 0.0 * _ANGSTROM:
@@ -87,6 +107,106 @@ def _convert_lj_potential(
             idx_offset += topology.n_particles
 
     return force
+
+
+def _convert_dexp_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> tuple[openmm.CustomNonbondedForce, openmm.CustomBondForce]:
+    energy_fn = (
+        "CombinedEpsilon*RepulsionExp-CombinedEpsilon*AttractionExp;"
+        "CombinedEpsilon=epsilon1*epsilon2;"
+        "RepulsionExp=beta/(alpha-beta)*exp(alpha*(1-ExpDistance));"
+        "AttractionExp=alpha/(alpha-beta)*exp(beta*(1-ExpDistance));"
+        "ExpDistance=r/CombinedR;"
+        "CombinedR=r_min1+r_min2;"
+    )
+    energy_fn_scaled_lines = energy_fn.split(";")
+    energy_fn_scaled_lines[0] = f"scale_excl*({energy_fn_scaled_lines[0]})"
+    energy_fn_scaled = ";".join(energy_fn_scaled_lines)
+
+    assert potential.parameter_cols == ("epsilon", "r_min")
+
+    transform = {"epsilon": lambda x: math.sqrt(x), "r_min": lambda x: x * 0.5}
+
+    def add_globals(f):
+        alpha_idx = potential.attribute_cols.index("alpha")
+        alpha = float(potential.attributes[alpha_idx])
+        f.addGlobalParameter("alpha", alpha)
+        beta_idx = potential.attribute_cols.index("beta")
+        beta = float(potential.attributes[beta_idx])
+        f.addGlobalParameter("beta", beta)
+
+    def parameter_to_openmm(p):
+        return [
+            transform[col_name](
+                (float(col) * unit)
+                .to_openmm()
+                .value_in_unit_system(openmm.unit.md_unit_system)
+            )
+            for col, col_name, unit in zip(
+                p, potential.parameter_cols, potential.parameter_units, strict=True
+            )
+        ]
+
+    force_vdw = _create_nonbonded_force(potential, system, openmm.CustomNonbondedForce)
+    force_vdw.setEnergyFunction(energy_fn)
+    add_globals(force_vdw)
+
+    for col in potential.parameter_cols:
+        force_vdw.addPerParticleParameter(col)
+
+    force_excl = openmm.CustomBondForce(energy_fn_scaled)
+    force_excl.setUsesPeriodicBoundaryConditions(system.is_periodic)
+    add_globals(force_excl)
+
+    force_excl.addPerBondParameter("scale_excl")
+    for i in (1, 2):
+        for col in potential.parameter_cols:
+            force_excl.addPerBondParameter(f"{col}{i}")
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+        parameters = parameter_map.assignment_matrix @ potential.parameters
+
+        for _ in range(n_copies):
+            for parameter in parameters:
+                force_vdw.addParticle(parameter_to_openmm(parameter))
+
+            for index, (i, j) in enumerate(parameter_map.exclusions):
+                eps_i, r_min_i = parameter_to_openmm(parameters[i, :])
+                eps_j, r_min_j = parameter_to_openmm(parameters[j, :])
+
+                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
+
+                force_vdw.addExclusion(i + idx_offset, j + idx_offset)
+
+                if torch.isclose(scale, smee.utils.tensor_like(0.0, scale)):
+                    continue
+
+                force_excl.addBond(
+                    i + idx_offset,
+                    j + idx_offset,
+                    [float(scale), eps_i, r_min_i, eps_j, r_min_j],
+                )
+
+            idx_offset += topology.n_particles
+
+    return force_vdw, force_excl
+
+
+def _convert_vdw_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> list[openmm.Force]:
+    import smee.potentials.nonbonded
+
+    if potential.fn == smee.potentials.nonbonded.LJ_POTENTIAL:
+        return [_convert_lj_potential(potential, system)]
+    elif potential.fn == smee.potentials.nonbonded.DEXP_POTENTIAL:
+        return [*_convert_dexp_potential(potential, system)]
+
+    raise NotImplementedError(f"unsupported potential function {potential.fn}")
 
 
 def _convert_electrostatics_potential(
@@ -317,26 +437,24 @@ def _apply_constraints(omm_system: openmm.System, system: smee.TensorSystem):
 
 def convert_to_openmm_force(
     potential: smee.TensorPotential, system: smee.TensorSystem
-) -> openmm.Force:
+) -> list[openmm.Force]:
     potential = potential.to("cpu")
     system = system.to("cpu")
 
     if potential.type == "Electrostatics":
-        return _convert_electrostatics_potential(potential, system)
-    if potential.type == "vdW":
-        return _convert_lj_potential(potential, system)
-    if potential.type == "Bonds":
-        force = _convert_bond_potential(potential, system)
+        return [_convert_electrostatics_potential(potential, system)]
+    elif potential.type == "vdW":
+        return _convert_vdw_potential(potential, system)
+    elif potential.type == "Bonds":
+        return [_convert_bond_potential(potential, system)]
     elif potential.type == "Angles":
-        force = _convert_angle_potential(potential, system)
+        return [_convert_angle_potential(potential, system)]
     elif potential.type == "ProperTorsions":
-        force = _convert_torsion_potential(potential, system)
+        return [_convert_torsion_potential(potential, system)]
     elif potential.type == "ImproperTorsions":
-        force = _convert_torsion_potential(potential, system)
-    else:
-        raise NotImplementedError(f"unsupported potential type {potential.type}")
+        return [_convert_torsion_potential(potential, system)]
 
-    return force
+    raise NotImplementedError(f"unsupported potential type {potential.type}")
 
 
 def convert_to_openmm_system(
@@ -368,15 +486,21 @@ def convert_to_openmm_system(
     }
     omm_system = create_openmm_system(system, force_field.v_sites)
 
-    if "Electrostatics" in omm_forces and "vdW" in omm_forces:
-        electrostatic_force = omm_forces.pop("Electrostatics")
-        vdw_force = omm_forces.pop("vdW")
+    if (
+        "Electrostatics" in omm_forces
+        and "vdW" in omm_forces
+        and len(omm_forces["vdW"]) == 1
+        and isinstance(omm_forces["vdW"][0], openmm.NonbondedForce)
+    ):
+        (electrostatic_force,) = omm_forces.pop("Electrostatics")
+        (vdw_force,) = omm_forces.pop("vdW")
 
         nonbonded_force = _combine_nonbonded(vdw_force, electrostatic_force)
         omm_system.addForce(nonbonded_force)
 
-    for force in omm_forces.values():
-        omm_system.addForce(force)
+    for forces in omm_forces.values():
+        for force in forces:
+            omm_system.addForce(force)
 
     _apply_constraints(omm_system, system)
 

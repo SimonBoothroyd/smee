@@ -314,7 +314,7 @@ def _run_simulation(
     platform: openmm.Platform,
     config: "smee.mm.SimulationConfig",
     reporters: list[typing.Any] | None = None,
-):
+) -> openmm.State:
     reporters = [] if reporters is None else reporters
 
     omm_system = copy.deepcopy(omm_system)
@@ -355,7 +355,7 @@ def simulate(
     production_config: "smee.mm.SimulationConfig",
     production_reporters: list[typing.Any] | None = None,
     apply_hmr: bool = False,
-):
+) -> openmm.State:
     """Simulate a SMEE system of molecules or topology.
 
     Args:
@@ -429,3 +429,5 @@ def simulate(
         production_reporters,
     )
     _LOGGER.info(_get_state_log(omm_state))
+
+    return omm_state

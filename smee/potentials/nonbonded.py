@@ -21,7 +21,13 @@ _COULOMB_POTENTIAL = "coul"
 _PME_MIN_NODES = torch.tensor(6)  # taken to match OpenMM 8.0.0
 _PME_ORDER = 5  # see OpenMM issue #2567
 
-_LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
+LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
+
+DEXP_POTENTIAL = (
+    "epsilon*("
+    "beta/(alpha-beta)*exp(alpha*(1-r/r_min))-"
+    "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
+)
 
 
 class PairwiseDistances(typing.NamedTuple):
@@ -225,7 +231,7 @@ def lorentz_berthelot(
     return smee.utils.geometric_mean(epsilon_a, epsilon_b), 0.5 * (sigma_a + sigma_b)
 
 
-def _compute_dispersion_integral(
+def _compute_lj_dispersion_integral(
     r: torch.Tensor, rs: torch.Tensor, rc: torch.Tensor, sigma: torch.Tensor
 ) -> torch.Tensor:
     """Evaluate the integral needed to compute the LJ long range dispersion correction
@@ -279,7 +285,7 @@ def _compute_dispersion_integral(
     # fmt: on
 
 
-def _compute_dispersion_term(
+def _compute_lj_dispersion_term(
     count: float,
     epsilon: torch.Tensor,
     sigma: torch.Tensor,
@@ -305,14 +311,14 @@ def _compute_dispersion_term(
         assert cutoff is not None
 
         terms.append(
-            _compute_dispersion_integral(cutoff, switch_width, cutoff, sigma)
-            - _compute_dispersion_integral(switch_width, switch_width, cutoff, sigma)
+            _compute_lj_dispersion_integral(cutoff, switch_width, cutoff, sigma)
+            - _compute_lj_dispersion_integral(switch_width, switch_width, cutoff, sigma)
         )
 
     return (count * epsilon * torch.stack(terms)).sum(dim=-1)
 
 
-def _compute_dispersion_correction(
+def _compute_lj_dispersion_correction(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
     cutoff: torch.Tensor | None,
@@ -348,7 +354,7 @@ def _compute_dispersion_correction(
 
     eps_ii, sig_ii = potential.parameters[:, 0], potential.parameters[:, 1]
 
-    terms = _compute_dispersion_term(
+    terms = _compute_lj_dispersion_term(
         n_ii_interactions, eps_ii, sig_ii, cutoff, switch_width
     )
 
@@ -359,7 +365,7 @@ def _compute_dispersion_correction(
     eps_ij, sig_ij = lorentz_berthelot(
         eps_ii[idx_i], eps_ii[idx_j], sig_ii[idx_i], sig_ii[idx_j]
     )
-    terms += _compute_dispersion_term(
+    terms += _compute_lj_dispersion_term(
         n_ij_interactions, eps_ij, sig_ij, cutoff, switch_width
     )
 
@@ -401,7 +407,7 @@ def _compute_switch_fn(
     return switch_fn, switch_width
 
 
-@smee.potentials.potential_energy_fn("vdW", _LJ_POTENTIAL)
+@smee.potentials.potential_energy_fn("vdW", LJ_POTENTIAL)
 def compute_lj_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -474,13 +480,101 @@ def compute_lj_energy(
     energies *= switch_fn
 
     energy = energies.sum(-1)
-    energy += _compute_dispersion_correction(
+    energy += _compute_lj_dispersion_correction(
         system,
         potential.to(precision="double"),
         switch_width.double(),
         pairwise.cutoff.double(),
         torch.det(box_vectors),
     )
+
+    return energy
+
+
+@smee.potentials.potential_energy_fn("vdW", DEXP_POTENTIAL)
+def compute_dexp_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
+) -> torch.Tensor:
+    """Compute the potential energy [kcal / mol] of the vdW interactions using the
+    double-exponential potential.
+
+    Notes:
+        * No cutoff function will be applied if the system is not periodic.
+
+    Args:
+        system: The system to compute the energy for.
+        potential: The potential energy function to evaluate.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs, 3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        pairwise: Pre-computed distances between each pair of particles
+            in the system.
+
+    Returns:
+        The evaluated potential energy [kcal / mol].
+    """
+    box_vectors = None if not system.is_periodic else box_vectors
+
+    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+
+    pairwise = (
+        pairwise
+        if pairwise is not None
+        else compute_pairwise(system, conformer, box_vectors, cutoff)
+    )
+
+    if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
+        raise ValueError("the pairwise cutoff does not match the potential.")
+
+    parameters = smee.potentials.broadcast_parameters(system, potential)
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    pairs_1d = smee.utils.to_upper_tri_idx(
+        pairwise.idxs[:, 0], pairwise.idxs[:, 1], len(parameters)
+    )
+    pair_scales = pair_scales[pairs_1d]
+
+    epsilon_column = potential.parameter_cols.index("epsilon")
+    r_min_column = potential.parameter_cols.index("r_min")
+
+    epsilon, r_min = smee.potentials.nonbonded.lorentz_berthelot(
+        parameters[pairwise.idxs[:, 0], epsilon_column],
+        parameters[pairwise.idxs[:, 1], epsilon_column],
+        parameters[pairwise.idxs[:, 0], r_min_column],
+        parameters[pairwise.idxs[:, 1], r_min_column],
+    )
+
+    alpha = potential.attributes[potential.attribute_cols.index("alpha")]
+    beta = potential.attributes[potential.attribute_cols.index("beta")]
+
+    x = pairwise.distances / r_min
+
+    energies_repulsion = beta / (alpha - beta) * torch.exp(alpha * (1.0 - x))
+    energies_attraction = alpha / (alpha - beta) * torch.exp(beta * (1.0 - x))
+
+    energies = pair_scales * epsilon * (energies_repulsion - energies_attraction)
+
+    if not system.is_periodic:
+        return energies.sum(-1)
+
+    switch_fn, switch_width = _compute_switch_fn(potential, pairwise)
+    energies *= switch_fn
+
+    energy = energies.sum(-1)
+
+    # TODO: ...
+    # energy += _compute_dexp_dispersion_correction(
+    #     system,
+    #     potential.to(precision="double"),
+    #     switch_width.double(),
+    #     pairwise.cutoff.double(),
+    #     torch.det(box_vectors),
+    # )
 
     return energy
 

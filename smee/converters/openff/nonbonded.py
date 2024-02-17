@@ -2,6 +2,7 @@
 
 import collections
 import copy
+import typing
 
 import openff.interchange.components.potentials
 import openff.interchange.models
@@ -11,6 +12,9 @@ import torch
 
 import smee
 import smee.utils
+
+if typing.TYPE_CHECKING:
+    import smirnoff_plugins.collections.nonbonded
 
 _UNITLESS = openff.units.unit.dimensionless
 _ANGSTROM = openff.units.unit.angstrom
@@ -153,6 +157,47 @@ def convert_vdw(
         ("epsilon", "sigma"),
         ("cutoff", "switch_width"),
     )
+
+
+@smee.converters.smirnoff_parameter_converter(
+    "DoubleExponential",
+    {
+        "epsilon": _KCAL_PER_MOL,
+        "r_min": _ANGSTROM,
+        "alpha": _UNITLESS,
+        "beta": _UNITLESS,
+        "scale_12": _UNITLESS,
+        "scale_13": _UNITLESS,
+        "scale_14": _UNITLESS,
+        "scale_15": _UNITLESS,
+        "cutoff": _ANGSTROM,
+        "switch_width": _ANGSTROM,
+    },
+)
+def convert_dexp(
+    handlers: list[
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFDoubleExponentialCollection"
+    ],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    import smee.potentials.nonbonded
+
+    (
+        potential,
+        parameter_maps,
+    ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
+        handlers,
+        "DoubleExponential",
+        topologies,
+        v_site_maps,
+        ("epsilon", "r_min"),
+        ("cutoff", "switch_width", "alpha", "beta"),
+    )
+    potential.type = "vdW"
+    potential.fn = smee.potentials.nonbonded.DEXP_POTENTIAL
+
+    return potential, parameter_maps
 
 
 def _make_v_site_electrostatics_compatible(
