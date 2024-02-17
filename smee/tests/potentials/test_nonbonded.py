@@ -30,10 +30,15 @@ def _compute_openmm_energy(
     if box_vectors is not None:
         box_vectors = box_vectors.numpy() * openmm.unit.angstrom
 
-    omm_force = smee.converters.convert_to_openmm_force(potential, system)
-
+    omm_forces = smee.converters.convert_to_openmm_force(potential, system)
     omm_system = smee.converters.openmm.create_openmm_system(system, None)
-    omm_system.addForce(omm_force)
+
+    for omm_force in omm_forces:
+        # TODO: this is not yet implemented for things like DEXP...
+        if isinstance(omm_force, openmm.CustomNonbondedForce):
+            omm_force.setUseLongRangeCorrection(False)
+
+        omm_system.addForce(omm_force)
 
     if box_vectors is not None:
         omm_system.setDefaultPeriodicBoxVectors(*box_vectors)
@@ -243,9 +248,7 @@ def test_compute_xxx_energy_periodic(energy_fn, convert_fn, etoh_water_system):
     vdw_potential = convert_fn(tensor_ff.potentials_by_type["vdW"])
     vdw_potential.parameters.requires_grad = True
 
-    energy = compute_dexp_energy(
-        tensor_sys, vdw_potential, coords.float(), box_vectors.float()
-    )
+    energy = energy_fn(tensor_sys, vdw_potential, coords.float(), box_vectors.float())
     energy.backward()
 
     expected_energy = _compute_openmm_energy(

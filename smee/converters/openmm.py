@@ -46,7 +46,7 @@ def _create_nonbonded_force(
     if not system.is_periodic:
         force.setNonbondedMethod(cls.NoCutoff)
     else:
-        cutoff = potential.attributes[cutoff_idx] * _ANGSTROM
+        cutoff = float(potential.attributes[cutoff_idx]) * _ANGSTROM
 
         method = (
             openmm.NonbondedForce.PME
@@ -55,10 +55,10 @@ def _create_nonbonded_force(
         )
 
         force.setNonbondedMethod(method)
-        force.setCutoffDistance(potential.attributes[cutoff_idx] * _ANGSTROM)
+        force.setCutoffDistance(cutoff)
 
         if switch_idx is not None:
-            switch_width = potential.attributes[switch_idx] * _ANGSTROM
+            switch_width = float(potential.attributes[switch_idx]) * _ANGSTROM
             switch_distance = cutoff - switch_width
 
             if switch_distance > 0.0 * _ANGSTROM:

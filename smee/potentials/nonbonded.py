@@ -231,7 +231,7 @@ def lorentz_berthelot(
     return smee.utils.geometric_mean(epsilon_a, epsilon_b), 0.5 * (sigma_a + sigma_b)
 
 
-def _compute_dispersion_integral(
+def _compute_lj_dispersion_integral(
     r: torch.Tensor, rs: torch.Tensor, rc: torch.Tensor, sigma: torch.Tensor
 ) -> torch.Tensor:
     """Evaluate the integral needed to compute the LJ long range dispersion correction
@@ -285,7 +285,7 @@ def _compute_dispersion_integral(
     # fmt: on
 
 
-def _compute_dispersion_term(
+def _compute_lj_dispersion_term(
     count: float,
     epsilon: torch.Tensor,
     sigma: torch.Tensor,
@@ -311,14 +311,14 @@ def _compute_dispersion_term(
         assert cutoff is not None
 
         terms.append(
-            _compute_dispersion_integral(cutoff, switch_width, cutoff, sigma)
-            - _compute_dispersion_integral(switch_width, switch_width, cutoff, sigma)
+            _compute_lj_dispersion_integral(cutoff, switch_width, cutoff, sigma)
+            - _compute_lj_dispersion_integral(switch_width, switch_width, cutoff, sigma)
         )
 
     return (count * epsilon * torch.stack(terms)).sum(dim=-1)
 
 
-def _compute_dispersion_correction(
+def _compute_lj_dispersion_correction(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
     cutoff: torch.Tensor | None,
@@ -354,7 +354,7 @@ def _compute_dispersion_correction(
 
     eps_ii, sig_ii = potential.parameters[:, 0], potential.parameters[:, 1]
 
-    terms = _compute_dispersion_term(
+    terms = _compute_lj_dispersion_term(
         n_ii_interactions, eps_ii, sig_ii, cutoff, switch_width
     )
 
@@ -365,7 +365,7 @@ def _compute_dispersion_correction(
     eps_ij, sig_ij = lorentz_berthelot(
         eps_ii[idx_i], eps_ii[idx_j], sig_ii[idx_i], sig_ii[idx_j]
     )
-    terms += _compute_dispersion_term(
+    terms += _compute_lj_dispersion_term(
         n_ij_interactions, eps_ij, sig_ij, cutoff, switch_width
     )
 
@@ -480,7 +480,7 @@ def compute_lj_energy(
     energies *= switch_fn
 
     energy = energies.sum(-1)
-    energy += _compute_dispersion_correction(
+    energy += _compute_lj_dispersion_correction(
         system,
         potential.to(precision="double"),
         switch_width.double(),
@@ -566,13 +566,15 @@ def compute_dexp_energy(
     energies *= switch_fn
 
     energy = energies.sum(-1)
-    energy += _compute_dispersion_correction(
-        system,
-        potential.to(precision="double"),
-        switch_width.double(),
-        pairwise.cutoff.double(),
-        torch.det(box_vectors),
-    )
+
+    # TODO: ...
+    # energy += _compute_dexp_dispersion_correction(
+    #     system,
+    #     potential.to(precision="double"),
+    #     switch_width.double(),
+    #     pairwise.cutoff.double(),
+    #     torch.det(box_vectors),
+    # )
 
     return energy
 

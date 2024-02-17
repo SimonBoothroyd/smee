@@ -311,6 +311,12 @@ class _EnsembleAverageOp(torch.autograd.Function):
         theta = ctx.saved_tensors[: ctx.n_theta]
         du_d_theta = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
 
+        # attributes are flat, so we need the extra dim
+        du_d_theta = [
+            None if v is None else (v if v.ndim == 3 else v.unsqueeze(0))
+            for v in du_d_theta
+        ]
+
         grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
 
         values = ctx.saved_tensors[-2]
@@ -344,6 +350,11 @@ class _EnsembleAverageOp(torch.autograd.Function):
             )
 
             grads[i] = d_avg_output_d_theta_i @ grad_outputs
+
+        grads = [
+            None if v is None else (v if t.ndim == 2 else v.squeeze(0))
+            for t, v in zip(theta, grads, strict=True)
+        ]
 
         # we need to return one extra 'gradient' for kwargs.
         return tuple([None] + grads)
