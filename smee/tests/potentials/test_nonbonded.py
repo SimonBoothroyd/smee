@@ -34,10 +34,6 @@ def _compute_openmm_energy(
     omm_system = smee.converters.openmm.create_openmm_system(system, None)
 
     for omm_force in omm_forces:
-        # TODO: this is not yet implemented for things like DEXP...
-        if isinstance(omm_force, openmm.CustomNonbondedForce):
-            omm_force.setUseLongRangeCorrection(False)
-
         omm_system.addForce(omm_force)
 
     if box_vectors is not None:

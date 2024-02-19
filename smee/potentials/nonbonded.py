@@ -202,6 +202,47 @@ def compute_pairwise(
         return _compute_pairwise_non_periodic(conformer)
 
 
+def prepare_lrc_types(system: smee.TensorSystem, potential: smee.TensorPotential):
+    """Finds the unique vdW interactions present in a system, ready to use
+    for computing the long range dispersion correction.
+
+    Args:
+        system: The system to prepare the types for.
+        potential: The potential to prepare the types for.
+
+    Returns:
+        Two tensors containing the i and j indices into ``potential.paramaters`` of
+        each unique interaction parameter excluding ``i==j``, the number of ``ii``
+        interactions with ``shape=(n_params,)``, the numbers of ``ij`` interactions
+        with ``shape=(len(idxs_i),)``, and the total number of interactions.
+    """
+    n_by_type = collections.defaultdict(int)
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_counts = topology.parameters["vdW"].assignment_matrix.abs().sum(dim=0)
+
+        for key, count in zip(potential.parameter_keys, parameter_counts):
+            n_by_type[key] += count.item() * n_copies
+
+    counts = smee.utils.tensor_like(
+        [n_by_type[key] for key in potential.parameter_keys], potential.parameters
+    )
+
+    n_ii_interactions = (counts * (counts + 1.0)) / 2.0
+
+    idxs_i, idxs_j = torch.triu_indices(len(counts), len(counts), 1)
+    n_ij_interactions = counts[idxs_i] * counts[idxs_j]
+
+    idxs_ii = torch.arange(len(counts))
+
+    idxs_i = torch.cat([idxs_i, idxs_ii])
+    idxs_j = torch.cat([idxs_j, idxs_ii])
+
+    n_ij_interactions = torch.cat([n_ij_interactions, n_ii_interactions])
+
+    return idxs_i, idxs_j, n_ij_interactions
+
+
 def lorentz_berthelot(
     epsilon_a: torch.Tensor,
     epsilon_b: torch.Tensor,
@@ -231,158 +272,6 @@ def lorentz_berthelot(
     return smee.utils.geometric_mean(epsilon_a, epsilon_b), 0.5 * (sigma_a + sigma_b)
 
 
-def _compute_lj_dispersion_integral(
-    r: torch.Tensor, rs: torch.Tensor, rc: torch.Tensor, sigma: torch.Tensor
-) -> torch.Tensor:
-    """Evaluate the integral needed to compute the LJ long range dispersion correction
-    due to the switching function.
-
-    Notes:
-        The math was very gratefully copied from OpenMM: https://github.com/openmm/openmm/blob/0363c38dc7ba5abc40d5d4c72efbca0718ff09ab/openmmapi/src/NonbondedForceImpl.cpp#L234C32-L234C32
-        See LICENSE_3RD_PARTY for the OpenMM license and copyright notice.
-
-    Args:
-        r: The distance to evaluate the integral at.
-        rs: The switching distance.
-        rc: The cutoff distance.
-        sigma: The sigma value of the pair.
-
-    Returns:
-        The evaluated integral.
-    """
-    A = 1 / (rc - rs)
-    A2 = A * A
-    A3 = A2 * A
-    sig2 = sigma * sigma
-    sig6 = sig2 * sig2 * sig2
-    rs2 = rs * rs
-    rs3 = rs * rs2
-    r2 = r * r
-    r3 = r * r2
-    r4 = r * r3
-    r5 = r * r4
-    r6 = r * r5
-    r9 = r3 * r6
-    # fmt: off
-    return (
-        sig6 * A3 * ((
-            sig6 * (
-                + rs3 * 28 * (6 * rs2 * A2 + 15 * rs * A + 10)
-                - r * rs2 * 945 * (rs2 * A2 + 2 * rs * A + 1)
-                + r2 * rs * 1080 * (2 * rs2 * A2 + 3 * rs * A + 1)
-                - r3 * 420 * (6 * rs2 * A2 + 6 * rs * A + 1)
-                + r4 * 756 * (2 * rs * A2 + A)
-                - r5 * 378 * A2)
-            - r6 * (
-                +rs3 * 84 * (6 * rs2 * A2 + 15 * rs * A + 10)
-                - r * rs2 * 3780 * (rs2 * A2 + 2 * rs * A + 1)
-                + r2 * rs * 7560 * (2 * rs2 * A2 + 3 * rs * A + 1)))
-            / (252 * r9)
-            - torch.log(r) * 10 * (6 * rs2 * A2 + 6 * rs * A + 1)
-            + r * 15 * (2 * rs * A2 + A)
-            - r2 * 3 * A2)
-    )
-    # fmt: on
-
-
-def _compute_lj_dispersion_term(
-    count: float,
-    epsilon: torch.Tensor,
-    sigma: torch.Tensor,
-    cutoff: torch.Tensor | None,
-    switch_width: torch.Tensor | None,
-) -> torch.Tensor:
-    """Computes the terms of the LJ dispersion correction for a particular type of
-    interactions (i.e., ii and ij).
-
-    Args:
-        count: The number of interactions of this type with ``shape=(n_parameters,)``.
-        epsilon: The epsilon values of each interaction with ``shape=(n_parameters,)``.
-        sigma: The sigma values of each interaction with ``shape=(n_parameters,)``.
-        cutoff: The cutoff distance.
-        switch_width: The distance at which the switching function begins to apply.
-
-    """
-    sigma6 = sigma**6
-
-    terms = [sigma6 * sigma6, sigma6]
-
-    if switch_width is not None:
-        assert cutoff is not None
-
-        terms.append(
-            _compute_lj_dispersion_integral(cutoff, switch_width, cutoff, sigma)
-            - _compute_lj_dispersion_integral(switch_width, switch_width, cutoff, sigma)
-        )
-
-    return (count * epsilon * torch.stack(terms)).sum(dim=-1)
-
-
-def _compute_lj_dispersion_correction(
-    system: smee.TensorSystem,
-    potential: smee.TensorPotential,
-    cutoff: torch.Tensor | None,
-    switch_width: torch.Tensor | None,
-    volume: torch.Tensor,
-) -> torch.Tensor:
-    """Computes the long range dispersion correction due to the switching function.
-
-    Args:
-        system: The system to compute the correction for.
-        potential: The LJ potential.
-        cutoff: The cutoff distance.
-        switch_width: The distance at which the switching function begins to apply.
-        volume: The volume of the system.
-
-    Returns:
-
-    """
-    n_by_type = collections.defaultdict(int)
-
-    for topology, n_copies in zip(system.topologies, system.n_copies):
-        parameter_counts = topology.parameters["vdW"].assignment_matrix.abs().sum(dim=0)
-
-        for key, count in zip(potential.parameter_keys, parameter_counts):
-            n_by_type[key] += count.item() * n_copies
-
-    counts = smee.utils.tensor_like(
-        [n_by_type[key] for key in potential.parameter_keys], potential.parameters
-    )
-
-    # particles of the same type interacting
-    n_ii_interactions = (counts * (counts + 1.0)) / 2.0
-
-    eps_ii, sig_ii = potential.parameters[:, 0], potential.parameters[:, 1]
-
-    terms = _compute_lj_dispersion_term(
-        n_ii_interactions, eps_ii, sig_ii, cutoff, switch_width
-    )
-
-    # particles of different types interacting
-    idx_i, idx_j = torch.triu_indices(len(counts), len(counts), 1)
-    n_ij_interactions = counts[idx_i] * counts[idx_j]
-
-    eps_ij, sig_ij = lorentz_berthelot(
-        eps_ii[idx_i], eps_ii[idx_j], sig_ii[idx_i], sig_ii[idx_j]
-    )
-    terms += _compute_lj_dispersion_term(
-        n_ij_interactions, eps_ij, sig_ij, cutoff, switch_width
-    )
-
-    n_particles = system.n_particles
-    n_interactions = (n_particles * (n_particles + 1)) / 2
-
-    terms /= n_interactions
-
-    return (
-        8.0
-        * n_particles**2
-        * torch.pi
-        * (terms[0] / (9 * cutoff**9) - terms[1] / (3 * cutoff**3) + terms[2])
-        / volume
-    )
-
-
 def _compute_switch_fn(
     potential: smee.TensorPotential,
     pairwise: PairwiseDistances,
@@ -405,6 +294,110 @@ def _compute_switch_fn(
     )
 
     return switch_fn, switch_width
+
+
+def _integrate_lj_switch(
+    r: torch.Tensor,
+    rs: torch.Tensor,
+    rc: torch.Tensor,
+    sig: torch.Tensor,
+) -> torch.Tensor:
+    """Evaluate the intergral of the LJ potential multiplied by one minus the switching
+    function.
+
+    We define `b = 1 / (rc - rs)` and integrate
+
+    (sig^12/r^10 - sig^6/r^4) (6 b^5 (r - rs)^5 - 15 b^4 (r - rs)^4 + 10 b^3 (r - rs)^3) dr
+
+    to get:
+
+    -(b**3 * c**6 *
+        (
+            - 28   * a**3        * c**6 *      (6 * a**2 * b**2 + 15 * a * b + 10) * r**-9
+            + 945  * a**2        * c**6 *      (    a**2 * b**2 + 2  * a * b + 1 ) * r**-8
+            - 1080 * a           * c**6 *      (2 * a**2 * b**2 + 3  * a * b + 1 ) * r**-7
+            + 420                * c**6 *      (6 * a**2 * b**2 + 6  * a * b + 1 ) * r**-6
+            - 756         * b    * c**6 *      (                  2  * a * b + 1 ) * r**-5
+            + 378         * b**2 * c**6 *      (                               1 ) * r**-4
+            + 84   * a**3               *      (6 * a**2 * b**2 + 15 * a * b + 10) * r**-3
+            - 3780 * a**2               *      (    a**2 * b**2 + 2  * a * b + 1 ) * r**-2
+            + 7560 * a                  *      (2 * a**2 * b**2 + 3  * a * b + 1 ) * r**-1
+            + 2520                      *      (6 * a**2 * b**2 + 6  * a * b + 1 ) * log(r)
+            - 3780        * b           *      (                  2  * a * b + 1 ) * r**1
+            + 756         * b**2                                                   * r**2
+        )
+    ) / 252
+
+    Args:
+        r: The distance to evaluate the integral at.
+        rs: The switching distance.
+        rc: The cutoff distance.
+        sig: The sigma parameter of the LJ potential with ``shape=(n_params,)``.
+
+    Returns:
+        The value of the integral.
+    """
+    b = 1.0 / (rc - rs)
+
+    coeff_0 = torch.tensor([rs**3, rs**2, rs, 1, b, b**2]) * (
+        torch.tensor([rs**2 * b**2, rs * b, 1])
+        * torch.tensor(
+            [[6, 15, 10], [1, 2, 1], [2, 3, 1], [6, 6, 1], [0, 2, 1], [0, 0, 1]]
+        )
+    ).sum(dim=-1)
+
+    coeff_01 = (
+        sig[:, None] ** 6 * torch.tensor([-28, 945, -1080, 420, -756, 378]) * coeff_0
+    )
+    coeff_11 = torch.tensor([84, -3780, 7560, 2520, -3780, 756]) * coeff_0
+
+    r_pow = torch.pow(r, torch.tensor([-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2]))
+    r_pow[-3] = torch.log(r)
+
+    integral = (
+        -(b**3)
+        * sig**6
+        * (coeff_01 * r_pow[:6] + coeff_11 * r_pow[6:]).sum(dim=-1)
+        / 252
+    )
+
+    return integral
+
+
+def _compute_lj_lrc(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    rs: torch.Tensor | None,
+    rc: torch.Tensor | None,
+    volume: torch.Tensor,
+) -> torch.Tensor:
+    """Computes the long range dispersion correction due to the double exponential
+    potential, possibly with a switching function."""
+
+    idxs_i, idxs_j, n_ij_interactions = smee.potentials.nonbonded.prepare_lrc_types(
+        system, potential
+    )
+
+    eps_ii, sig_ii = (
+        potential.parameters[:, potential.parameter_cols.index("epsilon")],
+        potential.parameters[:, potential.parameter_cols.index("sigma")],
+    )
+    eps_ij, sig_ij = smee.potentials.nonbonded.lorentz_berthelot(
+        eps_ii[idxs_i], eps_ii[idxs_j], sig_ii[idxs_i], sig_ii[idxs_j]
+    )
+
+    integral = sig_ij**12 / (9 * rc**9) - sig_ij**6 / (3 * rc**3)
+
+    if rs is not None:
+        integral_rc = _integrate_lj_switch(rc, rs, rc, sig_ij)
+        integral_rs = _integrate_lj_switch(rs, rs, rc, sig_ij)
+
+        integral += integral_rc - integral_rs
+
+    integral = (n_ij_interactions * 4.0 * eps_ij * integral).sum(dim=-1)
+    integral /= n_ij_interactions.sum()
+
+    return 2.0 * system.n_particles**2 * torch.pi / volume * integral
 
 
 @smee.potentials.potential_energy_fn("vdW", LJ_POTENTIAL)
@@ -480,7 +473,7 @@ def compute_lj_energy(
     energies *= switch_fn
 
     energy = energies.sum(-1)
-    energy += _compute_lj_dispersion_correction(
+    energy += _compute_lj_lrc(
         system,
         potential.to(precision="double"),
         switch_width.double(),
@@ -489,6 +482,163 @@ def compute_lj_energy(
     )
 
     return energy
+
+
+def _integrate_dexp_switch(
+    r: torch.Tensor,
+    rs: torch.Tensor,
+    rc: torch.Tensor,
+    a: torch.Tensor,
+    b: torch.Tensor,
+) -> torch.Tensor:
+    """Evaluate the intergral of one term (repulsive or attractive) of the double
+    exponential potential multiplied by one minus the switching function.
+
+    We define `rc_rs = 1 / (rc - rs)` and expand r^2 * (6 * rc_rs**5 * (r - rs)**5 + 15 * rc_rs**4 * (r - rs)**4 - 10 * rc_rs**3 * (r - rs)**3)
+    into:
+
+      (+ 6 * rs**5 * rc_rs**5 + 15 * rs**4 * rc_rs**4 + 10 * rs**3 * rc_rs**3) * r**2
+    + (-30 * rs**4 * rc_rs**5 - 60 * rs**3 * rc_rs**4 - 30 * rs**2 * rc_rs**3) * r**3
+    + ( 60 * rs**3 * rc_rs**5 + 90 * rs**2 * rc_rs**4 + 30 * rs    * rc_rs**3) * r**4
+    + (-60 * rs**2 * rc_rs**5 - 60 * rs    * rc_rs**4 - 10         * rc_rs**3) * r**5
+    + ( 30 * rs    * rc_rs**5 + 15         * rc_rs**4)                         * r**6
+    + (- 6         * rc_rs**5)                                                 * r**7
+
+    We then define c_n as the coefficient of r^n, then integral of c_n * r**n * a * exp(-b * x):
+
+    integral r^2 = c_0 * a * exp(-b * r) * (-2    / b**3 - 2    * r / b**2 -        r**2 / b)
+    integral r^3 = c_1 * a * exp(-b * r) * (-6    / b**4 - 6    * r / b**3 - 3    * r**2 / b**2 -       r**3 / b)
+    integral r^4 = c_2 * a * exp(-b * r) * (-24   / b**5 - 24   * r / b**4 - 12   * r**2 / b**3 - 4   * r**3 / b**2 -       r**4 / b)
+    integral r^5 = c_3 * a * exp(-b * r) * (-120  / b**6 - 120  * r / b**5 - 60   * r**2 / b**4 - 20  * r**3 / b**3 - 5   * r**4 / b**2 -      r**5 / b)
+    integral r^6 = c_4 * a * exp(-b * r) * (-720  / b**7 - 720  * r / b**6 - 360  * r**2 / b**5 - 120 * r**3 / b**4 - 30  * r**4 / b**3 - 6  * r**5 / b**2 -     r**6 / b)
+    integral r^7 = c_5 * a * exp(-b * r) * (-5040 / b**8 - 5040 * r / b**7 - 2520 * r**2 / b**6 - 840 * r**3 / b**5 - 210 * r**4 / b**4 - 42 * r**5 / b**3 - 7 * r**6 / b**2 - r**7 / b)
+
+    so the integral of the entire function is the sum of the integrals of each power of
+    r
+
+    Args:
+        r: The distance to evaluate the integral at.
+        rs: The switching distance.
+        rc: The cutoff distance.
+        a: The prefactor of the exponential term.
+        b: The exponent of the exponential term.
+    """
+    rs_pow = torch.tensor([rs**5, rs**4, rs**3, rs**2, rs, 1, 0, 0]).unsqueeze(1)
+
+    # fmt: off
+    c_n = torch.tensor(
+        [
+            [  6,  15,  10],  # noqa: E201,E241
+            [-30, -60, -30],  # noqa: E201,E241
+            [ 60,  90,  30],  # noqa: E201,E241
+            [-60, -60, -10],  # noqa: E201,E241
+            [ 30,  15,   0],  # noqa: E201,E241
+            [-6,    0,   0],  # noqa: E201,E241
+        ],
+        dtype=torch.float64
+    )
+    # fmt: on
+    c_n *= torch.hstack(
+        [
+            rs_pow[0:6] * (rc - rs) ** -5,
+            rs_pow[1:7] * (rc - rs) ** -4,
+            rs_pow[2:8] * (rc - rs) ** -3,
+        ]
+    )
+    c_n = c_n.sum(dim=1)
+
+    b = b.unsqueeze(1)
+    b_pow = torch.hstack(
+        [smee.utils.zeros_like((len(b), 1), b)] * 4
+        + [torch.ones_like(b), b, b**2, b**3, b**4, b**5, b**6, b**7, b**8],
+    )
+
+    mat = torch.stack(
+        [
+            1 / b_pow[:, 7:],
+            r / b_pow[:, 6:-1],
+            r**2 / b_pow[:, 5:-2],
+            r**3 / b_pow[:, 4:-3],
+            r**4 / b_pow[:, 3:-4],
+            r**5 / b_pow[:, 2:-5],
+            r**6 / b_pow[:, 1:-6],
+            r**7 / b_pow[:, :-7],
+        ],
+        dim=-1,
+    )
+    mat = torch.where(torch.isinf(mat), torch.zeros_like(mat), mat)
+
+    # fmt: off
+    mat_coeff = torch.tensor(
+        [[-2,    -2,    -1,     0,    0,    0,   0,  0],  # noqa: E241
+         [-6,    -6,    -3,    -1,    0,    0,   0,  0],  # noqa: E241
+         [-24,   -24,   -12,   -4,   -1,    0,   0,  0],  # noqa: E241
+         [-120,  -120,  -60,   -20,  -5,   -1,   0,  0],  # noqa: E241
+         [-720,  -720,  -360,  -120, -30,  -6,  -1,  0],  # noqa: E241
+         [-5040, -5040, -2520, -840, -210, -42, -7, -1]],  # noqa: E241
+    )
+    # fmt: on
+
+    int_n = a * torch.exp(-b * r) * c_n * (mat * mat_coeff).sum(dim=-1)
+    return -int_n.sum(dim=-1)
+
+
+def _compute_dexp_lrc(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    rs: torch.Tensor | None,
+    rc: torch.Tensor | None,
+    volume: torch.Tensor,
+) -> torch.Tensor:
+    """Computes the long range dispersion correction due to the double exponential
+    potential, possibly with a switching function."""
+
+    idxs_i, idxs_j, n_ij_interactions = prepare_lrc_types(system, potential)
+
+    rs = None if rs is None else rs.double()
+    rc = rc.double()
+
+    alpha = potential.attributes[potential.attribute_cols.index("alpha")]
+    beta = potential.attributes[potential.attribute_cols.index("beta")]
+
+    eps_ii, r_min_ii = (
+        potential.parameters[:, potential.parameter_cols.index("epsilon")],
+        potential.parameters[:, potential.parameter_cols.index("r_min")],
+    )
+    eps_ij, r_min_ij = smee.potentials.nonbonded.lorentz_berthelot(
+        eps_ii[idxs_i], eps_ii[idxs_j], r_min_ii[idxs_i], r_min_ii[idxs_j]
+    )
+
+    a_rep = beta * torch.exp(alpha) / (alpha - beta)
+    b_rep = alpha / r_min_ij
+
+    a_att = alpha * torch.exp(beta) / (alpha - beta)
+    b_att = beta / r_min_ij
+
+    integral = -(
+        a_rep
+        * torch.exp(-b_rep * rc)
+        * (-2 / b_rep**3 - 2 * rc / b_rep**2 - rc**2 / b_rep)
+        + a_att
+        * torch.exp(-b_att * rc)
+        * (2 / b_att**3 + 2 * rc / b_att**2 + rc**2 / b_att)
+    )
+
+    if rs is not None:
+        integral_rep_rs = _integrate_dexp_switch(rs, rs, rc, a_rep, b_rep)
+        integral_rep_rc = _integrate_dexp_switch(rc, rs, rc, a_rep, b_rep)
+        integral_rep_rs_to_rc = integral_rep_rc - integral_rep_rs
+
+        integral_att_rs = _integrate_dexp_switch(rs, rs, rc, a_att, b_att)
+        integral_att_rc = _integrate_dexp_switch(rc, rs, rc, a_att, b_att)
+        integral_att_rs_to_rc = integral_att_rc - integral_att_rs
+
+        integral += integral_rep_rs_to_rc - integral_att_rs_to_rc
+
+    integral = (n_ij_interactions * eps_ij * integral).sum(dim=-1)
+    integral /= n_ij_interactions.sum()
+
+    return 2.0 * system.n_particles**2 * torch.pi / volume * integral
 
 
 @smee.potentials.potential_energy_fn("vdW", DEXP_POTENTIAL)
@@ -567,14 +717,13 @@ def compute_dexp_energy(
 
     energy = energies.sum(-1)
 
-    # TODO: ...
-    # energy += _compute_dexp_dispersion_correction(
-    #     system,
-    #     potential.to(precision="double"),
-    #     switch_width.double(),
-    #     pairwise.cutoff.double(),
-    #     torch.det(box_vectors),
-    # )
+    energy += _compute_dexp_lrc(
+        system,
+        potential.to(precision="double"),
+        switch_width.double(),
+        pairwise.cutoff.double(),
+        torch.det(box_vectors),
+    )
 
     return energy
 
