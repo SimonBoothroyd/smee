@@ -17,7 +17,7 @@
         <LibraryCharge smirks="[#1:1]-[#8X2H2+0]-[#1]" charge1="0.417 * elementary_charge ** 1" id="q-tip3p-H"></LibraryCharge>
     </LibraryCharges>
     <ToolkitAM1BCC version="0.3"></ToolkitAM1BCC>
-    <DoubleExponential version="0.3" scale14="0.5" cutoff="9.0 * angstrom" periodic_method="cutoff" nonperiodic_method="no-cutoff" switch_width="1.0 * angstrom" alpha="16.76632136164" beta="4.426755081718">
+    <DoubleExponential version="0.3" scale14="0.5" cutoff="9.0 * angstrom" periodic_method="cutoff" nonperiodic_method="no-cutoff" switch_width="1.5 * angstrom" alpha="16.76632136164" beta="4.426755081718">
         <Atom smirks="[#1:1]-[#6X4]" r_min="2.843520958931 * angstrom" epsilon="0.01911727710372 * mole**-1 * kilocalorie"></Atom>
         <Atom smirks="[#1:1]-[#8]" r_min="1.0 * angstrom" epsilon="0.0 * mole**-1 * kilojoule"></Atom>
         <Atom smirks="[#6X4:1]" r_min="3.792495676752 * angstrom" epsilon="0.1121905471545 * mole**-1 * kilocalorie"></Atom>
