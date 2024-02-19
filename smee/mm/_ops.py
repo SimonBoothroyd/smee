@@ -169,7 +169,10 @@ def _compute_frame_observables(
         The observables for this frame.
     """
 
-    values = {"potential_energy": potential_energy}
+    values = {
+        "potential_energy": potential_energy,
+        "potential_energy^2": potential_energy**2,
+    }
     reduced_potential = beta * potential_energy
 
     if not system.is_periodic:
@@ -177,7 +180,8 @@ def _compute_frame_observables(
         return values
 
     volume = torch.det(box_vectors)
-    values["volume"] = volume
+
+    values.update({"volume": volume, "volume^2": volume**2})
 
     total_mass = _compute_mass(system)
 
@@ -185,9 +189,13 @@ def _compute_frame_observables(
 
     if pressure is not None:
         pv_term = volume * pressure
+
         values["enthalpy"] = potential_energy + kinetic_energy + pv_term
+        values["enthalpy^2"] = values["enthalpy"] ** 2
 
         reduced_potential += beta * pv_term
+
+        values["enthalpy_volume"] = values["enthalpy"] * values["volume"]
 
     values["reduced_potential"] = reduced_potential
 
@@ -324,6 +332,18 @@ class _EnsembleAverageOp(torch.autograd.Function):
 
         grads = [None] * len(theta)
 
+        energy = values[:, ctx.columns.index("potential_energy")]
+        volume = (
+            None
+            if "volume" not in ctx.columns
+            else values[:, ctx.columns.index("volume")]
+        )
+        enthalpy = (
+            None
+            if "enthalpy" not in ctx.columns
+            else values[:, ctx.columns.index("enthalpy")]
+        )
+
         for i in range(len(du_d_theta)):
             if du_d_theta[i] is None:
                 continue
@@ -332,10 +352,21 @@ class _EnsembleAverageOp(torch.autograd.Function):
 
             avg_d_output_d_theta_i = {
                 "potential_energy": avg_du_d_theta_i,
+                "potential_energy^2": (2 * energy * du_d_theta[i]).mean(dim=-1),
                 "volume": torch.zeros_like(avg_du_d_theta_i),
+                "volume^2": torch.zeros_like(avg_du_d_theta_i),
                 "density": torch.zeros_like(avg_du_d_theta_i),
                 "enthalpy": avg_du_d_theta_i,
+                "enthalpy^2": (
+                    None
+                    if enthalpy is None
+                    else (2 * enthalpy * du_d_theta[i]).mean(dim=-1)
+                ),
+                "enthalpy_volume": (
+                    None if volume is None else (volume * du_d_theta[i]).mean(dim=-1)
+                ),
             }
+
             avg_d_output_d_theta_i = torch.stack(
                 [avg_d_output_d_theta_i[column] for column in ctx.columns], dim=-1
             )
@@ -417,6 +448,18 @@ class _ReweightAverageOp(torch.autograd.Function):
 
         grads = [None] * len(theta)
 
+        energy = values[:, ctx.columns.index("potential_energy")]
+        volume = (
+            None
+            if "volume" not in ctx.columns
+            else values[:, ctx.columns.index("volume")]
+        )
+        enthalpy = (
+            None
+            if "enthalpy" not in ctx.columns
+            else values[:, ctx.columns.index("enthalpy")]
+        )
+
         for i in range(len(du_d_theta)):
             if du_d_theta[i] is None:
                 continue
@@ -435,9 +478,15 @@ class _ReweightAverageOp(torch.autograd.Function):
 
             d_output_d_theta_i = {
                 "potential_energy": du_d_theta[i],
+                "potential_energy^2": 2 * energy * du_d_theta[i],
                 "volume": torch.zeros_like(du_d_theta[i]),
+                "volume^2": torch.zeros_like(du_d_theta[i]),
                 "density": torch.zeros_like(du_d_theta[i]),
                 "enthalpy": du_d_theta[i],
+                "enthalpy^2": (
+                    None if enthalpy is None else 2 * enthalpy * du_d_theta[i]
+                ),
+                "enthalpy_volume": (None if volume is None else volume * du_d_theta[i]),
             }
             d_output_d_theta_i = torch.stack(
                 [d_output_d_theta_i[column] for column in ctx.columns], dim=-1

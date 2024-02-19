@@ -144,6 +144,7 @@ def test_compute_frame_observables_non_periodic(mocker):
     )
     assert values == {
         "potential_energy": expected_potential,
+        "potential_energy^2": expected_potential**2,
         "reduced_potential": beta * expected_potential,
     }
 
@@ -196,10 +197,16 @@ def test_compute_frame_observables():
     )
     assert values == {
         "potential_energy": torch.tensor(expected_potential),
+        "potential_energy^2": torch.tensor(expected_potential**2),
         "volume": pytest.approx(torch.tensor(expected_volume)),
+        "volume^2": pytest.approx(torch.tensor(expected_volume**2)),
         "density": pytest.approx(torch.tensor(expected_density)),
         "enthalpy": pytest.approx(torch.tensor(expected_enthalpy)),
+        "enthalpy^2": pytest.approx(torch.tensor(expected_enthalpy**2)),
         "reduced_potential": pytest.approx(torch.tensor(expected_reduced_potential)),
+        "enthalpy_volume": pytest.approx(
+            torch.tensor(expected_enthalpy * expected_volume)
+        ),
     }
 
 
@@ -256,10 +263,13 @@ def test_compute_observables(tmp_path, mock_argon_tensors, mock_argon_params):
             tensor_system, tensor_ff, file, theta, beta, None
         )
 
-    assert columns == ["potential_energy"]
+    assert columns == ["potential_energy", "potential_energy^2"]
 
-    assert values.shape == (len(expected_potential), 1)
-    numpy.allclose(values.numpy().flatten(), expected_potential)
+    assert values.shape == (len(expected_potential), 2)
+    assert numpy.allclose(
+        values.numpy(),
+        numpy.stack([expected_potential, expected_potential**2], axis=-1),
+    )
 
     assert reduced_potential.shape == (len(expected_potential),)
     assert numpy.allclose(reduced_potential.numpy(), beta * expected_potential)
@@ -362,13 +372,22 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
 
     mock_outputs = torch.stack(
-        [torch.tensor([1.0, 2.0, 3.0]), torch.tensor([5.0, 6.0, 20.0])]
+        [
+            torch.tensor([1.0, 1.0, 2.0, 4.0, 3.0]),
+            torch.tensor([5.0, 25.0, 6.0, 36.0, 20.0]),
+        ]
     )
     mock_reduced = (
         beta.value_in_unit(openmm.unit.kilocalories_per_mole**-1) * mock_outputs[:, 0]
     )
 
-    mock_columns = ["potential_energy", "volume", "density"]
+    mock_columns = [
+        "potential_energy",
+        "potential_energy^2",
+        "volume",
+        "volume^2",
+        "density",
+    ]
     mock_du_d_theta = (torch.tensor([[[-9.0, 10.0], [11.0, -12.0]]]), None)
 
     mocker.patch(
