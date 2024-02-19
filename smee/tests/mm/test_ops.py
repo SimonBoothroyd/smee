@@ -293,9 +293,18 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     output_path.write_bytes(b"")
 
     mock_outputs = torch.stack(
-        [torch.tensor([1.0, 2.0, 3.0]), torch.tensor([5.0, 6.0, 20.0])]
+        [
+            torch.tensor([1.0, 1.0, 2.0, 4.0, 3.0]),
+            torch.tensor([5.0, 25.0, 6.0, 36.0, 20.0]),
+        ]
     )
-    mock_columns = ["potential_energy", "volume", "density"]
+    mock_columns = [
+        "potential_energy",
+        "potential_energy^2",
+        "volume",
+        "volume^2",
+        "density",
+    ]
     mock_du_d_theta = (torch.tensor([[[9.0, 10.0], [11.0, 12.0]]]), None)
 
     mock_compute_observables = mocker.patch(
@@ -346,7 +355,7 @@ def test_compute_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
     beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * temperature)
     beta = beta.value_in_unit(openmm.unit.kilocalorie_per_mole**-1)
 
-    energy, volume, density = mock_outputs[:, 0], mock_outputs[:, 1], mock_outputs[:, 2]
+    energy, volume, density = mock_outputs[:, 0], mock_outputs[:, 2], mock_outputs[:, 4]
     du_d_eps = mock_du_d_theta[0][0, 0, :]
 
     expected_d_avg_energy_d_eps = du_d_eps.mean(-1) - beta * (
