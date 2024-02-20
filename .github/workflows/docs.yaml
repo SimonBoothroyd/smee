@@ -41,8 +41,8 @@ jobs:
         git config --global --add safe.directory "$PWD"
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
-        git pull origin gh-pages
         git fetch --all --prune
+        git pull origin gh-pages
 
         make env
 
