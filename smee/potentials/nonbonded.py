@@ -339,19 +339,23 @@ def _integrate_lj_switch(
     """
     b = 1.0 / (rc - rs)
 
-    coeff_0 = torch.tensor([rs**3, rs**2, rs, 1, b, b**2]) * (
-        torch.tensor([rs**2 * b**2, rs * b, 1])
-        * torch.tensor(
-            [[6, 15, 10], [1, 2, 1], [2, 3, 1], [6, 6, 1], [0, 2, 1], [0, 0, 1]]
+    coeff_0 = smee.utils.tensor_like([rs**3, rs**2, rs, 1, b, b**2], rs) * (
+        smee.utils.tensor_like([rs**2 * b**2, rs * b, 1], rs)
+        * smee.utils.tensor_like(
+            [[6, 15, 10], [1, 2, 1], [2, 3, 1], [6, 6, 1], [0, 2, 1], [0, 0, 1]], rs
         )
     ).sum(dim=-1)
 
     coeff_01 = (
-        sig[:, None] ** 6 * torch.tensor([-28, 945, -1080, 420, -756, 378]) * coeff_0
+        sig[:, None] ** 6
+        * smee.utils.tensor_like([-28, 945, -1080, 420, -756, 378], rs)
+        * coeff_0
     )
-    coeff_11 = torch.tensor([84, -3780, 7560, 2520, -3780, 756]) * coeff_0
+    coeff_11 = smee.utils.tensor_like([84, -3780, 7560, 2520, -3780, 756], rs) * coeff_0
 
-    r_pow = torch.pow(r, torch.tensor([-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2]))
+    r_pow = torch.pow(
+        r, smee.utils.tensor_like([-9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2], rs)
+    )
     r_pow[-3] = torch.log(r)
 
     integral = (
@@ -523,10 +527,12 @@ def _integrate_dexp_switch(
         a: The prefactor of the exponential term.
         b: The exponent of the exponential term.
     """
-    rs_pow = torch.tensor([rs**5, rs**4, rs**3, rs**2, rs, 1, 0, 0]).unsqueeze(1)
+    rs_pow = smee.utils.tensor_like(
+        [rs**5, rs**4, rs**3, rs**2, rs, 1, 0, 0], rc
+    ).unsqueeze(1)
 
     # fmt: off
-    c_n = torch.tensor(
+    c_n = smee.utils.tensor_like(
         [
             [  6,  15,  10],  # noqa: E201,E241
             [-30, -60, -30],  # noqa: E201,E241
@@ -535,7 +541,7 @@ def _integrate_dexp_switch(
             [ 30,  15,   0],  # noqa: E201,E241
             [-6,    0,   0],  # noqa: E201,E241
         ],
-        dtype=torch.float64
+        rs
     )
     # fmt: on
     c_n *= torch.hstack(
@@ -569,13 +575,16 @@ def _integrate_dexp_switch(
     mat = torch.where(torch.isinf(mat), torch.zeros_like(mat), mat)
 
     # fmt: off
-    mat_coeff = torch.tensor(
-        [[-2,    -2,    -1,     0,    0,    0,   0,  0],  # noqa: E241
-         [-6,    -6,    -3,    -1,    0,    0,   0,  0],  # noqa: E241
-         [-24,   -24,   -12,   -4,   -1,    0,   0,  0],  # noqa: E241
-         [-120,  -120,  -60,   -20,  -5,   -1,   0,  0],  # noqa: E241
-         [-720,  -720,  -360,  -120, -30,  -6,  -1,  0],  # noqa: E241
-         [-5040, -5040, -2520, -840, -210, -42, -7, -1]],  # noqa: E241
+    mat_coeff = smee.utils.tensor_like(
+        [
+            [-2,    -2,    -1,     0,    0,    0,   0,  0],  # noqa: E241
+            [-6,    -6,    -3,    -1,    0,    0,   0,  0],  # noqa: E241
+            [-24,   -24,   -12,   -4,   -1,    0,   0,  0],  # noqa: E241
+            [-120,  -120,  -60,   -20,  -5,   -1,   0,  0],  # noqa: E241
+            [-720,  -720,  -360,  -120, -30,  -6,  -1,  0],  # noqa: E241
+            [-5040, -5040, -2520, -840, -210, -42, -7, -1],  # noqa: E241
+        ],
+        rc
     )
     # fmt: on
 
