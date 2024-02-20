@@ -2,10 +2,8 @@ name: Publish Documentation
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - '*'
+    branches: ["main"]
+    tags: ["*"]
 
 jobs:
   deploy-docs:
@@ -43,11 +41,12 @@ jobs:
         git config --global --add safe.directory "$PWD"
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
+        git pull origin gh-pages
         git fetch --all --prune
 
         make env
 
         sed -i 's/# extensions/extensions/' mkdocs.yml
+        make docs-insiders INSIDER_DOCS_TOKEN="${INSIDER_DOCS_TOKEN}"
 
-        make docs-insiders INSIDER_DOCS_TOKEN="${INSIDER_DOCS_TOKEN}"        
         make docs-deploy VERSION="$VERSION"
