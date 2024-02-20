@@ -7,7 +7,7 @@ from smee.mm._ops import (
     compute_ensemble_averages,
     reweight_ensemble_averages,
 )
-from smee.mm._reporters import TensorReporter, unpack_frames
+from smee.mm._reporters import TensorReporter, tensor_reporter, unpack_frames
 
 __all__ = [
     "compute_ensemble_averages",
@@ -19,5 +19,6 @@ __all__ = [
     "NotEnoughSamplesError",
     "SimulationConfig",
     "TensorReporter",
+    "tensor_reporter",
     "unpack_frames",
 ]

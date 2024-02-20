@@ -2,7 +2,7 @@ import numpy
 import openmm.unit
 import pytest
 
-from smee.mm._reporters import TensorReporter, unpack_frames
+from smee.mm._reporters import TensorReporter, tensor_reporter, unpack_frames
 
 
 class TestTensorReporter:
@@ -81,3 +81,16 @@ class TestTensorReporter:
         with pytest.raises(ValueError, match=f"total energy is {contains}"):
             reporter = TensorReporter(mocker.MagicMock(), 1, beta, None)
             reporter.report(None, mock_state)
+
+
+def test_tensor_reporter(tmp_path):
+    output = tmp_path / "frames.msgpack"
+
+    beta = 1.0 / (openmm.unit.MOLAR_GAS_CONSTANT_R * 298.15 * openmm.unit.kelvin)
+
+    pressure = 1.0 * openmm.unit.atmospheres
+
+    with tensor_reporter(output, 2, beta, pressure) as reporter:
+        assert isinstance(reporter, TensorReporter)
+
+    assert output.exists() and output.is_file()
