@@ -1,6 +1,8 @@
 """OpenMM simulation reporters"""
 
+import contextlib
 import math
+import os
 import typing
 
 import msgpack
@@ -37,7 +39,8 @@ def _decoder(obj, chain=None):
 
 
 class TensorReporter:
-    """A reporter which stores coords, box vectors, and kinetic energy using msgpack."""
+    """A reporter which stores coords, box vectors, reduced potentials and kinetic
+    energy using msgpack."""
 
     def __init__(
         self,
@@ -109,3 +112,24 @@ def unpack_frames(
 
     for frame in unpacker:
         yield frame
+
+
+@contextlib.contextmanager
+def tensor_reporter(
+    output_path: os.PathLike,
+    report_interval: int,
+    beta: openmm.unit.Quantity,
+    pressure: openmm.unit.Quantity | None,
+) -> TensorReporter:
+    """Create a ``TensorReporter`` capable of writing frames to a file.
+
+    Args:
+        output_path: The path to write the frames to.
+        report_interval: The interval (in steps) at which to write frames.
+        beta: The inverse temperature the simulation is being run at.
+        pressure: The pressure the simulation is being run at, or ``None`` if NVT /
+            vacuum.
+    """
+    with open(output_path, "wb") as output_file:
+        reporter = TensorReporter(output_file, report_interval, beta, pressure)
+        yield reporter
