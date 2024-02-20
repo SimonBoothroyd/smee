@@ -42,7 +42,7 @@ jobs:
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
 
         git fetch --all --prune
-        git pull origin gh-pages
+        git pull origin gh-pages --allow-unrelated-histories
 
         make env
 
