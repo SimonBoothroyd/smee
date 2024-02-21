@@ -40,6 +40,17 @@ def find_exclusions(
         for bond in topology.bonds
     )
 
+    if v_sites is not None:
+
+        for v_site_key in v_sites.keys:
+            v_site_idx = v_sites.key_to_idx[v_site_key]
+            parent_idx = v_site_key.orientation_atom_indices[0]
+
+            for neighbour_idx in graph.neighbors(parent_idx):
+                graph.add_edge(v_site_idx, neighbour_idx)
+
+            graph.add_edge(v_site_idx, parent_idx)
+
     distances = dict(networkx.all_pairs_shortest_path_length(graph, cutoff=5))
     distance_to_scale = {1: "scale_12", 2: "scale_13", 3: "scale_14", 4: "scale_15"}
 
@@ -56,27 +67,7 @@ def find_exclusions(
             assert pair not in exclusions or exclusions[pair] == scale
             exclusions[pair] = scale
 
-    if v_sites is None:
-        return exclusions
-
-    v_site_exclusions = {}
-
-    for v_site_key in v_sites.keys:
-        v_site_idx = v_sites.key_to_idx[v_site_key]
-        parent_idx = v_site_key.orientation_atom_indices[0]
-
-        v_site_exclusions[(v_site_idx, parent_idx)] = "scale_12"
-
-        for pair, scale in exclusions.items():
-            if parent_idx not in pair:
-                continue
-
-            if pair[0] == parent_idx:
-                v_site_exclusions[(v_site_idx, pair[1])] = scale
-            else:
-                v_site_exclusions[(pair[0], v_site_idx)] = scale
-
-    return {**exclusions, **v_site_exclusions}
+    return exclusions
 
 
 def ones_like(size: _size, other: torch.Tensor) -> torch.Tensor:

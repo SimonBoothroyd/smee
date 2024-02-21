@@ -133,17 +133,18 @@ def test_find_exclusions_v_sites():
         (0, 1): "scale_12",
         (0, 2): "scale_13",
         (0, 3): "scale_14",
+        (0, 4): "scale_12",
         (0, 5): "scale_14",
         (1, 2): "scale_12",
         (1, 3): "scale_13",
+        (1, 4): "scale_12",
         (1, 5): "scale_13",
         (2, 3): "scale_12",
+        (2, 4): "scale_13",
         (2, 5): "scale_12",
-        (4, 0): "scale_12",
-        (4, 1): "scale_12",
-        (4, 2): "scale_13",
-        (4, 3): "scale_14",
-        (5, 3): "scale_12",
+        (3, 4): "scale_14",
+        (3, 5): "scale_12",
+        (4, 5): "scale_14",
     }
 
 

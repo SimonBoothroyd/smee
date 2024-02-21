@@ -154,7 +154,7 @@ def test_convert_electrostatics_v_site():
     assert parameter_map.exclusions.shape == (n_expected_exclusions, 2)
     assert parameter_map.exclusion_scale_idxs.shape == (n_expected_exclusions, 1)
 
-    expected_exclusions = torch.tensor([[0, 1], [2, 1], [0, 2]], dtype=torch.long)
+    expected_exclusions = torch.tensor([[0, 1], [0, 2], [1, 2]], dtype=torch.long)
     assert torch.allclose(parameter_map.exclusions, expected_exclusions)
 
     expected_scales = torch.zeros((n_expected_exclusions, 1), dtype=torch.long)
