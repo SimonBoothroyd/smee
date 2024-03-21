@@ -250,13 +250,16 @@ def _compute_observables(
         with torch.enable_grad():
             potential = smee.compute_energy(system, force_field, coords, box_vectors)
 
-        du_d_theta_subset = torch.autograd.grad(
-            potential,
-            [theta[i] for i in needs_grad],
-            [smee.utils.ones_like(1, potential)],
-            retain_graph=False,
-            allow_unused=True,
-        )
+        du_d_theta_subset = []
+
+        if len(needs_grad) > 0:
+            du_d_theta_subset = torch.autograd.grad(
+                potential,
+                [theta[i] for i in needs_grad],
+                [smee.utils.ones_like(1, potential)],
+                retain_graph=False,
+                allow_unused=True,
+            )
 
         for idx, i in enumerate(needs_grad):
             du_d_theta[i].append(du_d_theta_subset[idx].float())
