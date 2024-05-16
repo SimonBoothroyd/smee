@@ -62,3 +62,6 @@ dependencies:
   - mkdocstrings-python
   - black
   - mike
+
+  - pip:
+      - git+https://github.com/danielfrg/mkdocs-jupyter.git
