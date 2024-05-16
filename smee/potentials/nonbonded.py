@@ -28,6 +28,7 @@ DEXP_POTENTIAL = (
     "beta/(alpha-beta)*exp(alpha*(1-r/r_min))-"
     "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
 )
+BUCKINGHAM_POTENTIAL = "a*exp(-b*r)-c*r^-6"
 
 
 class PairwiseDistances(typing.NamedTuple):
@@ -467,6 +468,14 @@ def compute_lj_energy(
         parameters[pairwise.idxs[:, 1], sigma_column],
     )
 
+    if potential.exceptions is not None:
+        exception_idxs, exceptions = smee.potentials.broadcast_exceptions(
+            system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
+        )
+
+        epsilon[exception_idxs] = exceptions[epsilon_column]
+        sigma[exception_idxs] = exceptions[sigma_column]
+
     x = (sigma / pairwise.distances) ** 6
     energies = pair_scales * 4.0 * epsilon * (x * (x - 1.0))
 
@@ -708,6 +717,14 @@ def compute_dexp_energy(
         parameters[pairwise.idxs[:, 1], r_min_column],
     )
 
+    if potential.exceptions is not None:
+        exception_idxs, exceptions = smee.potentials.broadcast_exceptions(
+            system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
+        )
+
+        epsilon[exception_idxs] = exceptions[epsilon_column]
+        r_min[exception_idxs] = exceptions[r_min_column]
+
     alpha = potential.attributes[potential.attribute_cols.index("alpha")]
     beta = potential.attributes[potential.attribute_cols.index("beta")]
 
@@ -943,6 +960,9 @@ def compute_coulomb_energy(
 
     if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
         raise ValueError("the distance cutoff does not match the potential.")
+
+    if potential.exceptions is not None:
+        raise NotImplementedError("exceptions are not yet supported.")
 
     if system.is_periodic:
         return _compute_coulomb_energy_periodic(

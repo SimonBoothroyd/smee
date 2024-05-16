@@ -10,7 +10,8 @@ import torch
 
 import smee.converters
 import smee.tests.utils
-from smee.potentials import broadcast_parameters, compute_energy
+import smee.utils
+from smee.potentials import broadcast_exceptions, broadcast_parameters, compute_energy
 
 
 def _place_v_sites(
@@ -88,6 +89,51 @@ def test_broadcast_parameters():
     )
     assert parameters.shape == expected_parameters.shape
     assert torch.allclose(parameters, expected_parameters)
+
+
+def test_broadcast_exceptions():
+    system, force_field = smee.tests.utils.system_from_smiles(
+        ["O", "[Na+]", "[Cl-]"], [1, 2, 2]
+    )
+
+    vdw_potential = force_field.potentials_by_type["vdW"]
+    assert len(vdw_potential.parameters) == 4
+    assert vdw_potential.exceptions is None
+
+    def _parameter_key_to_idx(key):
+        return next(
+            iter(i for i, k in enumerate(vdw_potential.parameter_keys) if k.id == key)
+        )
+
+    parameter_idx_o = _parameter_key_to_idx("[#1]-[#8X2H2+0:1]-[#1]")
+    parameter_idx_cl = _parameter_key_to_idx("[#17X0-1:1]")
+    parameter_idx_na = _parameter_key_to_idx("[#11+1:1]")
+
+    vdw_potential.parameters = torch.vstack(
+        [vdw_potential.parameters, torch.tensor([[0.12, 0.34], [0.56, 0.67]])]
+    )
+    vdw_potential.parameter_keys = [*vdw_potential.parameter_keys, "o-cl", "o-na"]
+
+    exceptions_full = torch.full((6, 6), -1)
+    exceptions_full[parameter_idx_o, parameter_idx_cl] = 4
+    exceptions_full[parameter_idx_cl, parameter_idx_o] = 4
+    exceptions_full[parameter_idx_o, parameter_idx_na] = 5
+    exceptions_full[parameter_idx_na, parameter_idx_o] = 5
+
+    exceptions_idxs = torch.nonzero(torch.triu(exceptions_full), as_tuple=True)
+    vdw_potential.exceptions = exceptions_full[exceptions_idxs]
+
+    idxs_a = torch.tensor([0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 3, 3, 4, 4, 5])
+    idxs_b = torch.tensor([3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 4, 5, 6, 5, 6, 6])
+
+    exceptions_idxs, exceptions = broadcast_exceptions(
+        system, vdw_potential, idxs_a, idxs_b
+    )
+
+    # we only expect custom exceptions between the O and Na and O and Cl
+    # i.e. particle pairs (0, 3), (0, 4) and (0, 5), (0, 6)
+    assert torch.allclose(exceptions_idxs, torch.tensor([0, 3, 6, 9]))
+    assert torch.allclose(exceptions, vdw_potential.parameters[[5, 5, 4, 4], :])
 
 
 @pytest.mark.parametrize("precision", ["single", "double"])
