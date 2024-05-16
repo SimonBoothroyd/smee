@@ -54,6 +54,24 @@ class TestTensorTopology:
         expected_n_bonds = 5
         assert topology.n_bonds == expected_n_bonds
 
+    def test_n_residues(self):
+        topology = smee.tests.utils.topology_from_smiles("[Ar]")
+        topology.residue_ids = None
+        topology.residue_idxs = None
+        assert topology.n_residues == 0
+
+        topology.residue_ids = ["Ar"]
+        topology.residue_idxs = [0]
+        assert topology.n_residues == 1
+
+    def test_n_chains(self) -> int:
+        topology = smee.tests.utils.topology_from_smiles("[Ar]")
+        topology.residue_ids = [0]
+        topology.residue_idxs = ["UNK"]
+        topology.chain_idxs = [0]
+        topology.chain_ids = ["A"]
+        assert topology.n_chains == 1
+
     def test_n_v_sites(self):
         topology = smee.tests.utils.topology_from_smiles("CO")
 

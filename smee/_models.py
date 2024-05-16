@@ -165,12 +165,15 @@ class TensorTopology:
     will not be used outside of MD simulations."""
 
     residue_idxs: list[int] | None = None
-    """The indices of the atoms that belong to each residue in the topology with
+    """The index of the residue that each atom in the topology belongs to with
     ``length=n_atoms``."""
     residue_ids: list[str] | None = None
     """The names of the residues that each atom belongs to with ``length=n_residues``.
     """
 
+    chain_idxs: list[int] | None = None
+    """The index of the chain that each atom in the topology belongs to with
+    ``length=n_atoms``."""
     chain_ids: list[str] | None = None
     """The names of the chains that each atom belongs to with ``length=n_chains``."""
 
@@ -187,12 +190,12 @@ class TensorTopology:
     @property
     def n_residues(self) -> int:
         """The number of residues in the topology"""
-        return 0 if len(self.residue_ids) is None else len(self.residue_ids)
+        return 0 if self.residue_ids is None else len(self.residue_ids)
 
     @property
     def n_chains(self) -> int:
         """The number of chains in the topology"""
-        return 0 if len(self.chain_ids) is None else len(self.chain_ids)
+        return 0 if self.chain_ids is None else len(self.chain_ids)
 
     @property
     def n_v_sites(self) -> int:
