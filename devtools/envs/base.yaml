@@ -53,7 +53,7 @@ dependencies:
   - codecov
 
   # Docs
-  - mkdocs
+  - mkdocs <1.6
   - mkdocs-material
   - mkdocs-gen-files
   - mkdocs-literate-nav
@@ -62,6 +62,3 @@ dependencies:
   - mkdocstrings-python
   - black
   - mike
-
-  - pip:
-      - git+https://github.com/danielfrg/mkdocs-jupyter.git
