@@ -299,13 +299,13 @@ class TensorPotential:
     attribute_units: tuple[openff.units.Unit, ...] | None = None
     """The units of each attribute in ``attributes``."""
 
-    exceptions: torch.Tensor | None = None
+    exceptions: dict[tuple[int, int], int] | None = None
     """A lookup for custom cross-interaction parameters that should override any mixing
-    rules, with ``shape=n_parameters * (n_parameters - 1) // 2`` and ``dtype=int``.
+    rules.
 
-    It stores the sparse, upper triangular portion of an ``n_parameters x n_parameters``
-    matrix, which serves as lookup from pairs of parameter indices ``(i, j)`` to the
-    index of the parameter in ``parameters``.
+    Each key should correspond to the indices of the two parameters whose mixing rule
+    should be overridden, and each value the index of the parameter that contains the
+    'pre-mixed' parameter to use instead.
 
     As a note of caution, not all potentials (e.g. common valence potentials) support
     such exceptions, and these are predominantly useful for non-bonded potentials.
@@ -329,7 +329,7 @@ class TensorPotential:
             ),
             self.attribute_cols,
             self.attribute_units,
-            (None if self.exceptions is None else _cast(self.exceptions, device)),
+            self.exceptions,
         )
 
 

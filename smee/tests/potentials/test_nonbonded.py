@@ -1,12 +1,18 @@
+import math
+
 import numpy
+import openff.toolkit
+import openff.units
 import openmm.unit
 import pytest
 import torch
 
+import smee
 import smee.converters
 import smee.converters.openmm
 import smee.mm
 import smee.tests.utils
+import smee.utils
 from smee.potentials.nonbonded import (
     _COULOMB_PRE_FACTOR,
     DEXP_POTENTIAL,
@@ -51,6 +57,10 @@ def _compute_openmm_energy(
     omm_energy = omm_energy.value_in_unit(openmm.unit.kilocalories_per_mole)
 
     return torch.tensor(omm_energy, dtype=torch.float64)
+
+
+def _parameter_key_to_idx(potential: smee.TensorPotential, key: str):
+    return next(iter(i for i, k in enumerate(potential.parameter_keys) if k.id == key))
 
 
 def _convert_lj_to_dexp(potential: smee.TensorPotential):
@@ -275,6 +285,138 @@ def test_compute_xxx_energy_non_periodic(energy_fn, convert_fn):
     expected_energy = _compute_openmm_energy(tensor_sys, coords, None, vdw_potential)
 
     assert torch.isclose(energy, expected_energy, atol=1.0e-5)
+
+
+def _expected_energy_lj_exceptions(
+    eps_ah, sig_ah, eps_hh, sig_hh, eps_oa, sig_oa, eps_oh, sig_oh
+):
+    sqrt_2 = math.sqrt(2)
+
+    expected_energy = 4.0 * (
+        eps_oh * (sig_oh**12 - sig_oh**6)
+        + eps_oh * (sig_oh**12 - sig_oh**6)
+        #
+        + eps_ah * (sig_ah**12 - sig_ah**6)
+        + eps_ah * (sig_ah**12 - sig_ah**6)
+        #
+        + eps_hh * ((sig_hh / sqrt_2) ** 12 - (sig_hh / sqrt_2) ** 6)
+        #
+        + eps_oa * ((sig_oa / sqrt_2) ** 12 - (sig_oa / sqrt_2) ** 6)
+    )
+    return expected_energy
+
+
+def _expected_energy_dexp_exceptions(
+    eps_ah, sig_ah, eps_hh, sig_hh, eps_oa, sig_oa, eps_oh, sig_oh
+):
+    alpha = 16.5
+    beta = 5.0
+
+    def _dexp(eps, sig, dist):
+        r_min = 2 ** (1 / 6) * sig
+
+        x = dist / r_min
+
+        rep = beta / (alpha - beta) * math.exp(alpha * (1.0 - x))
+        atr = alpha / (alpha - beta) * math.exp(beta * (1.0 - x))
+
+        return eps * (rep - atr)
+
+    sqrt_2 = math.sqrt(2)
+
+    expected_energy = (
+        _dexp(eps_oh, sig_oh, 1.0)
+        + _dexp(eps_oh, sig_oh, 1.0)
+        #
+        + _dexp(eps_ah, sig_ah, 1.0)
+        + _dexp(eps_ah, sig_ah, 1.0)
+        #
+        + _dexp(eps_hh, sig_hh, sqrt_2)
+        #
+        + _dexp(eps_oa, sig_oa, sqrt_2)
+    )
+    return expected_energy
+
+
+@pytest.mark.parametrize(
+    "energy_fn,convert_fn,expected_fn",
+    [
+        (compute_lj_energy, lambda p: p, _expected_energy_lj_exceptions),
+        (compute_dexp_energy, _convert_lj_to_dexp, _expected_energy_dexp_exceptions),
+    ],
+)
+def test_compute_energy_exceptions_non_periodic(energy_fn, convert_fn, expected_fn):
+    ff = openff.toolkit.ForceField()
+
+    kcal = openff.units.unit.kilocalorie / openff.units.unit.mole
+    ang = openff.units.unit.angstrom
+
+    eps_h, sig_h = 0.123, 1.234
+    eps_o, sig_o = 0.234, 2.345
+    eps_a, sig_a = 0.345, 3.456
+
+    eps_hh, sig_hh = 0.3, 1.4
+    eps_ah, sig_ah = 0.4, 2.5
+
+    eps_oh, sig_oh = math.sqrt(eps_o * eps_h), 0.5 * (sig_o + sig_h)
+    eps_oa, sig_oa = math.sqrt(eps_a * eps_o), 0.5 * (sig_a + sig_o)
+
+    vdw_handler = ff.get_parameter_handler("vdW")
+    vdw_handler.add_parameter(
+        {"smirks": "[O:1]", "epsilon": eps_o * kcal, "sigma": sig_o * ang}
+    )
+    vdw_handler.add_parameter(
+        {"smirks": "[H:1]", "epsilon": eps_h * kcal, "sigma": sig_h * ang}
+    )
+    vdw_handler.add_parameter(
+        {"smirks": "[Ar:1]", "epsilon": eps_a * kcal, "sigma": sig_a * ang}
+    )
+
+    system, tensor_ff = smee.tests.utils.system_from_smiles(["O", "[Ar]"], [1, 1], ff)
+    system.is_periodic = False
+
+    vdw_potential = tensor_ff.potentials_by_type["vdW"]
+    vdw_potential.attributes[vdw_potential.attribute_cols.index("scale_12")] = 1.0
+    vdw_potential.attributes[vdw_potential.attribute_cols.index("scale_13")] = 1.0
+
+    parameter_idx_h = _parameter_key_to_idx(vdw_potential, "[H:1]")
+    parameter_idx_a = _parameter_key_to_idx(vdw_potential, "[Ar:1]")
+
+    assert vdw_potential.parameter_cols[0] == "epsilon"
+
+    vdw_potential.parameters = torch.vstack(
+        [vdw_potential.parameters, torch.tensor([[eps_ah, sig_ah], [eps_hh, sig_hh]])]
+    )
+    vdw_potential.parameter_keys = [*vdw_potential.parameter_keys, "ar-h", "h-h"]
+
+    vdw_potential.exceptions = {
+        (parameter_idx_a, parameter_idx_h): 3,
+        (parameter_idx_h, parameter_idx_h): 4,
+    }
+
+    vdw_potential = convert_fn(vdw_potential)
+
+    for top in system.topologies:
+        assignment_matrix = smee.utils.zeros_like(
+            (top.n_particles, len(vdw_potential.parameters)),
+            top.parameters["vdW"].assignment_matrix,
+        )
+        assignment_matrix[:, :3] = top.parameters["vdW"].assignment_matrix.to_dense()
+
+        top.parameters["vdW"].assignment_matrix = assignment_matrix.to_sparse()
+
+    # O --- H
+    # |     |
+    # H --- Ar
+    coords = torch.tensor(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]]
+    )
+    expected_energy = expected_fn(
+        eps_ah, sig_ah, eps_hh, sig_hh, eps_oa, sig_oa, eps_oh, sig_oh
+    )
+    energy = energy_fn(system, vdw_potential, coords, None)
+
+    assert torch.isclose(energy, torch.tensor(expected_energy, dtype=energy.dtype))
 
 
 def test_coulomb_pre_factor():

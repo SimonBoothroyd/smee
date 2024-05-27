@@ -473,8 +473,8 @@ def compute_lj_energy(
             system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
         )
 
-        epsilon[exception_idxs] = exceptions[epsilon_column]
-        sigma[exception_idxs] = exceptions[sigma_column]
+        epsilon[exception_idxs] = exceptions[:, epsilon_column]
+        sigma[exception_idxs] = exceptions[:, sigma_column]
 
     x = (sigma / pairwise.distances) ** 6
     energies = pair_scales * 4.0 * epsilon * (x * (x - 1.0))
@@ -722,8 +722,8 @@ def compute_dexp_energy(
             system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
         )
 
-        epsilon[exception_idxs] = exceptions[epsilon_column]
-        r_min[exception_idxs] = exceptions[r_min_column]
+        epsilon[exception_idxs] = exceptions[:, epsilon_column]
+        r_min[exception_idxs] = exceptions[:, r_min_column]
 
     alpha = potential.attributes[potential.attribute_cols.index("alpha")]
     beta = potential.attributes[potential.attribute_cols.index("beta")]
@@ -962,7 +962,7 @@ def compute_coulomb_energy(
         raise ValueError("the distance cutoff does not match the potential.")
 
     if potential.exceptions is not None:
-        raise NotImplementedError("exceptions are not yet supported.")
+        raise NotImplementedError("exceptions are not supported for charges.")
 
     if system.is_periodic:
         return _compute_coulomb_energy_periodic(

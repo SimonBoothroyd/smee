@@ -36,7 +36,9 @@ def topology_from_smiles(smiles: str) -> smee.TensorTopology:
 
 
 def system_from_smiles(
-    smiles: list[str], n_copies: list[int]
+    smiles: list[str],
+    n_copies: list[int],
+    force_field: openff.toolkit.ForceField | None = None,
 ) -> tuple[smee.TensorSystem, smee.TensorForceField]:
     """Creates a system from a list of SMILES strings.
 
@@ -47,7 +49,11 @@ def system_from_smiles(
     Returns:
         The system and force field.
     """
-    force_field = openff.toolkit.ForceField("openff-2.0.0.offxml")
+    force_field = (
+        force_field
+        if force_field is not None
+        else openff.toolkit.ForceField("openff-2.0.0.offxml")
+    )
 
     interchanges = [
         openff.interchange.Interchange.from_smirnoff(

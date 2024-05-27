@@ -90,8 +90,8 @@ def broadcast_exceptions(
             ``shape=(n_interactions,)``.
 
     Returns:
-        The parameters for the full system with
-        ``shape=(n_parameters, n_parameter_cols)``.
+        The indices of the interactions that require an exception, and the parameters
+        to use for those interactions.
     """
     assert potential.exceptions is not None
 
@@ -105,7 +105,13 @@ def broadcast_exceptions(
 
         # check that each particle is assigned to exactly one parameter
         assignment_dense = parameter_map.assignment_matrix.to_dense()
-        assert (assignment_dense.abs().sum(axis=-1) == 1).all()
+
+        if not (assignment_dense.abs().sum(axis=-1) == 1).all():
+            raise NotImplementedError(
+                f"exceptions can only be used when each particle is assigned exactly "
+                f"one {potential.type} parameter"
+            )
+
         assigned_idxs = assignment_dense.argmax(axis=-1)
 
         n_particles = len(assigned_idxs)
@@ -125,21 +131,24 @@ def broadcast_exceptions(
     parameter_idxs_a = parameter_idxs[idxs_a]
     parameter_idxs_b = parameter_idxs[idxs_b]
 
-    exception_parameter_idxs = potential.exceptions[
-        smee.utils.to_upper_tri_idx(
-            torch.minimum(parameter_idxs_a, parameter_idxs_b),
-            torch.maximum(parameter_idxs_a, parameter_idxs_b),
-            len(potential.parameters),
-            True,
-        )
-    ]
+    if len(set((min(i, j), max(i, j)) for i, j in potential.exceptions)) != len(
+        potential.exceptions
+    ):
+        raise NotImplementedError("cannot define different exceptions for i-j and j-i")
 
-    exception_mask = exception_parameter_idxs >= 0
+    exception_lookup = torch.full(
+        (len(potential.parameters), len(potential.parameters)), -1
+    )
 
-    exception_parameter_idxs = exception_parameter_idxs[exception_mask]
+    for (i, j), v in potential.exceptions.items():
+        exception_lookup[(min(i, j), max(i, j))] = v
+        exception_lookup[(max(i, j), min(i, j))] = v
+
+    exceptions_parameter_idxs = exception_lookup[parameter_idxs_a, parameter_idxs_b]
+    exception_mask = exceptions_parameter_idxs >= 0
+
+    exceptions = potential.parameters[exceptions_parameter_idxs[exception_mask]]
     exception_idxs = exception_mask.nonzero().flatten()
-
-    exceptions = potential.parameters[exception_parameter_idxs]
 
     return exception_idxs, exceptions
 

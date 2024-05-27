@@ -114,14 +114,10 @@ def test_broadcast_exceptions():
     )
     vdw_potential.parameter_keys = [*vdw_potential.parameter_keys, "o-cl", "o-na"]
 
-    exceptions_full = torch.full((6, 6), -1)
-    exceptions_full[parameter_idx_o, parameter_idx_cl] = 4
-    exceptions_full[parameter_idx_cl, parameter_idx_o] = 4
-    exceptions_full[parameter_idx_o, parameter_idx_na] = 5
-    exceptions_full[parameter_idx_na, parameter_idx_o] = 5
-
-    exceptions_idxs = torch.nonzero(torch.triu(exceptions_full), as_tuple=True)
-    vdw_potential.exceptions = exceptions_full[exceptions_idxs]
+    vdw_potential.exceptions = {
+        (parameter_idx_o, parameter_idx_cl): 4,
+        (parameter_idx_o, parameter_idx_na): 5,
+    }
 
     idxs_a = torch.tensor([0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2, 3, 3, 3, 4, 4, 5])
     idxs_b = torch.tensor([3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 4, 5, 6, 5, 6, 6])
