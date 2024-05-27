@@ -224,9 +224,6 @@ def test_convert_lj_potential_with_exceptions(with_exception):
     for force in forces:
         omm_system.addForce(force)
 
-    with open("test.xml", "w") as f:
-        f.write(openmm.XmlSerializer.serialize(omm_system))
-
     context = openmm.Context(
         omm_system,
         openmm.VerletIntegrator(1.0),
