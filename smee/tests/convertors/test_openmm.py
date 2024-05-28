@@ -11,7 +11,7 @@ import smee.mm
 import smee.potentials
 import smee.tests.utils
 from smee.converters.openmm import (
-    _convert_lj_potential_with_exceptions,
+    convert_to_openmm_force,
     convert_to_openmm_system,
     convert_to_openmm_topology,
     create_openmm_system,
@@ -206,7 +206,7 @@ def test_convert_lj_potential_with_exceptions(with_exception):
 
     vdw_potential.exceptions = {} if not with_exception else vdw_potential.exceptions
 
-    forces = _convert_lj_potential_with_exceptions(vdw_potential, system)
+    forces = convert_to_openmm_force(vdw_potential, system)
 
     assert len(forces) == 2
 
