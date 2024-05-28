@@ -240,20 +240,20 @@ def _convert_lj_potential(
                 force.addParticle(0.0, sigma * _ANGSTROM, epsilon * _KCAL_PER_MOL)
 
             for index, (i, j) in enumerate(parameter_map.exclusions):
+                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
+
                 eps_i, sig_i = parameters[i, :]
                 eps_j, sig_j = parameters[j, :]
 
-                eps = mixing_fn["epsilon"](eps_i, eps_j)
+                eps = mixing_fn["epsilon"](eps_i, eps_j) * scale
                 sig = mixing_fn["sigma"](sig_i, sig_j)
-
-                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
 
                 force.addException(
                     i + idx_offset,
                     j + idx_offset,
                     0.0,
                     sig * _ANGSTROM,
-                    eps * _KCAL_PER_MOL * scale,
+                    eps * _KCAL_PER_MOL,
                 )
 
             idx_offset += topology.n_particles
