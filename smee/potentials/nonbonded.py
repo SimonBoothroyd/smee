@@ -28,6 +28,7 @@ DEXP_POTENTIAL = (
     "beta/(alpha-beta)*exp(alpha*(1-r/r_min))-"
     "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
 )
+BUCKINGHAM_POTENTIAL = "a*exp(-b*r)-c*r^-6"
 
 
 class PairwiseDistances(typing.NamedTuple):
@@ -202,7 +203,10 @@ def compute_pairwise(
         return _compute_pairwise_non_periodic(conformer)
 
 
-def prepare_lrc_types(system: smee.TensorSystem, potential: smee.TensorPotential):
+def prepare_lrc_types(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Finds the unique vdW interactions present in a system, ready to use
     for computing the long range dispersion correction.
 
@@ -213,8 +217,8 @@ def prepare_lrc_types(system: smee.TensorSystem, potential: smee.TensorPotential
     Returns:
         Two tensors containing the i and j indices into ``potential.paramaters`` of
         each unique interaction parameter excluding ``i==j``, the number of ``ii``
-        interactions with ``shape=(n_params,)``, the numbers of ``ij`` interactions
-        with ``shape=(len(idxs_i),)``, and the total number of interactions.
+        interactions with ``shape=(n_params,)``, and the numbers of ``ij`` interactions
+        with ``shape=(len(idxs_i),)``.
     """
     n_by_type = collections.defaultdict(int)
 
@@ -382,13 +386,35 @@ def _compute_lj_lrc(
         system, potential
     )
 
+    eps_col = potential.parameter_cols.index("epsilon")
+    sig_col = potential.parameter_cols.index("sigma")
+
     eps_ii, sig_ii = (
-        potential.parameters[:, potential.parameter_cols.index("epsilon")],
-        potential.parameters[:, potential.parameter_cols.index("sigma")],
+        potential.parameters[:, eps_col],
+        potential.parameters[:, sig_col],
     )
     eps_ij, sig_ij = smee.potentials.nonbonded.lorentz_berthelot(
         eps_ii[idxs_i], eps_ii[idxs_j], sig_ii[idxs_i], sig_ii[idxs_j]
     )
+
+    if potential.exceptions is not None:
+        exceptions = {
+            **potential.exceptions,
+            **{(j, i): idx for (i, j), idx in potential.exceptions.items()},
+        }
+
+        eps_ij, sig_ij = eps_ij.clone(), sig_ij.clone()  # prevent in-place modification
+
+        for i, (idx_i, idx_j) in enumerate(zip(idxs_i, idxs_j, strict=True)):
+            idx_i, idx_j = int(idx_i), int(idx_j)
+
+            if (idx_i, idx_j) not in exceptions:
+                continue
+
+            param_idx = exceptions[(idx_i, idx_j)]
+
+            eps_ij[i] = potential.parameters[param_idx, eps_col]
+            sig_ij[i] = potential.parameters[param_idx, sig_col]
 
     integral = sig_ij**12 / (9 * rc**9) - sig_ij**6 / (3 * rc**3)
 
@@ -457,18 +483,28 @@ def compute_lj_energy(
     )
     pair_scales = pair_scales[pairs_1d]
 
-    epsilon_column = potential.parameter_cols.index("epsilon")
-    sigma_column = potential.parameter_cols.index("sigma")
+    eps_column = potential.parameter_cols.index("epsilon")
+    sig_column = potential.parameter_cols.index("sigma")
 
-    epsilon, sigma = lorentz_berthelot(
-        parameters[pairwise.idxs[:, 0], epsilon_column],
-        parameters[pairwise.idxs[:, 1], epsilon_column],
-        parameters[pairwise.idxs[:, 0], sigma_column],
-        parameters[pairwise.idxs[:, 1], sigma_column],
+    eps, sig = lorentz_berthelot(
+        parameters[pairwise.idxs[:, 0], eps_column],
+        parameters[pairwise.idxs[:, 1], eps_column],
+        parameters[pairwise.idxs[:, 0], sig_column],
+        parameters[pairwise.idxs[:, 1], sig_column],
     )
 
-    x = (sigma / pairwise.distances) ** 6
-    energies = pair_scales * 4.0 * epsilon * (x * (x - 1.0))
+    if potential.exceptions is not None:
+        exception_idxs, exceptions = smee.potentials.broadcast_exceptions(
+            system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
+        )
+
+        eps, sig = eps.clone(), sig.clone()  # prevent in-place modification
+
+        eps[exception_idxs] = exceptions[:, eps_column]
+        sig[exception_idxs] = exceptions[:, sig_column]
+
+    x = (sig / pairwise.distances) ** 6
+    energies = pair_scales * 4.0 * eps * (x * (x - 1.0))
 
     if not system.is_periodic:
         return energies.sum(-1)
@@ -610,13 +646,36 @@ def _compute_dexp_lrc(
     alpha = potential.attributes[potential.attribute_cols.index("alpha")]
     beta = potential.attributes[potential.attribute_cols.index("beta")]
 
+    eps_col = potential.parameter_cols.index("epsilon")
+    r_min_col = potential.parameter_cols.index("r_min")
+
     eps_ii, r_min_ii = (
-        potential.parameters[:, potential.parameter_cols.index("epsilon")],
-        potential.parameters[:, potential.parameter_cols.index("r_min")],
+        potential.parameters[:, eps_col],
+        potential.parameters[:, r_min_col],
     )
     eps_ij, r_min_ij = smee.potentials.nonbonded.lorentz_berthelot(
         eps_ii[idxs_i], eps_ii[idxs_j], r_min_ii[idxs_i], r_min_ii[idxs_j]
     )
+
+    if potential.exceptions is not None:
+        exceptions = {
+            **potential.exceptions,
+            **{(j, i): idx for (i, j), idx in potential.exceptions.items()},
+        }
+
+        # prevent in-place modification
+        eps_ij, r_min_ij = eps_ij.clone(), r_min_ij.clone()
+
+        for i, (idx_i, idx_j) in enumerate(zip(idxs_i, idxs_j, strict=True)):
+            idx_i, idx_j = int(idx_i), int(idx_j)
+
+            if (idx_i, idx_j) not in exceptions:
+                continue
+
+            param_idx = exceptions[(idx_i, idx_j)]
+
+            eps_ij[i] = potential.parameters[param_idx, eps_col]
+            r_min_ij[i] = potential.parameters[param_idx, r_min_col]
 
     a_rep = beta * torch.exp(alpha) / (alpha - beta)
     b_rep = alpha / r_min_ij
@@ -698,15 +757,25 @@ def compute_dexp_energy(
     )
     pair_scales = pair_scales[pairs_1d]
 
-    epsilon_column = potential.parameter_cols.index("epsilon")
+    eps_column = potential.parameter_cols.index("epsilon")
     r_min_column = potential.parameter_cols.index("r_min")
 
-    epsilon, r_min = smee.potentials.nonbonded.lorentz_berthelot(
-        parameters[pairwise.idxs[:, 0], epsilon_column],
-        parameters[pairwise.idxs[:, 1], epsilon_column],
+    eps, r_min = smee.potentials.nonbonded.lorentz_berthelot(
+        parameters[pairwise.idxs[:, 0], eps_column],
+        parameters[pairwise.idxs[:, 1], eps_column],
         parameters[pairwise.idxs[:, 0], r_min_column],
         parameters[pairwise.idxs[:, 1], r_min_column],
     )
+
+    if potential.exceptions is not None:
+        exception_idxs, exceptions = smee.potentials.broadcast_exceptions(
+            system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
+        )
+
+        eps, r_min = eps.clone(), r_min.clone()  # prevent in-place modification
+
+        eps[exception_idxs] = exceptions[:, eps_column]
+        r_min[exception_idxs] = exceptions[:, r_min_column]
 
     alpha = potential.attributes[potential.attribute_cols.index("alpha")]
     beta = potential.attributes[potential.attribute_cols.index("beta")]
@@ -716,7 +785,7 @@ def compute_dexp_energy(
     energies_repulsion = beta / (alpha - beta) * torch.exp(alpha * (1.0 - x))
     energies_attraction = alpha / (alpha - beta) * torch.exp(beta * (1.0 - x))
 
-    energies = pair_scales * epsilon * (energies_repulsion - energies_attraction)
+    energies = pair_scales * eps * (energies_repulsion - energies_attraction)
 
     if not system.is_periodic:
         return energies.sum(-1)
@@ -943,6 +1012,9 @@ def compute_coulomb_energy(
 
     if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
         raise ValueError("the distance cutoff does not match the potential.")
+
+    if potential.exceptions is not None:
+        raise NotImplementedError("exceptions are not supported for charges.")
 
     if system.is_periodic:
         return _compute_coulomb_energy_periodic(

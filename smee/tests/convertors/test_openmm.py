@@ -4,10 +4,14 @@ import openff.toolkit
 import openff.units
 import openmm
 import pytest
+import torch
 
 import smee
 import smee.mm
+import smee.potentials
+import smee.tests.utils
 from smee.converters.openmm import (
+    convert_to_openmm_force,
     convert_to_openmm_system,
     convert_to_openmm_topology,
     create_openmm_system,
@@ -193,6 +197,47 @@ def test_convert_to_openmm_system_periodic():
 
     _compare_smee_and_interchange(
         tensor_ff, tensor_system, interchange_top, coords, box_vectors
+    )
+
+
+@pytest.mark.parametrize("with_exception", [True, False])
+def test_convert_lj_potential_with_exceptions(with_exception):
+    system, vdw_potential, _ = smee.tests.utils.system_with_exceptions()
+
+    vdw_potential.exceptions = {} if not with_exception else vdw_potential.exceptions
+
+    forces = convert_to_openmm_force(vdw_potential, system)
+
+    assert len(forces) == 2
+
+    assert isinstance(forces[0], openmm.CustomNonbondedForce)
+    assert isinstance(forces[1], openmm.CustomBondForce)
+
+    coords = torch.tensor(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [1.0, 1.0, 0.0]]
+    )
+    expected_energy = smee.compute_energy_potential(system, vdw_potential, coords)
+
+    omm_system = openmm.System()
+    for _ in range(system.n_atoms):
+        omm_system.addParticle(1.0)
+    for force in forces:
+        omm_system.addForce(force)
+
+    context = openmm.Context(
+        omm_system,
+        openmm.VerletIntegrator(1.0),
+        openmm.Platform.getPlatformByName("Reference"),
+    )
+    context.setPositions(coords.numpy() * openmm.unit.angstrom)
+
+    energy = (
+        context.getState(getEnergy=True)
+        .getPotentialEnergy()
+        .value_in_unit(openmm.unit.kilocalorie_per_mole)
+    )
+    assert torch.isclose(
+        torch.tensor(energy, dtype=expected_energy.dtype), expected_energy
     )
 
 

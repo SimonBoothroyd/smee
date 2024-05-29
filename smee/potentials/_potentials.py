@@ -72,6 +72,87 @@ def broadcast_parameters(
     )
 
 
+def broadcast_exceptions(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    idxs_a: torch.Tensor,
+    idxs_b: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Returns the indices of the parameters that should be used to model interactions
+    between pairs of particles
+
+    Args:
+        system: The system.
+        potential: The potential whose parameters should be broadcast.
+        idxs_a: The indices of the first particle in each interaction with
+            ``shape=(n_interactions,)``.
+        idxs_b: The indices of the second particle in each interaction with
+            ``shape=(n_interactions,)``.
+
+    Returns:
+        The indices of the interactions that require an exception, and the parameters
+        to use for those interactions.
+    """
+    assert potential.exceptions is not None
+
+    parameter_idxs = []
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+
+        if isinstance(parameter_map, smee.ValenceParameterMap):
+            raise NotImplementedError("valence exceptions are not supported")
+
+        # check that each particle is assigned to exactly one parameter
+        assignment_dense = parameter_map.assignment_matrix.to_dense()
+
+        if not (assignment_dense.abs().sum(axis=-1) == 1).all():
+            raise NotImplementedError(
+                f"exceptions can only be used when each particle is assigned exactly "
+                f"one {potential.type} parameter"
+            )
+
+        assigned_idxs = assignment_dense.argmax(axis=-1)
+
+        n_particles = len(assigned_idxs)
+
+        assigned_idxs = torch.broadcast_to(
+            assigned_idxs[None, :], (n_copies, n_particles)
+        ).flatten()
+
+        parameter_idxs.append(assigned_idxs)
+
+    if len(parameter_idxs) == 0:
+        return torch.zeros((0,), dtype=torch.int64), torch.zeros(
+            (0, 0, len(potential.parameter_cols))
+        )
+
+    parameter_idxs = torch.concat(parameter_idxs)
+    parameter_idxs_a = parameter_idxs[idxs_a]
+    parameter_idxs_b = parameter_idxs[idxs_b]
+
+    if len(set((min(i, j), max(i, j)) for i, j in potential.exceptions)) != len(
+        potential.exceptions
+    ):
+        raise NotImplementedError("cannot define different exceptions for i-j and j-i")
+
+    exception_lookup = torch.full(
+        (len(potential.parameters), len(potential.parameters)), -1
+    )
+
+    for (i, j), v in potential.exceptions.items():
+        exception_lookup[(min(i, j), max(i, j))] = v
+        exception_lookup[(max(i, j), min(i, j))] = v
+
+    exceptions_parameter_idxs = exception_lookup[parameter_idxs_a, parameter_idxs_b]
+    exception_mask = exceptions_parameter_idxs >= 0
+
+    exceptions = potential.parameters[exceptions_parameter_idxs[exception_mask]]
+    exception_idxs = exception_mask.nonzero().flatten()
+
+    return exception_idxs, exceptions
+
+
 def broadcast_idxs(
     system: smee.TensorSystem, potential: smee.TensorPotential
 ) -> torch.Tensor:

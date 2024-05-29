@@ -64,7 +64,7 @@ class TestTensorTopology:
         topology.residue_idxs = [0]
         assert topology.n_residues == 1
 
-    def test_n_chains(self) -> int:
+    def test_n_chains(self):
         topology = smee.tests.utils.topology_from_smiles("[Ar]")
         topology.residue_ids = [0]
         topology.residue_idxs = ["UNK"]

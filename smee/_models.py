@@ -299,6 +299,21 @@ class TensorPotential:
     attribute_units: tuple[openff.units.Unit, ...] | None = None
     """The units of each attribute in ``attributes``."""
 
+    exceptions: dict[tuple[int, int], int] | None = None
+    """A lookup for custom cross-interaction parameters that should override any mixing
+    rules.
+
+    Each key should correspond to the indices of the two parameters whose mixing rule
+    should be overridden, and each value the index of the parameter that contains the
+    'pre-mixed' parameter to use instead.
+
+    For now, all exceptions are assumed to be symmetric, i.e. if (a, b) is an exception
+    then (b, a) is also an exception, and so only one of the two should be defined.
+
+    As a note of caution, not all potentials (e.g. common valence potentials) support
+    such exceptions, and these are predominantly useful for non-bonded potentials.
+    """
+
     def to(
         self, device: DeviceType | None = None, precision: Precision | None = None
     ) -> "TensorPotential":
@@ -317,6 +332,7 @@ class TensorPotential:
             ),
             self.attribute_cols,
             self.attribute_units,
+            self.exceptions,
         )
 
 

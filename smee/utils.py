@@ -158,7 +158,9 @@ def logsumexp(
         return ln_exp_sum
 
 
-def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
+def to_upper_tri_idx(
+    i: torch.Tensor, j: torch.Tensor, n: int, include_diag: bool = False
+) -> torch.Tensor:
     """Converts pairs of 2D indices to 1D indices in an upper triangular matrix that
     excludes the diagonal.
 
@@ -166,13 +168,19 @@ def to_upper_tri_idx(i: torch.Tensor, j: torch.Tensor, n: int) -> torch.Tensor:
         i: A tensor of the indices along the first axis with ``shape=(n_pairs,)``.
         j: A tensor of the indices along the second axis with ``shape=(n_pairs,)``.
         n: The size of the matrix.
+        include_diag: Whether the diagonal is included in the upper triangular matrix.
 
     Returns:
         A tensor of the indices in the upper triangular matrix with
         ``shape=(n_pairs * (n_pairs - 1) // 2,)``.
     """
-    assert (i < j).all(), "i must be less than j"
-    return (i * (2 * n - i - 1)) // 2 + j - i - 1
+
+    if not include_diag:
+        assert (i < j).all(), "i must be less than j"
+        return (i * (2 * n - i - 1)) // 2 + j - i - 1
+
+    assert (i <= j).all(), "i must be less than or equal to j"
+    return (i * (2 * n - i + 1)) // 2 + j - i
 
 
 class _SafeGeometricMean(torch.autograd.Function):

@@ -2,6 +2,7 @@
 
 import collections
 import copy
+import itertools
 import math
 import typing
 
@@ -17,6 +18,8 @@ _ANGSTROM = openmm.unit.angstrom
 _RADIANS = openmm.unit.radians
 
 _ANGSTROM_TO_NM = 1.0 / 10.0
+
+_INTRA_SCALE_VAR = "scale_excl"
 
 _T = typing.TypeVar("_T", bound=openmm.NonbondedForce | openmm.CustomNonbondedForce)
 
@@ -68,9 +71,162 @@ def _create_nonbonded_force(
     return force
 
 
+def _build_vdw_lookup(
+    potential: smee.TensorPotential,
+    mixing_fn: dict[str, typing.Callable[[float, float], float]],
+) -> dict[str, list[float]]:
+    """Build the ``n_param x n_param`` vdW parameter lookup table containing
+    parameters for all interactions.
+    """
+
+    n_params = len(potential.parameters)
+    n_params_sqr = n_params * n_params
+
+    parameter_col_to_idx = {col: i for i, col in enumerate(potential.parameter_cols)}
+    parameter_lookup = {col: [None] * n_params_sqr for col in potential.parameter_cols}
+
+    exceptions = {
+        **potential.exceptions,
+        **{(j, i): idx for (i, j), idx in potential.exceptions.items()},
+    }
+
+    for i, j in itertools.product(range(n_params), range(n_params)):
+        if (i, j) in exceptions:
+            parameters = {
+                col: potential.parameters[exceptions[i, j], col_idx]
+                for col, col_idx in parameter_col_to_idx.items()
+            }
+        else:
+            parameters = {
+                col: mixing_fn[col](
+                    potential.parameters[i, col_idx],
+                    potential.parameters[j, col_idx],
+                )
+                for col, col_idx in parameter_col_to_idx.items()
+            }
+
+        unit_conversion = {
+            col: (1.0 * potential.parameter_units[col_idx])
+            .to_openmm()
+            .value_in_unit_system(openmm.unit.md_unit_system)
+            for col, col_idx in parameter_col_to_idx.items()
+        }
+
+        for col, col_idx in parameter_col_to_idx.items():
+            parameter_lookup[col][i + j * n_params] = float(
+                parameters[col] * unit_conversion[col]
+            )
+
+    return parameter_lookup
+
+
+def _prepend_scale_to_energy_fn(fn: str, scale_var: str = _INTRA_SCALE_VAR) -> str:
+    assert scale_var not in fn, f"scale variable {scale_var} already in energy fn"
+
+    fn_split = fn.split(";")
+    assert "=" not in fn_split[0], "energy function missing a return value"
+
+    fn_split[0] = f"{scale_var}*({fn_split[0]})"
+    return ";".join(fn_split)
+
+
+def _convert_custom_vdw_potential(
+    potential: smee.TensorPotential,
+    system: smee.TensorSystem,
+    energy_fn: str,
+    mixing_fn: dict[str, typing.Callable[[float, float], float]],
+) -> list[openmm.CustomNonbondedForce | openmm.CustomBondForce]:
+    assert potential.exceptions is not None, "missing exceptions"
+
+    parameter_lookup = _build_vdw_lookup(potential, mixing_fn)
+    n_params = len(potential.parameters)
+
+    lookup_fn = " ".join(
+        f"{col}={col}_lookup(param_idx1, param_idx2);" for col in parameter_lookup
+    )
+
+    inter_force = _create_nonbonded_force(
+        potential, system, openmm.CustomNonbondedForce
+    )
+    inter_force.setEnergyFunction(energy_fn + lookup_fn)
+    inter_force.addPerParticleParameter("param_idx")
+
+    for col, vals in parameter_lookup.items():
+        inter_force.addTabulatedFunction(
+            f"{col}_lookup",
+            openmm.Discrete2DFunction(n_params, n_params, vals),
+        )
+
+    intra_force_energy_fn = _prepend_scale_to_energy_fn(energy_fn, _INTRA_SCALE_VAR)
+    intra_force = openmm.CustomBondForce(intra_force_energy_fn)
+
+    for col in parameter_lookup:
+        intra_force.addPerBondParameter(col)
+
+    intra_force.addPerBondParameter(_INTRA_SCALE_VAR)
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+
+        assignment_dense = parameter_map.assignment_matrix.to_dense()
+        assigned_idxs = assignment_dense.argmax(axis=-1)
+
+        if not (assignment_dense.abs().sum(axis=-1) == 1).all():
+            raise NotImplementedError(
+                f"exceptions can only be used when each particle is assigned exactly "
+                f"one {potential.type} parameter"
+            )
+
+        for _ in range(n_copies):
+            for idx in assigned_idxs:
+                inter_force.addParticle([int(idx)])
+
+            for index, (i, j) in enumerate(parameter_map.exclusions):
+                inter_force.addExclusion(int(i + idx_offset), int(j + idx_offset))
+
+                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
+
+                if scale <= 0.0:
+                    continue
+
+                intra_parameters = [
+                    vals[assigned_idxs[i] + assigned_idxs[j] * n_params]
+                    for col, vals in parameter_lookup.items()
+                ]
+                intra_parameters.append(scale)
+
+                intra_force.addBond(
+                    int(i + idx_offset), int(j + idx_offset), intra_parameters
+                )
+
+            idx_offset += topology.n_particles
+
+    return [inter_force, intra_force]
+
+
 def _convert_lj_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
-) -> openmm.NonbondedForce:
+) -> openmm.NonbondedForce | list[openmm.CustomNonbondedForce | openmm.CustomBondForce]:
+    """Convert a Lennard-Jones potential to an OpenMM force.
+
+    If the potential has custom mixing rules (i.e. exceptions), the interactions will
+    be split into an inter- and intra-molecular force.
+    """
+    mixing_fn = {
+        "epsilon": lambda x, y: (x * y) ** 0.5,
+        "sigma": lambda x, y: (x + y) * 0.5,
+    }
+
+    if potential.exceptions is not None:
+        return _convert_custom_vdw_potential(
+            potential,
+            system,
+            energy_fn="4*epsilon*x6*(x6 - 1.0);x6=x4*x2;x4=x2*x2;x2=x*x;x=sigma/r;",
+            mixing_fn=mixing_fn,
+        )
+
     force = _create_nonbonded_force(potential, system)
 
     idx_offset = 0
@@ -81,27 +237,23 @@ def _convert_lj_potential(
 
         for _ in range(n_copies):
             for epsilon, sigma in parameters:
-                force.addParticle(
-                    0.0,
-                    sigma * _ANGSTROM,
-                    epsilon * _KCAL_PER_MOL,
-                )
+                force.addParticle(0.0, sigma * _ANGSTROM, epsilon * _KCAL_PER_MOL)
 
             for index, (i, j) in enumerate(parameter_map.exclusions):
-                eps_i, sigma_i = parameters[i, :]
-                eps_j, sigma_j = parameters[j, :]
-
-                eps = (eps_i * eps_j) ** 0.5
-                sigma = (sigma_i + sigma_j) * 0.5
-
                 scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
+
+                eps_i, sig_i = parameters[i, :]
+                eps_j, sig_j = parameters[j, :]
+
+                eps = mixing_fn["epsilon"](eps_i, eps_j) * scale
+                sig = mixing_fn["sigma"](sig_i, sig_j)
 
                 force.addException(
                     i + idx_offset,
                     j + idx_offset,
                     0.0,
-                    sigma * _ANGSTROM,
-                    scale * eps * _KCAL_PER_MOL,
+                    sig * _ANGSTROM,
+                    eps * _KCAL_PER_MOL,
                 )
 
             idx_offset += topology.n_particles
@@ -112,6 +264,9 @@ def _convert_lj_potential(
 def _convert_dexp_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> tuple[openmm.CustomNonbondedForce, openmm.CustomBondForce]:
+    if potential.exceptions is not None:
+        raise NotImplementedError("exceptions not supported")
+
     energy_fn = (
         "CombinedEpsilon*RepulsionExp-CombinedEpsilon*AttractionExp;"
         "CombinedEpsilon=epsilon1*epsilon2;"
@@ -202,7 +357,8 @@ def _convert_vdw_potential(
     import smee.potentials.nonbonded
 
     if potential.fn == smee.potentials.nonbonded.LJ_POTENTIAL:
-        return [_convert_lj_potential(potential, system)]
+        forces = _convert_lj_potential(potential, system)
+        return [forces] if not isinstance(forces, list) else forces
     elif potential.fn == smee.potentials.nonbonded.DEXP_POTENTIAL:
         return [*_convert_dexp_potential(potential, system)]
 
@@ -440,6 +596,9 @@ def convert_to_openmm_force(
 ) -> list[openmm.Force]:
     potential = potential.to("cpu")
     system = system.to("cpu")
+
+    if potential.exceptions is not None and potential.type != "vdW":
+        raise NotImplementedError("exceptions are only supported for vdW potentials")
 
     if potential.type == "Electrostatics":
         return [_convert_electrostatics_potential(potential, system)]
