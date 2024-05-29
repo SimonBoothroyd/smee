@@ -307,6 +307,9 @@ class TensorPotential:
     should be overridden, and each value the index of the parameter that contains the
     'pre-mixed' parameter to use instead.
 
+    For now, all exceptions are assumed to be symmetric, i.e. if (a, b) is an exception
+    then (b, a) is also an exception, and so only one of the two should be defined.
+
     As a note of caution, not all potentials (e.g. common valence potentials) support
     such exceptions, and these are predominantly useful for non-bonded potentials.
     """
