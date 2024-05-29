@@ -169,3 +169,68 @@ def system_with_exceptions() -> (
         params[k[::-1]] = v
 
     return system, lj_potential, params
+
+
+def add_explicit_lb_exceptions(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+):
+    """Apply Lorentz-Berthelot mixing rules to a vdW potential and add the parameters
+    as explicit exceptions.
+
+    Notes:
+        The potential and system will be modified in place.
+
+    Args:
+        potential: The potential to add exceptions to.
+        system: The system whose assignment matrices need to be updated to account for
+            the new exception parameters.
+    """
+    assert potential.type == "vdW"
+
+    n_params = len(potential.parameters)
+
+    idxs_i, idxs_j = torch.triu_indices(n_params, n_params, 1)
+
+    idxs_i = torch.cat([idxs_i, torch.arange(n_params)])
+    idxs_j = torch.cat([idxs_j, torch.arange(n_params)])
+
+    eps_col = potential.parameter_cols.index("epsilon")
+
+    if "r_min" in potential.parameter_cols:
+        sig_col = potential.parameter_cols.index("r_min")
+    elif "sigma" in potential.parameter_cols:
+        sig_col = potential.parameter_cols.index("sigma")
+    else:
+        raise ValueError("no sigma-like parameter found.")
+
+    eps_i = potential.parameters[idxs_i, eps_col]
+    sig_i = potential.parameters[idxs_i, sig_col]
+
+    eps_j = potential.parameters[idxs_j, eps_col]
+    sig_j = potential.parameters[idxs_j, sig_col]
+
+    eps_ij, sig_ij = smee.potentials.nonbonded.lorentz_berthelot(
+        eps_i, eps_j, sig_i, sig_j
+    )
+
+    potential.parameters = torch.vstack(
+        [torch.zeros_like(potential.parameters), torch.stack([eps_ij, sig_ij], dim=-1)]
+    )
+    potential.exceptions = {
+        (int(idx_i), int(idx_j)): i + n_params
+        for i, (idx_i, idx_j) in enumerate(zip(idxs_i, idxs_j, strict=True))
+    }
+
+    for top in system.topologies:
+        parameter_map = top.parameters["vdW"]
+
+        padding = smee.utils.zeros_like(
+            (len(parameter_map.assignment_matrix), len(potential.exceptions)),
+            parameter_map.assignment_matrix,
+        )
+        padded = torch.concat(
+            [parameter_map.assignment_matrix.to_dense(), padding],
+            dim=-1,
+        )
+
+        parameter_map.assignment_matrix = padded.to_sparse()
