@@ -891,16 +891,114 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="converters/openmm/" class="md-nav__link">
+    
+    
+      
         
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_1_2_3">
+            <span class="md-nav__icon md-icon"></span>
+            <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="converters/openmm/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Openmm
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="converters/openmm/nonbonded/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> nonbonded
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="converters/openmm/valence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> valence
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1147,6 +1245,24 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#smee.EnergyFn" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EnergyFn
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#smee.PotentialType" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;PotentialType
+    </span>
+  </a>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#smee.NonbondedParameterMap" class="md-nav__link">
@@ -1892,7 +2008,7 @@
         <b><code><a class="autorefs autorefs-internal" title="smee.converters" href="converters/#smee.converters">converters</a></code></b>
         –
         <div class="doc-md-description">
-          <p>Convert to / from SMEE tensor representations.</p>
+          <p>Convert to / from <code>smee</code> tensor representations.</p>
         </div>
       </li>
       <li class="field-body">
@@ -1937,6 +2053,20 @@
 
   <p>Classes:</p>
   <ul>
+      <li class="field-body">
+        <b><code><a class="autorefs autorefs-internal" title="smee.EnergyFn" href="#smee.EnergyFn">EnergyFn</a></code></b>
+        –
+        <div class="doc-md-description">
+          <p>An enumeration of the energy functions supported by <code>smee</code> out of the box.</p>
+        </div>
+      </li>
+      <li class="field-body">
+        <b><code><a class="autorefs autorefs-internal" title="smee.PotentialType" href="#smee.PotentialType">PotentialType</a></code></b>
+        –
+        <div class="doc-md-description">
+          <p>An enumeration of the potential types supported by <code>smee</code> out of the box.</p>
+        </div>
+      </li>
       <li class="field-body">
         <b><code><a class="autorefs autorefs-internal" title="smee.NonbondedParameterMap" href="#smee.NonbondedParameterMap">NonbondedParameterMap</a></code></b>
         –
@@ -2048,6 +2178,94 @@
 
 
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="smee.EnergyFn" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>          <span class="doc doc-object-name doc-class-name">EnergyFn</span>
+
+
+<a href="#smee.EnergyFn" class="headerlink" title="Permanent link">#</a></h2>
+
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="smee._constants._StrEnum">_StrEnum</span></code></p>
+
+  
+      <p>An enumeration of the energy functions supported by <code>smee</code> out of the box.</p>
+
+
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="smee.PotentialType" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>          <span class="doc doc-object-name doc-class-name">PotentialType</span>
+
+
+<a href="#smee.PotentialType" class="headerlink" title="Permanent link">#</a></h2>
+
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="smee._constants._StrEnum">_StrEnum</span></code></p>
+
+  
+      <p>An enumeration of the potential types supported by <code>smee</code> out of the box.</p>
+
+
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
 
 <div class="doc doc-object doc-class">
 

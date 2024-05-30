@@ -10,26 +10,28 @@
       
       
       
-        <link rel="canonical" href="https://github.com/SimonBoothroyd/smee/latest/development/">
+        <link rel="canonical" href="https://github.com/SimonBoothroyd/smee/latest/reference/converters/openmm/valence/">
       
       
-        <link rel="prev" href="../reference/utils/">
+        <link rel="prev" href="../nonbonded/">
       
       
+        <link rel="next" href="../../../geometry/">
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.20">
     
     
       
-        <title>Development - smee</title>
+        <title>valence - smee</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.66ac8b77.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +50,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#development" class="md-skip">
+        <a href="#smee.converters.openmm.valence" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +98,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="smee" class="md-header__button md-logo" aria-label="smee" data-md-component="logo">
+    <a href="../../../.." title="smee" class="md-header__button md-logo" aria-label="smee" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -116,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Development
+              <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> valence
             
           </span>
         </div>
@@ -221,7 +223,7 @@
     
     
       <li class="md-tabs__item">
-        <a href=".." class="md-tabs__link">
+        <a href="../../../.." class="md-tabs__link">
           
   
     
@@ -241,7 +243,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../examples/" class="md-tabs__link">
+        <a href="../../../../examples/" class="md-tabs__link">
           
   
     
@@ -257,17 +259,21 @@
         
   
   
+    
+  
   
     
     
       
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../reference/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../" class="md-tabs__link">
           
   
     
@@ -286,11 +292,9 @@
         
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="./" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../../development/" class="md-tabs__link">
         
   
     
@@ -330,7 +334,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="smee" class="md-nav__button md-logo" aria-label="smee" data-md-component="logo">
+    <a href="../../../.." title="smee" class="md-nav__button md-logo" aria-label="smee" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -383,7 +387,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href=".." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -451,7 +455,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../examples/" class="md-nav__link ">
+            <a href="../../../../examples/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -484,7 +488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/compute-energy/" class="md-nav__link">
+      <a href="../../../../examples/compute-energy/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -505,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/conformer-minimization/" class="md-nav__link">
+      <a href="../../../../examples/conformer-minimization/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -526,7 +530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/custom-handler.ipynb" class="md-nav__link">
+      <a href="../../../../examples/custom-handler.ipynb" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -547,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/md-simulations/" class="md-nav__link">
+      <a href="../../../../examples/md-simulations/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -568,7 +572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/parameter-gradients/" class="md-nav__link">
+      <a href="../../../../examples/parameter-gradients/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -593,8 +597,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -603,19 +609,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -626,7 +635,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             API reference
@@ -637,6 +646,8 @@
                 
   
   
+    
+  
   
   
     
@@ -663,19 +674,22 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -686,13 +700,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3_1" id="__nav_3_1_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_1">
             <span class="md-nav__icon md-icon"></span>
             <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> smee
@@ -705,6 +719,8 @@
                 
   
   
+    
+  
   
   
     
@@ -726,16 +742,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/converters/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -752,7 +768,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_1_2">
             <span class="md-nav__icon md-icon"></span>
             <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> converters
@@ -795,7 +811,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/converters/openff/" class="md-nav__link ">
+            <a href="../../openff/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -828,7 +844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/converters/openff/nonbonded/" class="md-nav__link">
+      <a href="../../openff/nonbonded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -849,7 +865,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/converters/openff/valence/" class="md-nav__link">
+      <a href="../../openff/valence/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -875,8 +891,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -894,11 +912,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
@@ -912,7 +930,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_1_2_3">
             <span class="md-nav__icon md-icon"></span>
             <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
@@ -926,7 +944,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/converters/openmm/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -947,7 +965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/converters/openmm/nonbonded/" class="md-nav__link">
+      <a href="../nonbonded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -965,10 +983,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../reference/converters/openmm/valence/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -977,6 +1004,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1005,7 +1033,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/geometry/" class="md-nav__link">
+      <a href="../../../geometry/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1026,7 +1054,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/mm/" class="md-nav__link">
+      <a href="../../../mm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1074,7 +1102,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/potentials/" class="md-nav__link ">
+            <a href="../../../potentials/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1107,7 +1135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/potentials/nonbonded/" class="md-nav__link">
+      <a href="../../../potentials/nonbonded/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1128,7 +1156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/potentials/valence/" class="md-nav__link">
+      <a href="../../../potentials/valence/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1157,7 +1185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/utils/" class="md-nav__link">
+      <a href="../../../utils/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1190,19 +1218,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../development/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1211,7 +1230,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -1252,21 +1270,43 @@
   
 
 
-<h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">#</a></h1>
-<p>To create a development environment, you must have <a href="https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html"><code>mamba</code> installed</a>.</p>
-<p>A development conda environment can be created and activated with:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>env
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>conda<span class="w"> </span>activate<span class="w"> </span>smee
-</span></code></pre></div>
-<p>To format the codebase:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>format
-</span></code></pre></div>
-<p>To run the unit tests:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span><span class="nb">test</span>
-</span></code></pre></div>
-<p>To serve the documentation locally:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>mkdocs<span class="w"> </span>serve
-</span></code></pre></div>
+<div class="doc doc-object doc-module">
+
+
+
+<h1 id="smee.converters.openmm.valence" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">valence</span>
+
+
+<a href="#smee.converters.openmm.valence" class="headerlink" title="Permanent link">#</a></h1>
+
+  <div class="doc doc-contents first">
+  
+      <p>Convert valence potentials to OpenMM forces.</p>
+
+
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
 
 
 
@@ -1302,7 +1342,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../reference/utils/" class="md-footer__link md-footer__link--prev" aria-label="Previous: &lt;code class=&#34;doc-symbol doc-symbol-nav doc-symbol-module&#34;&gt;&lt;/code&gt; utils">
+          <a href="../nonbonded/" class="md-footer__link md-footer__link--prev" aria-label="Previous: &lt;code class=&#34;doc-symbol doc-symbol-nav doc-symbol-module&#34;&gt;&lt;/code&gt; nonbonded">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
@@ -1312,11 +1352,27 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> utils
+                <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> nonbonded
               </div>
             </div>
           </a>
         
+        
+          
+          <a href="../../../geometry/" class="md-footer__link md-footer__link--next" aria-label="Next: &lt;code class=&#34;doc-symbol doc-symbol-nav doc-symbol-module&#34;&gt;&lt;/code&gt; geometry">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> geometry
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
         
       </nav>
     
@@ -1347,12 +1403,12 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["announce.dismiss", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "search.highlight", "search.suggest", "toc.follow"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.dd8806f2.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.dd8806f2.min.js"></script>
       
-        <script src="../javascripts/mathjax.js"></script>
+        <script src="../../../../javascripts/mathjax.js"></script>
       
         <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
       
