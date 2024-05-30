@@ -1,4 +1,4 @@
-"""Convert to / from SMEE tensor representations."""
+"""Convert to / from ``smee`` tensor representations."""
 
 from smee.converters.openff import (
     convert_handlers,

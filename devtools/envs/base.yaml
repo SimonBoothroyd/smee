@@ -21,6 +21,7 @@ dependencies:
 
   ### MM simulations
   - openmm
+  - python-symengine
   - rdkit
   - packmol
   - numpy

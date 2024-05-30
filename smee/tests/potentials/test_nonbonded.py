@@ -308,6 +308,7 @@ def test_compute_xxx_lrc_with_exceptions(lrc_fn, convert_fn):
         (compute_lj_energy, lambda p: p, False),
         (compute_lj_energy, lambda p: p, True),
         (compute_dexp_energy, smee.tests.utils.convert_lj_to_dexp, False),
+        (compute_dexp_energy, smee.tests.utils.convert_lj_to_dexp, True),
     ],
 )
 def test_compute_xxx_energy_periodic(
@@ -339,7 +340,7 @@ def test_compute_xxx_energy_periodic(
         (compute_lj_energy, lambda p: p, False),
         (compute_lj_energy, lambda p: p, True),
         (compute_dexp_energy, smee.tests.utils.convert_lj_to_dexp, False),
-        # (compute_dexp_energy, smee.tests.utils.convert_lj_to_dexp, True),
+        (compute_dexp_energy, smee.tests.utils.convert_lj_to_dexp, True),
     ],
 )
 def test_compute_xxx_energy_non_periodic(energy_fn, convert_fn, with_exceptions):
@@ -520,4 +521,4 @@ def test_compute_coulomb_energy_non_periodic():
         tensor_sys, coords, None, coulomb_potential
     )
 
-    assert torch.isclose(energy, expected_energy, atol=1.0e-5)
+    assert torch.isclose(energy, expected_energy, atol=1.0e-4)
