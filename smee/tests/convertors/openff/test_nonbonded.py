@@ -11,7 +11,6 @@ from smee.converters.openff.nonbonded import (
     convert_electrostatics,
     convert_vdw,
 )
-from smee.potentials.nonbonded import DEXP_POTENTIAL, LJ_POTENTIAL
 
 
 def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
@@ -195,7 +194,7 @@ def test_convert_vdw(ethanol, ethanol_interchange):
     )
 
     assert potential.type == "vdW"
-    assert potential.fn == LJ_POTENTIAL
+    assert potential.fn == smee.EnergyFn.VDW_LJ
 
 
 def test_convert_dexp(ethanol, test_data_dir):
@@ -216,4 +215,4 @@ def test_convert_dexp(ethanol, test_data_dir):
     assert potential.parameter_cols == ("epsilon", "r_min")
 
     assert potential.type == "vdW"
-    assert potential.fn == DEXP_POTENTIAL
+    assert potential.fn == smee.EnergyFn.VDW_DEXP

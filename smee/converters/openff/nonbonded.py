@@ -151,7 +151,7 @@ def convert_vdw(
 
     return convert_nonbonded_handlers(
         handlers,
-        "vdW",
+        smee.PotentialType.VDW,
         topologies,
         v_site_maps,
         ("epsilon", "sigma"),
@@ -194,8 +194,8 @@ def convert_dexp(
         ("epsilon", "r_min"),
         ("cutoff", "switch_width", "alpha", "beta"),
     )
-    potential.type = "vdW"
-    potential.fn = smee.potentials.nonbonded.DEXP_POTENTIAL
+    potential.type = smee.PotentialType.VDW
+    potential.fn = smee.EnergyFn.VDW_DEXP
 
     return potential, parameter_maps
 

@@ -15,7 +15,7 @@ LJParam = typing.NamedTuple("LJParam", [("eps", float), ("sig", float)])
 
 
 def convert_lj_to_dexp(potential: smee.TensorPotential):
-    potential.fn = smee.potentials.nonbonded.DEXP_POTENTIAL
+    potential.fn = smee.EnergyFn.VDW_DEXP
 
     parameter_cols = [*potential.parameter_cols]
     sigma_idx = potential.parameter_cols.index("sigma")
@@ -29,6 +29,11 @@ def convert_lj_to_dexp(potential: smee.TensorPotential):
     potential.parameter_cols = tuple(parameter_cols)
 
     potential.attribute_cols = (*potential.attribute_cols, "alpha", "beta")
+    potential.attribute_units = (
+        *potential.attribute_units,
+        openff.units.unit.dimensionless,
+        openff.units.unit.dimensionless,
+    )
     potential.attributes = torch.cat([potential.attributes, torch.tensor([16.5, 5.0])])
 
     return potential

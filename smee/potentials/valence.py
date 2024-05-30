@@ -7,7 +7,9 @@ import smee.potentials
 import smee.utils
 
 
-@smee.potentials.potential_energy_fn("Bonds", "k/2*(r-length)**2")
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.BONDS, smee.EnergyFn.BOND_HARMONIC
+)
 def compute_harmonic_bond_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -37,7 +39,9 @@ def compute_harmonic_bond_energy(
     return (0.5 * k * (distances - length) ** 2).sum(-1)
 
 
-@smee.potentials.potential_energy_fn("Angles", "k/2*(theta-angle)**2")
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.ANGLES, smee.EnergyFn.ANGLE_HARMONIC
+)
 def compute_harmonic_angle_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -100,7 +104,7 @@ def _compute_cosine_torsion_energy(
 
 
 @smee.potentials.potential_energy_fn(
-    "ProperTorsions", "k*(1+cos(periodicity*theta-phase))"
+    smee.PotentialType.PROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE
 )
 def compute_cosine_proper_torsion_energy(
     system: smee.TensorSystem,
@@ -125,7 +129,7 @@ def compute_cosine_proper_torsion_energy(
 
 
 @smee.potentials.potential_energy_fn(
-    "ImproperTorsions", "k*(1+cos(periodicity*theta-phase))"
+    smee.PotentialType.IMPROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE
 )
 def compute_cosine_improper_torsion_energy(
     system: smee.TensorSystem,

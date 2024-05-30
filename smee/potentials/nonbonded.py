@@ -16,19 +16,9 @@ _COULOMB_PRE_FACTOR_UNITS = _UNIT.kilocalorie / _UNIT.mole * _UNIT.angstrom / _U
 _COULOMB_PRE_FACTOR = (_UNIT.avogadro_constant / (4.0 * _UNIT.pi * _UNIT.eps0)).m_as(
     _COULOMB_PRE_FACTOR_UNITS
 )
-_COULOMB_POTENTIAL = "coul"
 
 _PME_MIN_NODES = torch.tensor(6)  # taken to match OpenMM 8.0.0
 _PME_ORDER = 5  # see OpenMM issue #2567
-
-LJ_POTENTIAL = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
-
-DEXP_POTENTIAL = (
-    "epsilon*("
-    "beta/(alpha-beta)*exp(alpha*(1-r/r_min))-"
-    "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
-)
-BUCKINGHAM_POTENTIAL = "a*exp(-b*r)-c*r^-6"
 
 
 class PairwiseDistances(typing.NamedTuple):
@@ -430,7 +420,7 @@ def _compute_lj_lrc(
     return 2.0 * system.n_particles**2 * torch.pi / volume * integral
 
 
-@smee.potentials.potential_energy_fn("vdW", LJ_POTENTIAL)
+@smee.potentials.potential_energy_fn(smee.PotentialType.VDW, smee.EnergyFn.VDW_LJ)
 def compute_lj_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -709,7 +699,7 @@ def _compute_dexp_lrc(
     return 2.0 * system.n_particles**2 * torch.pi / volume * integral
 
 
-@smee.potentials.potential_energy_fn("vdW", DEXP_POTENTIAL)
+@smee.potentials.potential_energy_fn(smee.PotentialType.VDW, smee.EnergyFn.VDW_DEXP)
 def compute_dexp_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -970,7 +960,9 @@ def _compute_coulomb_energy_periodic(
     return energy_direct + energy_recip + energy_exclusion
 
 
-@smee.potentials.potential_energy_fn("Electrostatics", _COULOMB_POTENTIAL)
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB
+)
 def compute_coulomb_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
