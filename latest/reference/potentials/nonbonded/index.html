@@ -436,8 +436,6 @@
       
         
       
-        
-      
     
     
       
@@ -514,27 +512,6 @@
   
   <span class="md-ellipsis">
     Conformer Minimization
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/custom-handler.ipynb" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    None
   </span>
   
 
@@ -895,6 +872,8 @@
     
       
         
+          
+        
       
         
       
@@ -915,16 +894,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../converters/openmm/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1_2_3">
@@ -933,25 +920,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../converters/openmm/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Openmm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -1539,88 +1507,91 @@
 
 
 <h1 id="smee.potentials.nonbonded" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">nonbonded</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">nonbonded</span>
 
 
 <a href="#smee.potentials.nonbonded" class="headerlink" title="Permanent link">#</a></h1>
 
-  <div class="doc doc-contents first">
-  
+    <div class="doc doc-contents first">
+
       <p>Non-bonded potential energy functions.</p>
 
 
 
 
 
-  <p>Classes:</p>
-  <ul>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a></code></b>
-        –
-        <div class="doc-md-description">
-          <p>A container for the pairwise distances between all particles, possibly within</p>
-        </div>
-      </li>
-  </ul>
+
+
+<p><span class="doc-section-title">Classes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>A container for the pairwise distances between all particles, possibly within</p>
+          </div>
+        </li>
+    </ul>
 
 
 
 
-  <p>Functions:</p>
-  <ul>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_pairwise_scales" href="#smee.potentials.nonbonded.compute_pairwise_scales">compute_pairwise_scales</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Returns the scale factor for each pair of particles in the system by</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_pairwise" href="#smee.potentials.nonbonded.compute_pairwise">compute_pairwise</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes all pairwise distances between particles in the system.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.prepare_lrc_types" href="#smee.potentials.nonbonded.prepare_lrc_types">prepare_lrc_types</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Finds the unique vdW interactions present in a system, ready to use</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.lorentz_berthelot" href="#smee.potentials.nonbonded.lorentz_berthelot">lorentz_berthelot</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the Lorentz-Berthelot combination rules for the given parameters.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_lj_energy" href="#smee.potentials.nonbonded.compute_lj_energy">compute_lj_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the potential energy [kcal / mol] of the vdW interactions using the</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_dexp_energy" href="#smee.potentials.nonbonded.compute_dexp_energy">compute_dexp_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the potential energy [kcal / mol] of the vdW interactions using the</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_coulomb_energy" href="#smee.potentials.nonbonded.compute_coulomb_energy">compute_coulomb_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the potential energy [kcal / mol] of the electrostatic interactions</p>
-          </div>
-        </li>
-  </ul>
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_pairwise_scales" href="#smee.potentials.nonbonded.compute_pairwise_scales">compute_pairwise_scales</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Returns the scale factor for each pair of particles in the system by</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_pairwise" href="#smee.potentials.nonbonded.compute_pairwise">compute_pairwise</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes all pairwise distances between particles in the system.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.prepare_lrc_types" href="#smee.potentials.nonbonded.prepare_lrc_types">prepare_lrc_types</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Finds the unique vdW interactions present in a system, ready to use</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.lorentz_berthelot" href="#smee.potentials.nonbonded.lorentz_berthelot">lorentz_berthelot</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the Lorentz-Berthelot combination rules for the given parameters.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_lj_energy" href="#smee.potentials.nonbonded.compute_lj_energy">compute_lj_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the potential energy [kcal / mol] of the vdW interactions using the</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_dexp_energy" href="#smee.potentials.nonbonded.compute_dexp_energy">compute_dexp_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the potential energy [kcal / mol] of the vdW interactions using the</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.compute_coulomb_energy" href="#smee.potentials.nonbonded.compute_coulomb_energy">compute_coulomb_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the potential energy [kcal / mol] of the electrostatic interactions</p>
+            </div>
+          </li>
+    </ul>
 
 
-  
+
+
 
   <div class="doc doc-children">
 
@@ -1636,17 +1607,18 @@
 
 
 <h2 id="smee.potentials.nonbonded.PairwiseDistances" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>          <span class="doc doc-object-name doc-class-name">PairwiseDistances</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">PairwiseDistances</span>
 
 
 <a href="#smee.potentials.nonbonded.PairwiseDistances" class="headerlink" title="Permanent link">#</a></h2>
 
 
-  <div class="doc doc-contents ">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="typing.NamedTuple">NamedTuple</span></code></p>
 
-  
+
+
       <p>A container for the pairwise distances between all particles, possibly within
 a given cutoff.</p>
 
@@ -1656,44 +1628,48 @@ a given cutoff.</p>
 
 
 
-  <p>Attributes:</p>
-  <ul>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.idxs" href="#smee.potentials.nonbonded.PairwiseDistances.idxs">idxs</a></code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The particle indices of each pair with <code>shape=(n_pairs, 2)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.deltas" href="#smee.potentials.nonbonded.PairwiseDistances.deltas">deltas</a></code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The vector between each pair with <code>shape=(n_pairs, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.distances" href="#smee.potentials.nonbonded.PairwiseDistances.distances">distances</a></code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The distance between each pair with <code>shape=(n_pairs,)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.cutoff" href="#smee.potentials.nonbonded.PairwiseDistances.cutoff">cutoff</a></code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>)
-        –
-        <div class="doc-md-description">
-          <p>The cutoff used when computing the distances.</p>
-        </div>
-      </li>
-  </ul>
 
 
-  
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.idxs" href="#smee.potentials.nonbonded.PairwiseDistances.idxs">idxs</a></code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The particle indices of each pair with <code>shape=(n_pairs, 2)</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.deltas" href="#smee.potentials.nonbonded.PairwiseDistances.deltas">deltas</a></code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The vector between each pair with <code>shape=(n_pairs, 3)</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.distances" href="#smee.potentials.nonbonded.PairwiseDistances.distances">distances</a></code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The distance between each pair with <code>shape=(n_pairs,)</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances.cutoff" href="#smee.potentials.nonbonded.PairwiseDistances.cutoff">cutoff</a></code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>The cutoff used when computing the distances.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
 
   <div class="doc doc-children">
 
@@ -1708,9 +1684,9 @@ a given cutoff.</p>
 
 
 <h3 id="smee.potentials.nonbonded.PairwiseDistances.idxs" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>          <span class="doc doc-object-name doc-attribute-name">idxs</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">idxs</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
   </span>
@@ -1719,10 +1695,10 @@ a given cutoff.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">idxs</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>The particle indices of each pair with <code>shape=(n_pairs, 2)</code>.</p>
-  </div>
+    </div>
 
 </div>
 
@@ -1731,9 +1707,9 @@ a given cutoff.</p>
 
 
 <h3 id="smee.potentials.nonbonded.PairwiseDistances.deltas" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>          <span class="doc doc-object-name doc-attribute-name">deltas</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">deltas</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
   </span>
@@ -1742,10 +1718,10 @@ a given cutoff.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">deltas</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>The vector between each pair with <code>shape=(n_pairs, 3)</code>.</p>
-  </div>
+    </div>
 
 </div>
 
@@ -1754,9 +1730,9 @@ a given cutoff.</p>
 
 
 <h3 id="smee.potentials.nonbonded.PairwiseDistances.distances" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>          <span class="doc doc-object-name doc-attribute-name">distances</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">distances</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
   </span>
@@ -1765,10 +1741,10 @@ a given cutoff.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">distances</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>The distance between each pair with <code>shape=(n_pairs,)</code>.</p>
-  </div>
+    </div>
 
 </div>
 
@@ -1777,9 +1753,9 @@ a given cutoff.</p>
 
 
 <h3 id="smee.potentials.nonbonded.PairwiseDistances.cutoff" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>          <span class="doc doc-object-name doc-attribute-name">cutoff</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">cutoff</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
@@ -1789,10 +1765,10 @@ a given cutoff.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">cutoff</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>The cutoff used when computing the distances.</p>
-  </div>
+    </div>
 
 </div>
 
@@ -1802,71 +1778,66 @@ a given cutoff.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
-
 
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.compute_pairwise_scales" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_pairwise_scales</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_pairwise_scales</span>
 
 
 <a href="#smee.potentials.nonbonded.compute_pairwise_scales" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_pairwise_scales</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_pairwise_scales</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span> <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Returns the scale factor for each pair of particles in the system by
 broadcasting and stacking the exclusions of each topology.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential containing the scale factors to broadcast.</p>
-        </div>
-      </li>
-  </ul>
-
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential containing the scale factors to broadcast.</p>
+          </div>
+        </li>
+    </ul>
 
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The scales for each pair of particles as a flattened upper triangular matrix
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The scales for each pair of particles as a flattened upper triangular matrix
 with <code>shape=(n_particles * (n_particles - 1) / 2,)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
 <span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
 <span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
 <span class="normal"><a href="#__codelineno-0-100">100</a></span>
@@ -1928,22 +1899,20 @@ with <code>shape=(n_particles * (n_particles - 1) / 2,)</code>.</p>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="k">return</span> <span class="n">pair_scales</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.compute_pairwise" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_pairwise</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_pairwise</span>
 
 
 <a href="#smee.potentials.nonbonded.compute_pairwise" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_pairwise</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_pairwise</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">box_vectors</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
@@ -1951,70 +1920,69 @@ with <code>shape=(n_particles * (n_particles - 1) / 2,)</code>.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes all pairwise distances between particles in the system.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
   <p>If the system is not periodic, no cutoff and no PBC will be applied.</p>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the distances for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the distances for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>box_vectors</code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>)
-        –
-        <div class="doc-md-description">
-          <p>The box vectors [Å] of the system with <code>shape=(n_confs3, 3)</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>box_vectors</code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>)
+          –
+          <div class="doc-md-description">
+            <p>The box vectors [Å] of the system with <code>shape=(n_confs3, 3)</code>
 or <code>shape=(3, 3)</code> if the system is periodic, or <code>None</code> otherwise.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>cutoff</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The cutoff [Å] to apply for periodic systems.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>cutoff</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The cutoff [Å] to apply for periodic systems.</p>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a></code>
+          –
+          <div class="doc-md-description">
+            <p>The pairwise distances between each pair of particles within the cutoff.</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a></code>
-        –
-        <div class="doc-md-description">
-          <p>The pairwise distances between each pair of particles within the cutoff.</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-168">168</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-168">168</a></span>
 <span class="normal"><a href="#__codelineno-0-169">169</a></span>
 <span class="normal"><a href="#__codelineno-0-170">170</a></span>
 <span class="normal"><a href="#__codelineno-0-171">171</a></span>
@@ -2066,72 +2034,68 @@ or <code>shape=(3, 3)</code> if the system is periodic, or <code>None</code> oth
 </span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a>        <span class="k">return</span> <span class="n">_compute_pairwise_non_periodic</span><span class="p">(</span><span class="n">conformer</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.prepare_lrc_types" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">prepare_lrc_types</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">prepare_lrc_types</span>
 
 
 <a href="#smee.potentials.nonbonded.prepare_lrc_types" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">prepare_lrc_types</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">prepare_lrc_types</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span> <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Finds the unique vdW interactions present in a system, ready to use
 for computing the long range dispersion correction.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to prepare the types for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential to prepare the types for.</p>
-        </div>
-      </li>
-  </ul>
-
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to prepare the types for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential to prepare the types for.</p>
+          </div>
+        </li>
+    </ul>
 
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
-        –
-        <div class="doc-md-description">
-          <p>Two tensors containing the i and j indices into <code>potential.paramaters</code> of
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>Two tensors containing the i and j indices into <code>potential.paramaters</code> of
 each unique interaction parameter excluding <code>i==j</code>, the number of <code>ii</code>
 interactions with <code>shape=(n_params,)</code>, and the numbers of <code>ij</code> interactions
 with <code>shape=(len(idxs_i),)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-196">196</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-196">196</a></span>
 <span class="normal"><a href="#__codelineno-0-197">197</a></span>
 <span class="normal"><a href="#__codelineno-0-198">198</a></span>
 <span class="normal"><a href="#__codelineno-0-199">199</a></span>
@@ -2215,22 +2179,20 @@ with <code>shape=(len(idxs_i),)</code>.</p>
 </span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>
 </span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="k">return</span> <span class="n">idxs_i</span><span class="p">,</span> <span class="n">idxs_j</span><span class="p">,</span> <span class="n">n_ij_interactions</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.lorentz_berthelot" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">lorentz_berthelot</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">lorentz_berthelot</span>
 
 
 <a href="#smee.potentials.nonbonded.lorentz_berthelot" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">lorentz_berthelot</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">lorentz_berthelot</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">epsilon_a</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">epsilon_b</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">sigma_a</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
@@ -2238,9 +2200,10 @@ with <code>shape=(len(idxs_i),)</code>.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the Lorentz-Berthelot combination rules for the given parameters.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
@@ -2248,64 +2211,62 @@ with <code>shape=(len(idxs_i),)</code>.</p>
 This will yield non-analytic gradients in some cases.</p>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>epsilon_a</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The epsilon [kcal / mol] values of the first particle in each pair
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>epsilon_a</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The epsilon [kcal / mol] values of the first particle in each pair
 with <code>shape=(n_pairs, 1)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>epsilon_b</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The epsilon [kcal / mol] values of the second particle in each pair
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>epsilon_b</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The epsilon [kcal / mol] values of the second particle in each pair
 with <code>shape=(n_pairs, 1)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>sigma_a</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The sigma [kcal / mol] values of the first particle in each pair
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>sigma_a</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The sigma [kcal / mol] values of the first particle in each pair
 with <code>shape=(n_pairs, 1)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>sigma_b</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The sigma [kcal / mol] values of the second particle in each pair
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>sigma_b</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The sigma [kcal / mol] values of the second particle in each pair
 with <code>shape=(n_pairs, 1)</code>.</p>
-        </div>
-      </li>
-  </ul>
-
+          </div>
+        </li>
+    </ul>
 
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
-        –
-        <div class="doc-md-description">
-          <p>The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>The epsilon [kcal / mol] and sigma [Å] values of each pair, each with
 <code>shape=(n_pairs, 1)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-240">240</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-240">240</a></span>
 <span class="normal"><a href="#__codelineno-0-241">241</a></span>
 <span class="normal"><a href="#__codelineno-0-242">242</a></span>
 <span class="normal"><a href="#__codelineno-0-243">243</a></span>
@@ -2359,22 +2320,20 @@ with <code>shape=(n_pairs, 1)</code>.</p>
 </span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a>    <span class="k">return</span> <span class="n">smee</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">geometric_mean</span><span class="p">(</span><span class="n">epsilon_a</span><span class="p">,</span> <span class="n">epsilon_b</span><span class="p">),</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">sigma_a</span> <span class="o">+</span> <span class="n">sigma_b</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.compute_lj_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_lj_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_lj_energy</span>
 
 
 <a href="#smee.potentials.nonbonded.compute_lj_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_lj_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_lj_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
@@ -2383,10 +2342,11 @@ with <code>shape=(n_pairs, 1)</code>.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the potential energy [kcal / mol] of the vdW interactions using the
 standard Lennard-Jones potential.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
@@ -2398,75 +2358,73 @@ standard Lennard-Jones potential.</p>
 </ul>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>box_vectors</code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>box_vectors</code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
+          –
+          <div class="doc-md-description">
+            <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
 or <code>shape=(3, 3)</code> if the system is periodic, or <code>None</code> otherwise.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>pairwise</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pairwise</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The pre-computed pairwise distances between each pair of particles
+          –
+          <div class="doc-md-description">
+            <p>The pre-computed pairwise distances between each pair of particles
 in the system. If none, these will be computed within the function.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol] with <code>shape=(n_confs,)</code> if the
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol] with <code>shape=(n_confs,)</code> if the
 input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-423">423</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-423">423</a></span>
 <span class="normal"><a href="#__codelineno-0-424">424</a></span>
 <span class="normal"><a href="#__codelineno-0-425">425</a></span>
 <span class="normal"><a href="#__codelineno-0-426">426</a></span>
@@ -2591,7 +2549,7 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 </span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>
 </span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>    <span class="n">box_vectors</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">system</span><span class="o">.</span><span class="n">is_periodic</span> <span class="k">else</span> <span class="n">box_vectors</span>
 </span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;cutoff&quot;</span><span class="p">)]</span>
+</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">smee</span><span class="o">.</span><span class="n">CUTOFF_ATTRIBUTE</span><span class="p">)]</span>
 </span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>
 </span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>    <span class="n">pairwise</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>        <span class="n">pairwise</span>
@@ -2650,22 +2608,20 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 </span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a>
 </span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a>    <span class="k">return</span> <span class="n">energy</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.compute_dexp_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_dexp_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_dexp_energy</span>
 
 
 <a href="#smee.potentials.nonbonded.compute_dexp_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_dexp_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_dexp_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
@@ -2674,10 +2630,11 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the potential energy [kcal / mol] of the vdW interactions using the
 double-exponential potential.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
@@ -2686,74 +2643,72 @@ double-exponential potential.</p>
 </ul>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>box_vectors</code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>box_vectors</code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
+          –
+          <div class="doc-md-description">
+            <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
 or <code>shape=(3, 3)</code> if the system is periodic, or <code>None</code> otherwise.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>pairwise</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pairwise</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>Pre-computed distances between each pair of particles
+          –
+          <div class="doc-md-description">
+            <p>Pre-computed distances between each pair of particles
 in the system.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The evaluated potential energy [kcal / mol].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The evaluated potential energy [kcal / mol].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-702">702</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-702">702</a></span>
 <span class="normal"><a href="#__codelineno-0-703">703</a></span>
 <span class="normal"><a href="#__codelineno-0-704">704</a></span>
 <span class="normal"><a href="#__codelineno-0-705">705</a></span>
@@ -2876,7 +2831,7 @@ in the system.</p>
 </span><span id="__span-0-728"><a id="__codelineno-0-728" name="__codelineno-0-728"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-729"><a id="__codelineno-0-729" name="__codelineno-0-729"></a>    <span class="n">box_vectors</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">system</span><span class="o">.</span><span class="n">is_periodic</span> <span class="k">else</span> <span class="n">box_vectors</span>
 </span><span id="__span-0-730"><a id="__codelineno-0-730" name="__codelineno-0-730"></a>
-</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;cutoff&quot;</span><span class="p">)]</span>
+</span><span id="__span-0-731"><a id="__codelineno-0-731" name="__codelineno-0-731"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">smee</span><span class="o">.</span><span class="n">CUTOFF_ATTRIBUTE</span><span class="p">)]</span>
 </span><span id="__span-0-732"><a id="__codelineno-0-732" name="__codelineno-0-732"></a>
 </span><span id="__span-0-733"><a id="__codelineno-0-733" name="__codelineno-0-733"></a>    <span class="n">pairwise</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-734"><a id="__codelineno-0-734" name="__codelineno-0-734"></a>        <span class="n">pairwise</span>
@@ -2943,22 +2898,20 @@ in the system.</p>
 </span><span id="__span-0-795"><a id="__codelineno-0-795" name="__codelineno-0-795"></a>
 </span><span id="__span-0-796"><a id="__codelineno-0-796" name="__codelineno-0-796"></a>    <span class="k">return</span> <span class="n">energy</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.nonbonded.compute_coulomb_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_coulomb_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_coulomb_energy</span>
 
 
 <a href="#smee.potentials.nonbonded.compute_coulomb_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_coulomb_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_coulomb_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
@@ -2967,10 +2920,11 @@ in the system.</p>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the potential energy [kcal / mol] of the electrostatic interactions
 using the Coulomb potential.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
@@ -2980,75 +2934,73 @@ using the Coulomb potential.</p>
 </ul>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>box_vectors</code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>box_vectors</code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
+          –
+          <div class="doc-md-description">
+            <p>The box vectors [Å] of the system with <code>shape=(n_confs, 3, 3)</code>
 or <code>shape=(3, 3)</code> if the system is periodic, or <code>None</code> otherwise.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>pairwise</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>pairwise</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.potentials.nonbonded.PairwiseDistances" href="#smee.potentials.nonbonded.PairwiseDistances">PairwiseDistances</a> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The pre-computed pairwise distances between each pair of particles
+          –
+          <div class="doc-md-description">
+            <p>The pre-computed pairwise distances between each pair of particles
 in the system. If none, these will be computed within the function.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol] with <code>shape=(n_confs,)</code> if the
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol] with <code>shape=(n_confs,)</code> if the
 input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-963"> 963</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/nonbonded.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-963"> 963</a></span>
 <span class="normal"><a href="#__codelineno-0-964"> 964</a></span>
 <span class="normal"><a href="#__codelineno-0-965"> 965</a></span>
 <span class="normal"><a href="#__codelineno-0-966"> 966</a></span>
@@ -3135,7 +3087,7 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 </span><span id="__span-0-994"><a id="__codelineno-0-994" name="__codelineno-0-994"></a>
 </span><span id="__span-0-995"><a id="__codelineno-0-995" name="__codelineno-0-995"></a>    <span class="n">box_vectors</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">system</span><span class="o">.</span><span class="n">is_periodic</span> <span class="k">else</span> <span class="n">box_vectors</span>
 </span><span id="__span-0-996"><a id="__codelineno-0-996" name="__codelineno-0-996"></a>
-</span><span id="__span-0-997"><a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;cutoff&quot;</span><span class="p">)]</span>
+</span><span id="__span-0-997"><a id="__codelineno-0-997" name="__codelineno-0-997"></a>    <span class="n">cutoff</span> <span class="o">=</span> <span class="n">potential</span><span class="o">.</span><span class="n">attributes</span><span class="p">[</span><span class="n">potential</span><span class="o">.</span><span class="n">attribute_cols</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">smee</span><span class="o">.</span><span class="n">CUTOFF_ATTRIBUTE</span><span class="p">)]</span>
 </span><span id="__span-0-998"><a id="__codelineno-0-998" name="__codelineno-0-998"></a>
 </span><span id="__span-0-999"><a id="__codelineno-0-999" name="__codelineno-0-999"></a>    <span class="n">pairwise</span> <span class="o">=</span> <span class="p">(</span>
 </span><span id="__span-0-1000"><a id="__codelineno-0-1000" name="__codelineno-0-1000"></a>        <span class="n">pairwise</span>
@@ -3156,8 +3108,8 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 </span><span id="__span-0-1015"><a id="__codelineno-0-1015" name="__codelineno-0-1015"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-1016"><a id="__codelineno-0-1016" name="__codelineno-0-1016"></a>        <span class="k">return</span> <span class="n">_compute_coulomb_energy_non_periodic</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="n">potential</span><span class="p">,</span> <span class="n">pairwise</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -3165,7 +3117,7 @@ input conformer has a batch dimension, or <code>shape=()</code> otherwise.</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 

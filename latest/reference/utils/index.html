@@ -436,8 +436,6 @@
       
         
       
-        
-      
     
     
       
@@ -514,27 +512,6 @@
   
   <span class="md-ellipsis">
     Conformer Minimization
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/custom-handler.ipynb" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    None
   </span>
   
 
@@ -895,6 +872,8 @@
     
       
         
+          
+        
       
         
       
@@ -915,16 +894,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../converters/openmm/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1_2_3">
@@ -933,25 +920,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../converters/openmm/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Openmm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -1471,13 +1439,13 @@
 
 
 <h1 id="smee.utils" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">utils</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">utils</span>
 
 
 <a href="#smee.utils" class="headerlink" title="Permanent link">#</a></h1>
 
-  <div class="doc doc-contents first">
-  
+    <div class="doc doc-contents first">
+
       <p>General utility functions</p>
 
 
@@ -1485,81 +1453,84 @@
 
 
 
-  <p>Functions:</p>
-  <ul>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.find_exclusions" href="#smee.utils.find_exclusions">find_exclusions</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Find all excluded interaction pairs and their associated scaling factor.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.ones_like" href="#smee.utils.ones_like">ones_like</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Create a tensor of ones with the same device and type as another tensor.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.zeros_like" href="#smee.utils.zeros_like">zeros_like</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Create a tensor of zeros with the same device and type as another tensor.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.tensor_like" href="#smee.utils.tensor_like">tensor_like</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Create a tensor with the same device and type as another tensor.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.arange_like" href="#smee.utils.arange_like">arange_like</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Arange a tensor with the same device and type as another tensor.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.logsumexp" href="#smee.utils.logsumexp">logsumexp</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the log of the sum of the exponential of the input elements, optionally</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.to_upper_tri_idx" href="#smee.utils.to_upper_tri_idx">to_upper_tri_idx</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Converts pairs of 2D indices to 1D indices in an upper triangular matrix that</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.utils.geometric_mean" href="#smee.utils.geometric_mean">geometric_mean</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the geometric mean of two values 'safely'.</p>
-          </div>
-        </li>
-  </ul>
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.find_exclusions" href="#smee.utils.find_exclusions">find_exclusions</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Find all excluded interaction pairs and their associated scaling factor.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.ones_like" href="#smee.utils.ones_like">ones_like</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Create a tensor of ones with the same device and type as another tensor.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.zeros_like" href="#smee.utils.zeros_like">zeros_like</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Create a tensor of zeros with the same device and type as another tensor.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.tensor_like" href="#smee.utils.tensor_like">tensor_like</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Create a tensor with the same device and type as another tensor.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.arange_like" href="#smee.utils.arange_like">arange_like</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Arange a tensor with the same device and type as another tensor.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.logsumexp" href="#smee.utils.logsumexp">logsumexp</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the log of the sum of the exponential of the input elements, optionally</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.to_upper_tri_idx" href="#smee.utils.to_upper_tri_idx">to_upper_tri_idx</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Converts pairs of 2D indices to 1D indices in an upper triangular matrix that</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.utils.geometric_mean" href="#smee.utils.geometric_mean">geometric_mean</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the geometric mean of two values 'safely'.</p>
+            </div>
+          </li>
+    </ul>
 
 
 
 
-  <p>Attributes:</p>
-  <ul>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.utils.EPSILON" href="#smee.utils.EPSILON">EPSILON</a></code></b>
-        –
-        <div class="doc-md-description">
-          <p>A small epsilon value used to prevent divide by zero errors.</p>
-        </div>
-      </li>
-  </ul>
+<p><span class="doc-section-title">Attributes:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.utils.EPSILON" href="#smee.utils.EPSILON">EPSILON</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>A small epsilon value used to prevent divide by zero errors.</p>
+          </div>
+        </li>
+    </ul>
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1574,9 +1545,9 @@
 
 
 <h2 id="smee.utils.EPSILON" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>          <span class="doc doc-object-name doc-attribute-name">EPSILON</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">EPSILON</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
   </span>
@@ -1585,74 +1556,70 @@
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">EPSILON</span> <span class="o">=</span> <span class="mf">1e-06</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>A small epsilon value used to prevent divide by zero errors.</p>
-  </div>
+    </div>
 
 </div>
-
 
 
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.find_exclusions" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">find_exclusions</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">find_exclusions</span>
 
 
 <a href="#smee.utils.find_exclusions" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">find_exclusions</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">find_exclusions</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">topology</span><span class="p">:</span> <span class="n"><span title="openff.toolkit.Topology">Topology</span></span><span class="p">,</span> <span class="n">v_sites</span><span class="p">:</span> <span class="n"><span title="typing.Optional">Optional</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">dict</span><span class="p">[</span><span class="n">tuple</span><span class="p">[</span><span class="n">int</span><span class="p">,</span> <span class="n">int</span><span class="p">],</span> <span class="n"><span title="smee.utils.ExclusionType">ExclusionType</span></span><span class="p">]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Find all excluded interaction pairs and their associated scaling factor.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>topology</code></b>
-            (<code><span title="openff.toolkit.Topology">Topology</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The topology to find the interaction pairs of.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>v_sites</code></b>
-            (<code><span title="typing.Optional">Optional</span>[<a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a>]</code>, default:
-                <code>None</code>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>topology</code></b>
+              (<code><span title="openff.toolkit.Topology">Topology</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The topology to find the interaction pairs of.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>v_sites</code></b>
+              (<code><span title="typing.Optional">Optional</span>[<a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a>]</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>Virtual sites that will be added to the topology.</p>
-        </div>
-      </li>
-  </ul>
+          –
+          <div class="doc-md-description">
+            <p>Virtual sites that will be added to the topology.</p>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>A dictionary of the form ``{(atom_idx_1, atom_idx_2</code>
+          –
+          <div class="doc-md-description">
+            <p>scale}``.</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>A dictionary of the form ``{(atom_idx_1, atom_idx_2</code>
-        –
-        <div class="doc-md-description">
-          <p>scale}``.</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-22">22</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-22">22</a></span>
 <span class="normal"><a href="#__codelineno-0-23">23</a></span>
 <span class="normal"><a href="#__codelineno-0-24">24</a></span>
 <span class="normal"><a href="#__codelineno-0-25">25</a></span>
@@ -1750,91 +1717,85 @@
 </span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a>
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a>    <span class="k">return</span> <span class="n">exclusions</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.ones_like" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">ones_like</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">ones_like</span>
 
 
 <a href="#smee.utils.ones_like" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ones_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n"><span title="smee.utils._size">_size</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ones_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n"><span title="smee.utils._size">_size</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Create a tensor of ones with the same device and type as another tensor.</p>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-73">73</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-73">73</a></span>
 <span class="normal"><a href="#__codelineno-0-74">74</a></span>
 <span class="normal"><a href="#__codelineno-0-75">75</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="k">def</span> <span class="nf">ones_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n">_size</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a tensor of ones with the same device and type as another tensor.&quot;&quot;&quot;</span>
 </span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.zeros_like" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">zeros_like</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">zeros_like</span>
 
 
 <a href="#smee.utils.zeros_like" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">zeros_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n"><span title="smee.utils._size">_size</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">zeros_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n"><span title="smee.utils._size">_size</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Create a tensor of zeros with the same device and type as another tensor.</p>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-78">78</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-78">78</a></span>
 <span class="normal"><a href="#__codelineno-0-79">79</a></span>
 <span class="normal"><a href="#__codelineno-0-80">80</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="k">def</span> <span class="nf">zeros_like</span><span class="p">(</span><span class="n">size</span><span class="p">:</span> <span class="n">_size</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a tensor of zeros with the same device and type as another tensor.&quot;&quot;&quot;</span>
 </span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.tensor_like" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">tensor_like</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">tensor_like</span>
 
 
 <a href="#smee.utils.tensor_like" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">tensor_like</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">tensor_like</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Create a tensor with the same device and type as another tensor.</p>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
 <span class="normal"><a href="#__codelineno-0-84">84</a></span>
 <span class="normal"><a href="#__codelineno-0-85">85</a></span>
 <span class="normal"><a href="#__codelineno-0-86">86</a></span>
@@ -1848,52 +1809,48 @@
 </span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>
 </span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.arange_like" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">arange_like</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">arange_like</span>
 
 
 <a href="#smee.utils.arange_like" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">arange_like</span><span class="p">(</span><span class="n">end</span><span class="p">:</span> <span class="n">int</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">arange_like</span><span class="p">(</span><span class="n">end</span><span class="p">:</span> <span class="n">int</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Arange a tensor with the same device and type as another tensor.</p>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-92">92</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-92">92</a></span>
 <span class="normal"><a href="#__codelineno-0-93">93</a></span>
 <span class="normal"><a href="#__codelineno-0-94">94</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="k">def</span> <span class="nf">arange_like</span><span class="p">(</span><span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 </span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Arange a tensor with the same device and type as another tensor.&quot;&quot;&quot;</span>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.logsumexp" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">logsumexp</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">logsumexp</span>
 
 
 <a href="#smee.utils.logsumexp" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logsumexp</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">logsumexp</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">a</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">dim</span><span class="p">:</span> <span class="n">int</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">keepdim</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1902,73 +1859,72 @@
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span> <span class="o">|</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the log of the sum of the exponential of the input elements, optionally
 with each element multiplied by a scaling factor.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
   <p>This should be removed if torch.logsumexp is updated to support scaling factors.</p>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>a</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The elements that should be summed over.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>dim</code></b>
-            (<code>int</code>)
-        –
-        <div class="doc-md-description">
-          <p>The dimension to sum over.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>keepdim</code></b>
-            (<code>bool</code>, default:
-                <code>False</code>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>a</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The elements that should be summed over.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>dim</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The dimension to sum over.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>keepdim</code></b>
+              (<code>bool</code>, default:
+                  <code>False</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>Whether to keep the summed dimension.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>b</code></b>
-            (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
-                <code>None</code>
+          –
+          <div class="doc-md-description">
+            <p>Whether to keep the summed dimension.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>b</code></b>
+              (<code><span title="torch.Tensor">Tensor</span> | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The scaling factor to multiply each element by.</p>
-        </div>
-      </li>
-  </ul>
+          –
+          <div class="doc-md-description">
+            <p>The scaling factor to multiply each element by.</p>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span> | tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>The log of the sum of exponential of the a elements.</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span> | tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
-        –
-        <div class="doc-md-description">
-          <p>The log of the sum of exponential of the a elements.</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-97"> 97</a></span>
 <span class="normal"><a href="#__codelineno-0-98"> 98</a></span>
 <span class="normal"><a href="#__codelineno-0-99"> 99</a></span>
 <span class="normal"><a href="#__codelineno-0-100">100</a></span>
@@ -2092,88 +2048,84 @@ with each element multiplied by a scaling factor.</p>
 </span><span id="__span-0-157"><a id="__codelineno-0-157" name="__codelineno-0-157"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>        <span class="k">return</span> <span class="n">ln_exp_sum</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.to_upper_tri_idx" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">to_upper_tri_idx</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">to_upper_tri_idx</span>
 
 
 <a href="#smee.utils.to_upper_tri_idx" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">to_upper_tri_idx</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_upper_tri_idx</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">i</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">j</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="n">int</span><span class="p">,</span> <span class="n">include_diag</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="kc">False</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Converts pairs of 2D indices to 1D indices in an upper triangular matrix that
 excludes the diagonal.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>i</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>A tensor of the indices along the first axis with <code>shape=(n_pairs,)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>j</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>A tensor of the indices along the second axis with <code>shape=(n_pairs,)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>n</code></b>
-            (<code>int</code>)
-        –
-        <div class="doc-md-description">
-          <p>The size of the matrix.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>include_diag</code></b>
-            (<code>bool</code>, default:
-                <code>False</code>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>i</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>A tensor of the indices along the first axis with <code>shape=(n_pairs,)</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>j</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>A tensor of the indices along the second axis with <code>shape=(n_pairs,)</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>n</code></b>
+              (<code>int</code>)
+          –
+          <div class="doc-md-description">
+            <p>The size of the matrix.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>include_diag</code></b>
+              (<code>bool</code>, default:
+                  <code>False</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>Whether the diagonal is included in the upper triangular matrix.</p>
-        </div>
-      </li>
-  </ul>
+          –
+          <div class="doc-md-description">
+            <p>Whether the diagonal is included in the upper triangular matrix.</p>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>A tensor of the indices in the upper triangular matrix with
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>A tensor of the indices in the upper triangular matrix with
 <code>shape=(n_pairs * (n_pairs - 1) // 2,)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-161">161</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-161">161</a></span>
 <span class="normal"><a href="#__codelineno-0-162">162</a></span>
 <span class="normal"><a href="#__codelineno-0-163">163</a></span>
 <span class="normal"><a href="#__codelineno-0-164">164</a></span>
@@ -2219,68 +2171,64 @@ excludes the diagonal.</p>
 </span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a>    <span class="k">assert</span> <span class="p">(</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="n">j</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s2">&quot;i must be less than or equal to j&quot;</span>
 </span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a>    <span class="k">return</span> <span class="p">(</span><span class="n">i</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">n</span> <span class="o">-</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">j</span> <span class="o">-</span> <span class="n">i</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.utils.geometric_mean" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">geometric_mean</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">geometric_mean</span>
 
 
 <a href="#smee.utils.geometric_mean" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">geometric_mean</span><span class="p">(</span><span class="n">eps_a</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">eps_b</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">geometric_mean</span><span class="p">(</span><span class="n">eps_a</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">eps_b</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the geometric mean of two values 'safely'.</p>
 <p>A small epsilon (<code>smee.utils.EPSILON</code>) is added when computing the gradient in
 cases where the mean is zero to prevent divide by zero errors.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>eps_a</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The first value.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>eps_b</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The second value.</p>
-        </div>
-      </li>
-  </ul>
-
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>eps_a</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The first value.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>eps_b</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The second value.</p>
+          </div>
+        </li>
+    </ul>
 
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The geometric mean of the two values.</p>
-      </div>
-      </li>
-  </ul>
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The geometric mean of the two values.</p>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/utils.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-223">223</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/utils.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-223">223</a></span>
 <span class="normal"><a href="#__codelineno-0-224">224</a></span>
 <span class="normal"><a href="#__codelineno-0-225">225</a></span>
 <span class="normal"><a href="#__codelineno-0-226">226</a></span>
@@ -2310,8 +2258,8 @@ cases where the mean is zero to prevent divide by zero errors.</p>
 </span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>
 </span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="k">return</span> <span class="n">_SafeGeometricMean</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">eps_a</span><span class="p">,</span> <span class="n">eps_b</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -2319,7 +2267,7 @@ cases where the mean is zero to prevent divide by zero errors.</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 

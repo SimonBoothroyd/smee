@@ -436,8 +436,6 @@
       
         
       
-        
-      
     
     
       
@@ -514,27 +512,6 @@
   
   <span class="md-ellipsis">
     Conformer Minimization
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../examples/custom-handler.ipynb" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    None
   </span>
   
 
@@ -895,6 +872,8 @@
     
       
         
+          
+        
       
         
       
@@ -915,16 +894,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../converters/openmm/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1_2_3">
@@ -933,25 +920,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../converters/openmm/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Openmm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -1417,13 +1385,13 @@
 
 
 <h1 id="smee.geometry" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">geometry</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">geometry</span>
 
 
 <a href="#smee.geometry" class="headerlink" title="Permanent link">#</a></h1>
 
-  <div class="doc doc-contents first">
-  
+    <div class="doc doc-contents first">
+
       <p>Compute internal coordinates (e.g. bond lengths).</p>
 
 
@@ -1431,57 +1399,60 @@
 
 
 
-  <p>Functions:</p>
-  <ul>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_bond_vectors" href="#smee.geometry.compute_bond_vectors">compute_bond_vectors</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the vectors between each atom pair specified by the <code>atom_indices</code> as</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_angles" href="#smee.geometry.compute_angles">compute_angles</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the angles [rad] between each atom triplet specified by the</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_dihedrals" href="#smee.geometry.compute_dihedrals">compute_dihedrals</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the dihedral angles [rad] between each atom quartet specified by the</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.polar_to_cartesian_coords" href="#smee.geometry.polar_to_cartesian_coords">polar_to_cartesian_coords</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Converts a set of polar coordinates into cartesian coordinates.</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_v_site_coords" href="#smee.geometry.compute_v_site_coords">compute_v_site_coords</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Computes the positions of a set of virtual sites relative to a specified</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.geometry.add_v_site_coords" href="#smee.geometry.add_v_site_coords">add_v_site_coords</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Appends the coordinates of any virtual sites to a conformer (or batch of</p>
-          </div>
-        </li>
-  </ul>
 
 
-  
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_bond_vectors" href="#smee.geometry.compute_bond_vectors">compute_bond_vectors</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the vectors between each atom pair specified by the <code>atom_indices</code> as</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_angles" href="#smee.geometry.compute_angles">compute_angles</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the angles [rad] between each atom triplet specified by the</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_dihedrals" href="#smee.geometry.compute_dihedrals">compute_dihedrals</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the dihedral angles [rad] between each atom quartet specified by the</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.polar_to_cartesian_coords" href="#smee.geometry.polar_to_cartesian_coords">polar_to_cartesian_coords</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Converts a set of polar coordinates into cartesian coordinates.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.compute_v_site_coords" href="#smee.geometry.compute_v_site_coords">compute_v_site_coords</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Computes the positions of a set of virtual sites relative to a specified</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.geometry.add_v_site_coords" href="#smee.geometry.add_v_site_coords">add_v_site_coords</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Appends the coordinates of any virtual sites to a conformer (or batch of</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
 
   <div class="doc doc-children">
-
 
 
 
@@ -1494,62 +1465,59 @@
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.compute_bond_vectors" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_bond_vectors</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_bond_vectors</span>
 
 
 <a href="#smee.geometry.compute_bond_vectors" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_bond_vectors</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_bond_vectors</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">atom_indices</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the vectors between each atom pair specified by the <code>atom_indices</code> as
 well as their norms.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to compute the bond vectors for with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to compute the bond vectors for with
 <code>shape=(n_atoms, 3)</code> or <code>shape=(n_confs, n_atoms, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>atom_indices</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The indices of the atoms involved in each bond with
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>atom_indices</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The indices of the atoms involved in each bond with
 <code>shape=(n_bonds, 2)</code></p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
+          –
+          <div class="doc-md-description">
+            <p>The bond vectors and their norms [Å].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>tuple[<span title="torch.Tensor">Tensor</span>, <span title="torch.Tensor">Tensor</span>]</code>
-        –
-        <div class="doc-md-description">
-          <p>The bond vectors and their norms [Å].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
 <span class="normal"><a href="#__codelineno-0-35">35</a></span>
 <span class="normal"><a href="#__codelineno-0-36">36</a></span>
 <span class="normal"><a href="#__codelineno-0-37">37</a></span>
@@ -1619,71 +1587,67 @@ well as their norms.</p>
 </span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="k">return</span> <span class="n">directions</span><span class="p">,</span> <span class="n">distances</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.compute_angles" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_angles</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_angles</span>
 
 
 <a href="#smee.geometry.compute_angles" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_angles</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_angles</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">atom_indices</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the angles [rad] between each atom triplet specified by the
 <code>atom_indices</code>.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to compute the angles for with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to compute the angles for with
 <code>shape=(n_atoms, 3)</code> or <code>shape=(n_confs, n_atoms, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>atom_indices</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The indices of the atoms involved in each angle with
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>atom_indices</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The indices of the atoms involved in each angle with
 <code>shape=(n_angles, 3)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The valence angles [rad].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The valence angles [rad].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
 <span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
 <span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
 <span class="normal"><a href="#__codelineno-0-74"> 74</a></span>
@@ -1763,71 +1727,67 @@ well as their norms.</p>
 </span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="k">return</span> <span class="n">angles</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.compute_dihedrals" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_dihedrals</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_dihedrals</span>
 
 
 <a href="#smee.geometry.compute_dihedrals" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_dihedrals</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_dihedrals</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span> <span class="n">atom_indices</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the dihedral angles [rad] between each atom quartet specified by the
 <code>atom_indices</code>.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to compute the dihedral angles for with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to compute the dihedral angles for with
 <code>shape=(n_atoms, 3)</code> or <code>shape=(n_confs, n_atoms, 3)</code>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>atom_indices</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The indices of the atoms involved in each dihedral angle with
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>atom_indices</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The indices of the atoms involved in each dihedral angle with
 <code>shape=(n_dihedrals, 4)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The dihedral angles [rad].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The dihedral angles [rad].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-113">113</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-113">113</a></span>
 <span class="normal"><a href="#__codelineno-0-114">114</a></span>
 <span class="normal"><a href="#__codelineno-0-115">115</a></span>
 <span class="normal"><a href="#__codelineno-0-116">116</a></span>
@@ -1923,61 +1883,57 @@ well as their norms.</p>
 </span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a>    <span class="k">return</span> <span class="n">phi</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.polar_to_cartesian_coords" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">polar_to_cartesian_coords</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">polar_to_cartesian_coords</span>
 
 
 <a href="#smee.geometry.polar_to_cartesian_coords" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">polar_to_cartesian_coords</span><span class="p">(</span><span class="n">polar_coords</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">polar_to_cartesian_coords</span><span class="p">(</span><span class="n">polar_coords</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Converts a set of polar coordinates into cartesian coordinates.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>polar_coords</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The polar coordinates with <code>shape=(n_coords, 3)</code> and with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>polar_coords</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The polar coordinates with <code>shape=(n_coords, 3)</code> and with
 columns of distance [Å], 'in plane angle' [rad] and 'out of plane'
 angle [rad].</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>An array of the cartesian coordinates with <code>shape=(n_coords, 3)</code> and units
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>An array of the cartesian coordinates with <code>shape=(n_coords, 3)</code> and units
 of [Å].</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-236">236</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-236">236</a></span>
 <span class="normal"><a href="#__codelineno-0-237">237</a></span>
 <span class="normal"><a href="#__codelineno-0-238">238</a></span>
 <span class="normal"><a href="#__codelineno-0-239">239</a></span>
@@ -2033,83 +1989,79 @@ of [Å].</p>
 </span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a>    <span class="p">)</span>
 </span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a>    <span class="k">return</span> <span class="n">coords</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.compute_v_site_coords" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_v_site_coords</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_v_site_coords</span>
 
 
 <a href="#smee.geometry.compute_v_site_coords" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_v_site_coords</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_v_site_coords</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">v_sites</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Computes the positions of a set of virtual sites relative to a specified
 conformer or batch of conformers.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>v_sites</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>A mapping between the virtual sites to add and their corresponding
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>v_sites</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A mapping between the virtual sites to add and their corresponding
 force field parameters.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer(s) to add the virtual sites to with
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer(s) to add the virtual sites to with
 <code>shape=(n_atoms, 3)</code> or <code>shape=(n_batches, n_atoms, 3)</code> and units of
 [Å].</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>force_field</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The force field containing the virtual site parameters.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>force_field</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The force field containing the virtual site parameters.</p>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>A tensor of virtual site positions [Å] with <code>shape=(n_v_sites, 3)</code> or
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>A tensor of virtual site positions [Å] with <code>shape=(n_v_sites, 3)</code> or
 <code>shape=(n_batches, n_v_sites, 3)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-294">294</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-294">294</a></span>
 <span class="normal"><a href="#__codelineno-0-295">295</a></span>
 <span class="normal"><a href="#__codelineno-0-296">296</a></span>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span>
@@ -2185,32 +2137,31 @@ force field parameters.</p>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>
 </span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="k">return</span> <span class="n">v_site_coords</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.geometry.add_v_site_coords" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">add_v_site_coords</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">add_v_site_coords</span>
 
 
 <a href="#smee.geometry.add_v_site_coords" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_v_site_coords</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">add_v_site_coords</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">v_sites</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">force_field</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Appends the coordinates of any virtual sites to a conformer (or batch of
 conformers) containing only atomic coordinates.</p>
+
 
 <details class="notes" open>
   <summary>Notes</summary>
@@ -2220,55 +2171,53 @@ conformers) containing only atomic coordinates.</p>
 </ul>
 </details>
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>v_sites</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>A mapping between the virtual sites to add and their corresponding
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>v_sites</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../#smee.VSiteMap">VSiteMap</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>A mapping between the virtual sites to add and their corresponding
 force field parameters.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer(s) to add the virtual sites to with
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer(s) to add the virtual sites to with
 <code>shape=(n_atoms, 3)</code> or <code>shape=(n_batches, n_atoms, 3)</code> and units of
 [Å].</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>force_field</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The force field containing the virtual site parameters.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>force_field</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../#smee.TensorForceField">TensorForceField</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The force field containing the virtual site parameters.</p>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The full conformer(s) with both atomic and virtual site coordinates [Å] with
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The full conformer(s) with both atomic and virtual site coordinates [Å] with
 <code>shape=(n_atoms+n_v_sites, 3)</code> or <code>shape=(n_batches, n_atoms+n_v_sites, 3)</code>.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/geometry.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-334">334</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/geometry.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-334">334</a></span>
 <span class="normal"><a href="#__codelineno-0-335">335</a></span>
 <span class="normal"><a href="#__codelineno-0-336">336</a></span>
 <span class="normal"><a href="#__codelineno-0-337">337</a></span>
@@ -2324,8 +2273,8 @@ force field parameters.</p>
 </span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>
 </span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>    <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">conformer</span><span class="p">,</span> <span class="n">v_site_coords</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span> <span class="k">if</span> <span class="n">conformer</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">0</span><span class="p">))</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -2333,7 +2282,7 @@ force field parameters.</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 

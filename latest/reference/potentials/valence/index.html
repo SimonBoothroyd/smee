@@ -436,8 +436,6 @@
       
         
       
-        
-      
     
     
       
@@ -514,27 +512,6 @@
   
   <span class="md-ellipsis">
     Conformer Minimization
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/custom-handler.ipynb" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    None
   </span>
   
 
@@ -895,6 +872,8 @@
     
       
         
+          
+        
       
         
       
@@ -915,16 +894,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../converters/openmm/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1_2_3">
@@ -933,25 +920,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../converters/openmm/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Openmm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -1383,13 +1351,13 @@
 
 
 <h1 id="smee.potentials.valence" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">valence</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">valence</span>
 
 
 <a href="#smee.potentials.valence" class="headerlink" title="Permanent link">#</a></h1>
 
-  <div class="doc doc-contents first">
-  
+    <div class="doc doc-contents first">
+
       <p>Valence potential energy functions.</p>
 
 
@@ -1397,43 +1365,46 @@
 
 
 
-  <p>Functions:</p>
-  <ul>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_harmonic_bond_energy" href="#smee.potentials.valence.compute_harmonic_bond_energy">compute_harmonic_bond_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the potential energy [kcal / mol] of a set of bonds for a given</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_harmonic_angle_energy" href="#smee.potentials.valence.compute_harmonic_angle_energy">compute_harmonic_angle_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the potential energy [kcal / mol] of a set of valence angles for a given</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_cosine_proper_torsion_energy" href="#smee.potentials.valence.compute_cosine_proper_torsion_energy">compute_cosine_proper_torsion_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the potential energy [kcal / mol] of a set of proper torsions</p>
-          </div>
-        </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_cosine_improper_torsion_energy" href="#smee.potentials.valence.compute_cosine_improper_torsion_energy">compute_cosine_improper_torsion_energy</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>Compute the potential energy [kcal / mol] of a set of improper torsions</p>
-          </div>
-        </li>
-  </ul>
 
 
-  
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_harmonic_bond_energy" href="#smee.potentials.valence.compute_harmonic_bond_energy">compute_harmonic_bond_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the potential energy [kcal / mol] of a set of bonds for a given</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_harmonic_angle_energy" href="#smee.potentials.valence.compute_harmonic_angle_energy">compute_harmonic_angle_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the potential energy [kcal / mol] of a set of valence angles for a given</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_cosine_proper_torsion_energy" href="#smee.potentials.valence.compute_cosine_proper_torsion_energy">compute_cosine_proper_torsion_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the potential energy [kcal / mol] of a set of proper torsions</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.potentials.valence.compute_cosine_improper_torsion_energy" href="#smee.potentials.valence.compute_cosine_improper_torsion_energy">compute_cosine_improper_torsion_energy</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Compute the potential energy [kcal / mol] of a set of improper torsions</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
 
   <div class="doc doc-children">
-
 
 
 
@@ -1446,71 +1417,68 @@
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.valence.compute_harmonic_bond_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_harmonic_bond_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_harmonic_bond_energy</span>
 
 
 <a href="#smee.potentials.valence.compute_harmonic_bond_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_harmonic_bond_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_harmonic_bond_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the potential energy [kcal / mol] of a set of bonds for a given
 conformer using a harmonic potential of the form <code>1/2 * k * (r - length) ** 2</code></p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/valence.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-10">10</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/valence.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-10">10</a></span>
 <span class="normal"><a href="#__codelineno-0-11">11</a></span>
 <span class="normal"><a href="#__codelineno-0-12">12</a></span>
 <span class="normal"><a href="#__codelineno-0-13">13</a></span>
@@ -1570,80 +1538,76 @@ conformer using a harmonic potential of the form <code>1/2 * k * (r - length) **
 </span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a>
 </span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="k">return</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">distances</span> <span class="o">-</span> <span class="n">length</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.valence.compute_harmonic_angle_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_harmonic_angle_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_harmonic_angle_energy</span>
 
 
 <a href="#smee.potentials.valence.compute_harmonic_angle_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_harmonic_angle_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_harmonic_angle_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the potential energy [kcal / mol] of a set of valence angles for a given
 conformer using a harmonic potential of the form <code>1/2 * k * (theta - angle) ** 2</code></p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/valence.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-42">42</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/valence.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-42">42</a></span>
 <span class="normal"><a href="#__codelineno-0-43">43</a></span>
 <span class="normal"><a href="#__codelineno-0-44">44</a></span>
 <span class="normal"><a href="#__codelineno-0-45">45</a></span>
@@ -1703,81 +1667,77 @@ conformer using a harmonic potential of the form <code>1/2 * k * (theta - angle)
 </span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a>
 </span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="k">return</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">theta</span> <span class="o">-</span> <span class="n">angle</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.valence.compute_cosine_proper_torsion_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_cosine_proper_torsion_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_cosine_proper_torsion_energy</span>
 
 
 <a href="#smee.potentials.valence.compute_cosine_proper_torsion_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_cosine_proper_torsion_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_cosine_proper_torsion_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the potential energy [kcal / mol] of a set of proper torsions
 for a given conformer using a cosine potential of the form:</p>
 <p><code>k*(1+cos(periodicity*theta-phase))</code></p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/valence.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-106">106</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/valence.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-106">106</a></span>
 <span class="normal"><a href="#__codelineno-0-107">107</a></span>
 <span class="normal"><a href="#__codelineno-0-108">108</a></span>
 <span class="normal"><a href="#__codelineno-0-109">109</a></span>
@@ -1823,81 +1783,77 @@ for a given conformer using a cosine potential of the form:</p>
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="k">return</span> <span class="n">_compute_cosine_torsion_energy</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="n">potential</span><span class="p">,</span> <span class="n">conformer</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.potentials.valence.compute_cosine_improper_torsion_energy" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">compute_cosine_improper_torsion_energy</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">compute_cosine_improper_torsion_energy</span>
 
 
 <a href="#smee.potentials.valence.compute_cosine_improper_torsion_energy" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">compute_cosine_improper_torsion_energy</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">compute_cosine_improper_torsion_energy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">system</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">potential</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">conformer</span><span class="p">:</span> <span class="n"><span title="torch.Tensor">Tensor</span></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="torch.Tensor">Tensor</span></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Compute the potential energy [kcal / mol] of a set of improper torsions
 for a given conformer using a cosine potential of the form:</p>
 <p><code>k*(1+cos(periodicity*theta-phase))</code></p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>system</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The system to compute the energy for.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>potential</code></b>
-            (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>The potential energy function to evaluate.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>conformer</code></b>
-            (<code><span title="torch.Tensor">Tensor</span></code>)
-        –
-        <div class="doc-md-description">
-          <p>The conformer [Å] to evaluate the potential at with
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>system</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorSystem" href="../../#smee.TensorSystem">TensorSystem</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The system to compute the energy for.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>potential</code></b>
+              (<code><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>The potential energy function to evaluate.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>conformer</code></b>
+              (<code><span title="torch.Tensor">Tensor</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>The conformer [Å] to evaluate the potential at with
 <code>shape=(n_confs, n_particles, 3)</code> or <code>shape=(n_particles, 3)</code>.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="torch.Tensor">Tensor</span></code>
+          –
+          <div class="doc-md-description">
+            <p>The computed potential energy [kcal / mol].</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="torch.Tensor">Tensor</span></code>
-        –
-        <div class="doc-md-description">
-          <p>The computed potential energy [kcal / mol].</p>
-      </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/potentials/valence.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-131">131</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/potentials/valence.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-131">131</a></span>
 <span class="normal"><a href="#__codelineno-0-132">132</a></span>
 <span class="normal"><a href="#__codelineno-0-133">133</a></span>
 <span class="normal"><a href="#__codelineno-0-134">134</a></span>
@@ -1943,8 +1899,8 @@ for a given conformer using a cosine potential of the form:</p>
 </span><span id="__span-0-152"><a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-153"><a id="__codelineno-0-153" name="__codelineno-0-153"></a>    <span class="k">return</span> <span class="n">_compute_cosine_torsion_energy</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="n">potential</span><span class="p">,</span> <span class="n">conformer</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -1952,7 +1908,7 @@ for a given conformer using a cosine potential of the form:</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 

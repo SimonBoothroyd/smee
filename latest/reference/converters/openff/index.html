@@ -436,8 +436,6 @@
       
         
       
-        
-      
     
     
       
@@ -514,27 +512,6 @@
   
   <span class="md-ellipsis">
     Conformer Minimization
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../examples/custom-handler.ipynb" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    None
   </span>
   
 
@@ -899,6 +876,8 @@
     
       
         
+          
+        
       
         
       
@@ -919,16 +898,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_2_3" >
         
           
-          <label class="md-nav__link" for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../openmm/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     <code class="doc-symbol doc-symbol-nav doc-symbol-module"></code> openmm
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_1_2_3" id="__nav_3_1_2_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3_1_2_3">
@@ -937,25 +924,6 @@
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../openmm/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Openmm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -1300,70 +1268,72 @@
 
 
 <h1 id="smee.converters.openff" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>          <span class="doc doc-object-name doc-module-name">openff</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-module"></code>            <span class="doc doc-object-name doc-module-name">openff</span>
 
 
 <a href="#smee.converters.openff" class="headerlink" title="Permanent link">#</a></h1>
 
-  <div class="doc doc-contents first">
-  
+    <div class="doc doc-contents first">
+
       <p>Tensor representations of SMIRNOFF force fields.</p>
 
 
 
 
-  <p>Modules:</p>
-  <ul>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.nonbonded" href="nonbonded/#smee.converters.openff.nonbonded">nonbonded</a></code></b>
-        –
-        <div class="doc-md-description">
-          <p>Convert SMIRNOFF non-bonded parameters into tensors.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.valence" href="valence/#smee.converters.openff.valence">valence</a></code></b>
-        –
-        <div class="doc-md-description">
-          <p>Convert SMIRNOFF valence parameters into tensors.</p>
-        </div>
-      </li>
-  </ul>
 
-
-
-
-
-  <p>Functions:</p>
-  <ul>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.convert_handlers" href="#smee.converters.openff.convert_handlers">convert_handlers</a></code></b>
+<p><span class="doc-section-title">Modules:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.nonbonded" href="nonbonded/#smee.converters.openff.nonbonded">nonbonded</a></code></b>
           –
           <div class="doc-md-description">
-            <p>Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.</p>
+            <p>Convert SMIRNOFF non-bonded parameters into tensors.</p>
           </div>
         </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.convert_interchange" href="#smee.converters.openff.convert_interchange">convert_interchange</a></code></b>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.valence" href="valence/#smee.converters.openff.valence">valence</a></code></b>
           –
           <div class="doc-md-description">
-            <p>Convert a list of interchange objects into tensor potentials.</p>
+            <p>Convert SMIRNOFF valence parameters into tensors.</p>
           </div>
         </li>
-        <li class="field-body">
-          <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.smirnoff_parameter_converter" href="#smee.converters.openff.smirnoff_parameter_converter">smirnoff_parameter_converter</a></code></b>
-          –
-          <div class="doc-md-description">
-            <p>A decorator used to flag a function as being able to convert a parameter handlers</p>
-          </div>
-        </li>
-  </ul>
+    </ul>
 
 
-  
+
+
+
+
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.convert_handlers" href="#smee.converters.openff.convert_handlers">convert_handlers</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.convert_interchange" href="#smee.converters.openff.convert_interchange">convert_interchange</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Convert a list of interchange objects into tensor potentials.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="smee.converters.openff.smirnoff_parameter_converter" href="#smee.converters.openff.smirnoff_parameter_converter">smirnoff_parameter_converter</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>A decorator used to flag a function as being able to convert a parameter handlers</p>
+            </div>
+          </li>
+    </ul>
+
+
+
+
 
   <div class="doc doc-children">
-
 
 
 
@@ -1376,70 +1346,67 @@
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.converters.openff.convert_handlers" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">convert_handlers</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">convert_handlers</span>
 
 
 <a href="#smee.converters.openff.convert_handlers" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">convert_handlers</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">convert_handlers</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">handlers</span><span class="p">:</span> <span class="n">list</span><span class="p">[</span><span class="n"><span title="openff.interchange.smirnoff.SMIRNOFFCollection">SMIRNOFFCollection</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">topologies</span><span class="p">:</span> <span class="n">list</span><span class="p">[</span><span class="n"><span title="openff.toolkit.Topology">Topology</span></span><span class="p">],</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">v_site_maps</span><span class="p">:</span> <span class="n">list</span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../../#smee.VSiteMap">VSiteMap</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a></span><span class="p">,</span> <span class="n">list</span><span class="p">[</span><span class="n"><span title="smee.ParameterMap">ParameterMap</span></span><span class="p">]]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>handlers</code></b>
-            (<code>list[<span title="openff.interchange.smirnoff.SMIRNOFFCollection">SMIRNOFFCollection</span>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>The SMIRNOFF parameter handler collections for a set of interchange
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>handlers</code></b>
+              (<code>list[<span title="openff.interchange.smirnoff.SMIRNOFFCollection">SMIRNOFFCollection</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The SMIRNOFF parameter handler collections for a set of interchange
 objects to convert.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>topologies</code></b>
-            (<code>list[<span title="openff.toolkit.Topology">Topology</span>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>The topologies associated with each interchange object.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>v_site_maps</code></b>
-            (<code>list[<a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../../#smee.VSiteMap">VSiteMap</a> | None] | None</code>, default:
-                <code>None</code>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>topologies</code></b>
+              (<code>list[<span title="openff.toolkit.Topology">Topology</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The topologies associated with each interchange object.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>v_site_maps</code></b>
+              (<code>list[<a class="autorefs autorefs-internal" title="smee.VSiteMap" href="../../#smee.VSiteMap">VSiteMap</a> | None] | None</code>, default:
+                  <code>None</code>
 )
-        –
-        <div class="doc-md-description">
-          <p>The v-site maps associated with each interchange object.</p>
-        </div>
-      </li>
-  </ul>
+          –
+          <div class="doc-md-description">
+            <p>The v-site maps associated with each interchange object.</p>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>tuple[<a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a>, list[<span title="smee.ParameterMap">ParameterMap</span>]]</code>
-        –
-        <div class="doc-md-description">
-          <p>The potential containing the values of the parameters in each handler
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>tuple[<a class="autorefs autorefs-internal" title="smee.TensorPotential" href="../../#smee.TensorPotential">TensorPotential</a>, list[<span title="smee.ParameterMap">ParameterMap</span>]]</code>
+          –
+          <div class="doc-md-description">
+            <p>The potential containing the values of the parameters in each handler
 collection, and a list of maps (one per topology) between molecule elements
 (e.g. bond indices) and parameter indices.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
       <p>Examples:</p>
 <div class="language-text highlight"><pre><span></span><code>&gt;&gt;&gt; from openff.toolkit import ForceField, Molecule
 &gt;&gt;&gt; from openff.interchange import Interchange
@@ -1458,9 +1425,9 @@ collection, and a list of maps (one per topology) between molecule elements
 &gt;&gt;&gt; vdw_potential, applied_vdw_parameters = convert_handlers(interchanges)
 </code></pre></div>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-249">249</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-249">249</a></span>
 <span class="normal"><a href="#__codelineno-0-250">250</a></span>
 <span class="normal"><a href="#__codelineno-0-251">251</a></span>
 <span class="normal"><a href="#__codelineno-0-252">252</a></span>
@@ -1582,59 +1549,55 @@ collection, and a list of maps (one per topology) between molecule elements
 </span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="k">return</span> <span class="n">converter</span><span class="p">(</span><span class="n">handlers</span><span class="p">,</span> <span class="o">**</span><span class="n">converter_kwargs</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.converters.openff.convert_interchange" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">convert_interchange</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">convert_interchange</span>
 
 
 <a href="#smee.converters.openff.convert_interchange" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">convert_interchange</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">convert_interchange</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">interchange</span><span class="p">:</span> <span class="n"><span title="openff.interchange.Interchange">Interchange</span></span> <span class="o">|</span> <span class="n">list</span><span class="p">[</span><span class="n"><span title="openff.interchange.Interchange">Interchange</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">tuple</span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../../#smee.TensorForceField">TensorForceField</a></span><span class="p">,</span> <span class="n">list</span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="smee.TensorTopology" href="../../#smee.TensorTopology">TensorTopology</a></span><span class="p">]]</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Convert a list of interchange objects into tensor potentials.</p>
 
 
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>interchange</code></b>
-            (<code><span title="openff.interchange.Interchange">Interchange</span> | list[<span title="openff.interchange.Interchange">Interchange</span>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>The list of (or singile) interchange objects to convert into
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>interchange</code></b>
+              (<code><span title="openff.interchange.Interchange">Interchange</span> | list[<span title="openff.interchange.Interchange">Interchange</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The list of (or singile) interchange objects to convert into
 tensor potentials.</p>
-        </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
 
 
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code>tuple[<a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../../#smee.TensorForceField">TensorForceField</a>, list[<a class="autorefs autorefs-internal" title="smee.TensorTopology" href="../../#smee.TensorTopology">TensorTopology</a>]]</code>
-        –
-        <div class="doc-md-description">
-          <p>The tensor force field containing the parameters of each handler, and a list
+<p><span class="doc-section-title">Returns:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code>tuple[<a class="autorefs autorefs-internal" title="smee.TensorForceField" href="../../#smee.TensorForceField">TensorForceField</a>, list[<a class="autorefs autorefs-internal" title="smee.TensorTopology" href="../../#smee.TensorTopology">TensorTopology</a>]]</code>
+          –
+          <div class="doc-md-description">
+            <p>The tensor force field containing the parameters of each handler, and a list
 (one per interchange) of objects mapping molecule elements (e.g. bonds, angles)
 to corresponding handler parameters.</p>
-      </div>
-      </li>
-  </ul>
+          </div>
+        </li>
+    </ul>
       <p>Examples:</p>
 <div class="language-text highlight"><pre><span></span><code>&gt;&gt;&gt; from openff.toolkit import ForceField, Molecule
 &gt;&gt;&gt; from openff.interchange import Interchange
@@ -1650,9 +1613,9 @@ to corresponding handler parameters.</p>
 &gt;&gt;&gt; tensor_ff, tensor_topologies = convert_interchange(interchanges)
 </code></pre></div>
 
-          <details class="quote">
-            <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-354">354</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-354">354</a></span>
 <span class="normal"><a href="#__codelineno-0-355">355</a></span>
 <span class="normal"><a href="#__codelineno-0-356">356</a></span>
 <span class="normal"><a href="#__codelineno-0-357">357</a></span>
@@ -1842,56 +1805,53 @@ to corresponding handler parameters.</p>
 </span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>    <span class="n">tensor_force_field</span> <span class="o">=</span> <span class="n">smee</span><span class="o">.</span><span class="n">TensorForceField</span><span class="p">(</span><span class="n">potentials</span><span class="p">,</span> <span class="n">v_sites</span><span class="p">)</span>
 </span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>    <span class="k">return</span> <span class="n">tensor_force_field</span><span class="p">,</span> <span class="n">tensor_topologies</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="smee.converters.openff.smirnoff_parameter_converter" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>          <span class="doc doc-object-name doc-function-name">smirnoff_parameter_converter</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">smirnoff_parameter_converter</span>
 
 
 <a href="#smee.converters.openff.smirnoff_parameter_converter" class="headerlink" title="Permanent link">#</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">smirnoff_parameter_converter</span><span class="p">(</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">smirnoff_parameter_converter</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">type_</span><span class="p">:</span> <span class="n">str</span><span class="p">,</span> <span class="n">default_units</span><span class="p">:</span> <span class="n">dict</span><span class="p">[</span><span class="n">str</span><span class="p">,</span> <span class="n"><span title="openff.units.Unit">Unit</span></span><span class="p">]</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>A decorator used to flag a function as being able to convert a parameter handlers
 parameters into tensors.</p>
 
 
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>type_</code></b>
+              (<code>str</code>)
+          –
+          <div class="doc-md-description">
+            <p>The type of parameter handler that the decorated function can convert.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>default_units</code></b>
+              (<code>dict[str, <span title="openff.units.Unit">Unit</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The default units of each parameter in the handler.</p>
+          </div>
+        </li>
+    </ul>
 
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b><code>type_</code></b>
-            (<code>str</code>)
-        –
-        <div class="doc-md-description">
-          <p>The type of parameter handler that the decorated function can convert.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code>default_units</code></b>
-            (<code>dict[str, <span title="openff.units.Unit">Unit</span>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>The default units of each parameter in the handler.</p>
-        </div>
-      </li>
-  </ul>
-
-          <details class="quote">
-            <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
-            <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-27">27</a></span>
+            <details class="quote">
+              <summary>Source code in <code>smee/converters/openff/_openff.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-27">27</a></span>
 <span class="normal"><a href="#__codelineno-0-28">28</a></span>
 <span class="normal"><a href="#__codelineno-0-29">29</a></span>
 <span class="normal"><a href="#__codelineno-0-30">30</a></span>
@@ -1933,8 +1893,8 @@ parameters into tensors.</p>
 </span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>
 </span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="k">return</span> <span class="n">parameter_converter_inner</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -1942,7 +1902,7 @@ parameters into tensors.</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 
