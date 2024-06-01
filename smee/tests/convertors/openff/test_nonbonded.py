@@ -32,7 +32,7 @@ def test_convert_electrostatics_am1bcc(ethanol, ethanol_interchange):
         "scale_13",
         "scale_14",
         "scale_15",
-        "cutoff",
+        smee.CUTOFF_ATTRIBUTE,
     )
 
     assert potential.parameter_cols == ("charge",)

@@ -38,11 +38,11 @@ def _create_nonbonded_force(
     else:
         raise NotImplementedError(f"unsupported force class {cls}")
 
-    cutoff_idx = potential.attribute_cols.index("cutoff")
+    cutoff_idx = potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)
     switch_idx = (
         None
-        if "switch_width" not in potential.attribute_cols
-        else potential.attribute_cols.index("switch_width")
+        if smee.SWITCH_ATTRIBUTE not in potential.attribute_cols
+        else potential.attribute_cols.index(smee.SWITCH_ATTRIBUTE)
     )
 
     if not system.is_periodic:
@@ -505,9 +505,9 @@ def convert_dexp_potential(
     The intermolcular interactions are described by a custom nonbonded force, while the
     intramolecular interactions are described by a custom bond force.
 
-    If the potential has custom mixing rules (i.e. exceptions), the a lookup table will
-    be used to store the parameters. Otherwise, the mixing rules will be applied
-    directly in the energy function.
+    If the potential has custom mixing rules (i.e. exceptions), a lookup table will be
+    used to store the parameters. Otherwise, the mixing rules will be applied directly
+    in the energy function.
     """
     energy_fn = (
         "epsilon * (repulsion - attraction);"
