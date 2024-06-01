@@ -16,6 +16,7 @@ _RADIANS = openmm.unit.radians
 def convert_bond_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.HarmonicBondForce:
+    """Convert a harmonic bond potential to a corresponding OpenMM force."""
     force = openmm.HarmonicBondForce()
 
     idx_offset = 0
@@ -47,6 +48,7 @@ def convert_bond_potential(
 def _convert_angle_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.HarmonicAngleForce:
+    """Convert a harmonic angle potential to a corresponding OpenMM force."""
     force = openmm.HarmonicAngleForce()
 
     idx_offset = 0
@@ -82,6 +84,7 @@ def _convert_angle_potential(
 def convert_torsion_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.PeriodicTorsionForce:
+    """Convert a torsion potential to a corresponding OpenMM force."""
     force = openmm.PeriodicTorsionForce()
 
     idx_offset = 0

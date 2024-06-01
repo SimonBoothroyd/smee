@@ -264,8 +264,10 @@ def _precompute_pairwise(
 
         requires_pairwise = True
 
-        if "cutoff" in potential.attribute_cols:
-            cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+        if smee.CUTOFF_ATTRIBUTE in potential.attribute_cols:
+            cutoff = potential.attributes[
+                potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)
+            ]
             cutoffs.append(cutoff)
 
         break

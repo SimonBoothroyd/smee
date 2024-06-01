@@ -54,3 +54,13 @@ class EnergyFn(_StrEnum):
     ANGLE_HARMONIC = "k/2*(theta-angle)**2"
 
     TORSION_COSINE = "k*(1+cos(periodicity*theta-phase))"
+
+
+CUTOFF_ATTRIBUTE = "cutoff"
+"""The attribute that should be used to store the cutoff distance of a potential."""
+SWITCH_ATTRIBUTE = "switch_width"
+"""The attribute that should be used to store the switch width of a potential, if the
+potential should use the standard OpenMM switch function.
+
+This attribute should be omitted if the potential should not use a switch function.
+"""

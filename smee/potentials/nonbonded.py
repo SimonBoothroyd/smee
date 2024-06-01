@@ -270,10 +270,10 @@ def _compute_switch_fn(
     potential: smee.TensorPotential,
     pairwise: PairwiseDistances,
 ) -> tuple[torch.Tensor, torch.Tensor | None]:
-    if "switch_width" not in potential.attribute_cols:
+    if smee.SWITCH_ATTRIBUTE not in potential.attribute_cols:
         return torch.ones(1), None
 
-    switch_width_idx = potential.attribute_cols.index("switch_width")
+    switch_width_idx = potential.attribute_cols.index(smee.SWITCH_ATTRIBUTE)
     switch_width = pairwise.cutoff - potential.attributes[switch_width_idx]
 
     x_switch = (pairwise.distances - switch_width) / (pairwise.cutoff - switch_width)
@@ -454,7 +454,7 @@ def compute_lj_energy(
 
     box_vectors = None if not system.is_periodic else box_vectors
 
-    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
 
     pairwise = (
         pairwise
@@ -728,7 +728,7 @@ def compute_dexp_energy(
     """
     box_vectors = None if not system.is_periodic else box_vectors
 
-    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
 
     pairwise = (
         pairwise
@@ -906,7 +906,7 @@ def _compute_coulomb_energy_periodic(
 
     charges = smee.potentials.broadcast_parameters(system, potential).squeeze(-1)
 
-    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
     error_tol = torch.tensor(0.0001)
 
     exceptions = _compute_pme_exclusions(system, potential).to(charges.device)
@@ -994,7 +994,7 @@ def compute_coulomb_energy(
 
     box_vectors = None if not system.is_periodic else box_vectors
 
-    cutoff = potential.attributes[potential.attribute_cols.index("cutoff")]
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
 
     pairwise = (
         pairwise
