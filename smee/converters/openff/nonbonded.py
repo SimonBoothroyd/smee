@@ -200,6 +200,49 @@ def convert_dexp(
     return potential, parameter_maps
 
 
+@smee.converters.smirnoff_parameter_converter(
+    "DampedExp6810",
+    {
+        "beta": _ANGSTROM**-1,
+        "rho": _ANGSTROM,
+        "c6": _KCAL_PER_MOL * _ANGSTROM**6,
+        "c8": _KCAL_PER_MOL * _ANGSTROM**8,
+        "c10": _KCAL_PER_MOL * _ANGSTROM**10,
+        "force_at_zero": _KCAL_PER_MOL * _ANGSTROM**-1,
+        "scale_12": _UNITLESS,
+        "scale_13": _UNITLESS,
+        "scale_14": _UNITLESS,
+        "scale_15": _UNITLESS,
+        "cutoff": _ANGSTROM,
+        "switch_width": _ANGSTROM,
+    },
+)
+def convert_dampedexp6810(
+    handlers: list[
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFDoubleExponentialCollection"
+    ],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    import smee.potentials.nonbonded
+
+    (
+        potential,
+        parameter_maps,
+    ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
+        handlers,
+        "DampedExp6810",
+        topologies,
+        v_site_maps,
+        ("beta", "rho", "c6", "c8", "c10"),
+        ("cutoff", "switch_width", "force_at_zero"),
+    )
+    potential.type = smee.PotentialType.VDW
+    potential.fn = smee.EnergyFn.VDW_DAMPEDEXP6810
+
+    return potential, parameter_maps
+
+
 def _make_v_site_electrostatics_compatible(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
 ):

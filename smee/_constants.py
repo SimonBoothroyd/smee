@@ -48,6 +48,9 @@ class EnergyFn(_StrEnum):
         "alpha/(alpha-beta)*exp(beta*(1-r/r_min)))"
     )
     # VDW_BUCKINGHAM = "a*exp(-b*r)-c*r^-6"
+    VDW_DAMPEDEXP6810 = (
+        "fz*beta**-1*exp(-beta*(r-rho))-c6**6-c8**8-c10**10"
+    )
 
     BOND_HARMONIC = "k/2*(r-length)**2"
 

@@ -10,6 +10,7 @@ from smee.converters.openff.nonbonded import (
     convert_dexp,
     convert_electrostatics,
     convert_vdw,
+    convert_dampedexp6810
 )
 
 
@@ -228,12 +229,12 @@ def test_convert_dampedexp6810(ethanol, test_data_dir):
     )
     vdw_collection = interchange.collections["DampedExp6810"]
 
-    #potential, parameter_maps = convert_dexp(
-    #    [vdw_collection], [ethanol.to_topology()], [None]
-    #)
+    potential, parameter_maps = convert_dampedexp6810(
+        [vdw_collection], [ethanol.to_topology()], [None]
+    )
 
     #assert potential.attribute_cols[-2:] == ("alpha", "beta")
     #assert potential.parameter_cols == ("epsilon", "r_min")
 
-    #assert potential.type == "vdW"
-    #assert potential.fn == smee.EnergyFn.VDW_DEXP
+    assert potential.type == "vdW"
+    assert potential.fn == smee.EnergyFn.VDW_DAMPEDEXP6810
