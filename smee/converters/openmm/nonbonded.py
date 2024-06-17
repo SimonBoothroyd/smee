@@ -524,6 +524,46 @@ def convert_dexp_potential(
 
 
 @smee.converters.openmm.potential_converter(
+    smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810
+)
+def convert_dampedexp6810_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> tuple[openmm.CustomNonbondedForce, openmm.CustomBondForce]:
+    """Convert a DampedExp6810 potential to OpenMM forces.
+
+    The intermolcular interactions are described by a custom nonbonded force, while the
+    intramolecular interactions are described by a custom bond force.
+
+    If the potential has custom mixing rules (i.e. exceptions), a lookup table will be
+    used to store the parameters. Otherwise, the mixing rules will be applied directly
+    in the energy function.
+    """
+    energy_fn = (
+        "repulsion - ttdamp6*c6*invR^6 - ttdamp8*c8*invR^8 - ttdamp10*c10*invR^10;"
+        "repulsion = force_at_zero*invbeta*exp(-beta*(r-rho));"
+        "ttdamp10 = select(expbr, 1.0 - expbr * ttdamp10Sum, 1);"
+        "ttdamp8 = select(expbr, 1.0 - expbr * ttdamp8Sum, 1);"
+        "ttdamp6 = select(expbr, 1.0 - expbr * ttdamp6Sum, 1);"
+        "ttdamp10Sum = ttdamp8Sum + br^9/362880 + br^10/3628800;"
+        "ttdamp8Sum = ttdamp6Sum + br^7/5040 + br^8/40320;"
+        "ttdamp6Sum = 1.0 + br + br^2/2 + br^3/6 + br^4/24 + br^5/120 + br^6/720;"
+        "expbr = exp(-br);"
+        "br = beta*r;"
+        "invR = 1.0/r;"
+        "invbeta = 1.0/beta;"
+    )
+    mixing_fn = {
+        "beta": "2.0 * beta1 * beta2 / (beta1 + beta2)",
+        "rho": "0.5 * (rho1 + rho2)",
+        "c6": "sqrt(c61*c62)",
+        "c8": "sqrt(c81*c82)",
+        "c10": "sqrt(c101*c102)"
+    }
+
+    return convert_custom_vdw_potential(potential, system, energy_fn, mixing_fn)
+
+
+@smee.converters.openmm.potential_converter(
     smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB
 )
 def convert_coulomb_potential(
