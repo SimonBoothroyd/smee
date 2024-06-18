@@ -6,6 +6,8 @@ import openmm.unit
 import pytest
 import torch
 
+import openff
+
 import smee
 import smee.converters
 import smee.converters.openmm
@@ -522,3 +524,31 @@ def test_compute_coulomb_energy_non_periodic():
     )
 
     assert torch.isclose(energy, expected_energy, atol=1.0e-4)
+
+
+def test_compute_dampedexp6810_energy_non_periodic(test_data_dir):
+    tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
+        ["[Ne]", "[Ne]"],
+        [1, 1],
+        openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-nonpolar-2.0.0.offxml"), load_plugins=True)
+    )
+    tensor_sys.is_periodic = False
+
+    coords = torch.stack(
+        [
+            torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 0]) + torch.tensor([0, 0, 1.5 + i * 0.5])])
+            for i in range(20)
+        ]
+    )
+
+    energies = smee.compute_energy(tensor_sys, tensor_ff, coords)
+    expected_energies = []
+    for coord in coords:
+        expected_energies.append(_compute_openmm_energy(
+            tensor_sys, coord, None, tensor_ff.potentials_by_type["vdW"]
+            )
+        )
+    expected_energies = torch.tensor(expected_energies)
+    print(energies)
+    print(expected_energies)
+    assert torch.allclose(energies, expected_energies.float(), atol=1.0e-4)
