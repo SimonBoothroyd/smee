@@ -234,7 +234,7 @@ def test_convert_dampedexp6810(ethanol, test_data_dir):
     )
 
     assert potential.attribute_cols[-1] == "force_at_zero"
-    assert potential.parameter_cols == ("beta", "rho", "c6", "c8", "c10")
+    assert potential.parameter_cols == ("rho", "beta", "c6", "c8", "c10")
 
     assert potential.type == "vdW"
     assert potential.fn == smee.EnergyFn.VDW_DAMPEDEXP6810

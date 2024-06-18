@@ -203,8 +203,8 @@ def convert_dexp(
 @smee.converters.smirnoff_parameter_converter(
     "DampedExp6810",
     {
-        "beta": _ANGSTROM**-1,
         "rho": _ANGSTROM,
+        "beta": _ANGSTROM**-1,
         "c6": _KCAL_PER_MOL * _ANGSTROM**6,
         "c8": _KCAL_PER_MOL * _ANGSTROM**8,
         "c10": _KCAL_PER_MOL * _ANGSTROM**10,
@@ -219,7 +219,7 @@ def convert_dexp(
 )
 def convert_dampedexp6810(
     handlers: list[
-        "smirnoff_plugins.collections.nonbonded.SMIRNOFFDoubleExponentialCollection"
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFDampedExp6810Collection"
     ],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.VSiteMap | None],
@@ -234,7 +234,7 @@ def convert_dampedexp6810(
         "DampedExp6810",
         topologies,
         v_site_maps,
-        ("beta", "rho", "c6", "c8", "c10"),
+        ("rho", "beta", "c6", "c8", "c10"),
         ("cutoff", "switch_width", "force_at_zero"),
     )
     potential.type = smee.PotentialType.VDW

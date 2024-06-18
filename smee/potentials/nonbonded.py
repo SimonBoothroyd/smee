@@ -844,16 +844,16 @@ def compute_dampedexp6810_energy(
     )
     pair_scales = pair_scales[pairs_1d]
 
-    beta_column = potential.parameter_cols.index("beta")
     rho_column = potential.parameter_cols.index("rho")
+    beta_column = potential.parameter_cols.index("beta")
     c6_column = potential.parameter_cols.index("c6")
     c8_column = potential.parameter_cols.index("c8")
     c10_column = potential.parameter_cols.index("c10")
 
-    beta_a = parameters[pairwise.idxs[:, 0], beta_column]
-    beta_b = parameters[pairwise.idxs[:, 1], beta_column]
     rho_a = parameters[pairwise.idxs[:, 0], rho_column]
     rho_b = parameters[pairwise.idxs[:, 1], rho_column]
+    beta_a = parameters[pairwise.idxs[:, 0], beta_column]
+    beta_b = parameters[pairwise.idxs[:, 1], beta_column]
     c6_a = parameters[pairwise.idxs[:, 0], c6_column]
     c6_b = parameters[pairwise.idxs[:, 1], c6_column]
     c8_a = parameters[pairwise.idxs[:, 0], c8_column]
@@ -861,8 +861,8 @@ def compute_dampedexp6810_energy(
     c10_a = parameters[pairwise.idxs[:, 0], c10_column]
     c10_b = parameters[pairwise.idxs[:, 1], c10_column]
 
-    beta = 2.0 * beta_a * beta_b / (beta_a + beta_b)
     rho = 0.5 * (rho_a + rho_b)
+    beta = 2.0 * beta_a * beta_b / (beta_a + beta_b)
     c6 = smee.utils.geometric_mean(c6_a, c6_b)
     c8 = smee.utils.geometric_mean(c8_a, c8_b)
     c10 = smee.utils.geometric_mean(c10_a, c10_b)
@@ -872,14 +872,14 @@ def compute_dampedexp6810_energy(
             system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
         )
 
-        beta = beta.clone()  # prevent in-place modification
-        rho = rho.clone()
+        rho = rho.clone()  # prevent in-place modification
+        beta = beta.clone()
         c6 = c6.clone()
         c8 = c8.clone()
         c10 = c10.clone()
 
-        beta[exception_idxs] = exceptions[:, beta_column]
         rho[exception_idxs] = exceptions[:, rho_column]
+        beta[exception_idxs] = exceptions[:, beta_column]
         c6[exception_idxs] = exceptions[:, c6_column]
         c8[exception_idxs] = exceptions[:, c8_column]
         c10[exception_idxs] = exceptions[:, c10_column]
@@ -892,9 +892,13 @@ def compute_dampedexp6810_energy(
     br = beta * x
     expbr = torch.exp(-beta * x)
 
-    ttdamp6 = 1.0 + br + br**2/2 + br**3/6 + br**4/24 + br**5/120 + br**6/720
-    ttdamp8 = ttdamp6 + br**7/5040 + br**8/40320
-    ttdamp10 = ttdamp8 + br**9/362880 + br**10/3628800
+    ttdamp6_sum = 1.0 + br + br**2/2 + br**3/6 + br**4/24 + br**5/120 + br**6/720
+    ttdamp8_sum = ttdamp6_sum + br**7/5040 + br**8/40320
+    ttdamp10_sum = ttdamp8_sum + br**9/362880 + br**10/3628800
+
+    ttdamp6 = 1.0 - expbr * ttdamp6_sum
+    ttdamp8 = 1.0 - expbr * ttdamp8_sum
+    ttdamp10 = 1.0 - expbr * ttdamp10_sum
 
     repulsion = force_at_zero * 1.0 / beta * torch.exp(-beta * (x - rho))
     energies = repulsion - ttdamp6 * c6 * x**-6 - ttdamp8 * c8 * x**-8 - ttdamp10 * c10 * x**-10
