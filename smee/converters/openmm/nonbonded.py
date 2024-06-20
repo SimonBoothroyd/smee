@@ -563,6 +563,15 @@ def convert_dampedexp6810_potential(
     return convert_custom_vdw_potential(potential, system, energy_fn, mixing_fn)
 
 
+def convert_multipole_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> openmm.AmoebaMultipoleForce:
+    """Convert a Multipole potential to OpenMM forces.
+    """
+
+    raise NotImplementedError
+
+
 @smee.converters.openmm.potential_converter(
     smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB
 )

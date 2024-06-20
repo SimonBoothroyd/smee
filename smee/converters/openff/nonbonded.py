@@ -243,6 +243,39 @@ def convert_dampedexp6810(
     return potential, parameter_maps
 
 
+@smee.converters.smirnoff_parameter_converter(
+    "Multipole",
+    {
+        "polarity": _ANGSTROM**3,
+        "cutoff": _ANGSTROM
+    },
+)
+def convert_multipole(
+    handlers: list[
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFMultipoleCollection"
+    ],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    import smee.potentials.nonbonded
+
+    (
+        potential,
+        parameter_maps,
+    ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
+        handlers,
+        "Multipole",
+        topologies,
+        v_site_maps,
+        ("polarity"),
+        ("cutoff"),
+    )
+    potential.type = smee.PotentialType.POLARIZATION
+    potential.fn = smee.EnergyFn.POLARIZATION
+
+    return potential, parameter_maps
+
+
 def _make_v_site_electrostatics_compatible(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
 ):

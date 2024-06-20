@@ -806,7 +806,7 @@ def _compute_dampedexp6810_lrc(
     """Computes the long range dispersion correction due to the double exponential
     potential, possibly with a switching function."""
 
-    return
+    raise NotImplementedError
 
 
 @smee.potentials.potential_energy_fn(smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810)
@@ -933,6 +933,18 @@ def compute_dampedexp6810_energy(
     )
 
     return energy
+
+
+@smee.potentials.potential_energy_fn(smee.PotentialType.POLARIZATION, smee.EnergyFn.POLARIZATION)
+def compute_multipole_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
+) -> torch.Tensor:
+
+    raise NotImplementedError
 
 
 def _compute_pme_exclusions(
