@@ -796,6 +796,19 @@ def compute_dexp_energy(
     return energy
 
 
+def _compute_dampedexp6810_lrc(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    rs: torch.Tensor | None,
+    rc: torch.Tensor | None,
+    volume: torch.Tensor,
+) -> torch.Tensor:
+    """Computes the long range dispersion correction due to the double exponential
+    potential, possibly with a switching function."""
+
+    return
+
+
 @smee.potentials.potential_energy_fn(smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810)
 def compute_dampedexp6810_energy(
     system: smee.TensorSystem,
@@ -906,16 +919,12 @@ def compute_dampedexp6810_energy(
     if not system.is_periodic:
         return energies.sum(-1)
 
-    return energies.sum(-1)
-
-    '''
-
     switch_fn, switch_width = _compute_switch_fn(potential, pairwise)
     energies *= switch_fn
 
     energy = energies.sum(-1)
 
-    energy += _compute_dexp_lrc(
+    energy += _compute_dampedexp6810_lrc(
         system,
         potential.to(precision="double"),
         switch_width.double(),
@@ -924,7 +933,6 @@ def compute_dampedexp6810_energy(
     )
 
     return energy
-    '''
 
 
 def _compute_pme_exclusions(
