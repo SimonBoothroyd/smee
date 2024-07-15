@@ -1,6 +1,8 @@
 import importlib
 import inspect
+import typing
 
+import networkx
 import openff.interchange.components.potentials
 import openff.interchange.models
 import openff.interchange.smirnoff
@@ -11,8 +13,17 @@ import torch
 import smee
 import smee.geometry
 
-_CONVERTERS = {}
-_DEFAULT_UNITS = {}
+
+class _Converter(typing.NamedTuple):
+    fn: typing.Callable
+    """The function that will convert the parameters of a handler into tensors."""
+    units: dict[str, openff.units.Unit]
+    """The default units of each parameter in the handler."""
+    depends_on: list[str] | None
+    """The names of other converters that this converter should be run after."""
+
+
+_CONVERTERS: dict[str, _Converter] = {}
 
 _ANGSTROM = openff.units.unit.angstrom
 _RADIANS = openff.units.unit.radians
@@ -25,7 +36,9 @@ _V_SITE_DEFAULT_VALUES = {
 
 
 def smirnoff_parameter_converter(
-    type_: str, default_units: dict[str, openff.units.Unit]
+    type_: str,
+    default_units: dict[str, openff.units.Unit],
+    depends_on: list[str] | None = None,
 ):
     """A decorator used to flag a function as being able to convert a parameter handlers
     parameters into tensors.
@@ -33,14 +46,17 @@ def smirnoff_parameter_converter(
     Args:
         type_: The type of parameter handler that the decorated function can convert.
         default_units: The default units of each parameter in the handler.
+        depends_on: The names of other handlers that this handler depends on. When set,
+            the convert function should additionally take in a list of the already
+            converted potentials and return a new list of potentials that should either
+            include or replace the original potentials.
     """
 
     def parameter_converter_inner(func):
         if type_ in _CONVERTERS:
             raise KeyError(f"A {type_} converter is already registered.")
 
-        _CONVERTERS[type_] = func
-        _DEFAULT_UNITS[type_] = default_units
+        _CONVERTERS[type_] = _Converter(func, default_units, depends_on)
 
         return func
 
@@ -82,7 +98,7 @@ def _handlers_to_potential(
                 _get_value(
                     parameters_by_key[parameter_key],
                     column,
-                    _DEFAULT_UNITS[handler_type],
+                    _CONVERTERS[handler_type].units,
                 )
                 for column in parameter_cols
             ]
@@ -100,7 +116,7 @@ def _handlers_to_potential(
             for handler in handlers
         }
         attributes_by_column = {
-            k: v.m_as(_DEFAULT_UNITS[handler_type][k])
+            k: v.m_as(_CONVERTERS[handler_type].units[k])
             for k, v in attributes_by_column.items()
         }
         attributes = torch.tensor(
@@ -115,7 +131,7 @@ def _handlers_to_potential(
         parameter_keys=parameter_keys,
         parameter_cols=parameter_cols,
         parameter_units=tuple(
-            _DEFAULT_UNITS[handler_type][column] for column in parameter_cols
+            _CONVERTERS[handler_type].units[column] for column in parameter_cols
         ),
         attributes=attributes,
         attribute_cols=attribute_cols,
@@ -123,7 +139,7 @@ def _handlers_to_potential(
             None
             if attribute_cols is None
             else tuple(
-                _DEFAULT_UNITS[handler_type][column] for column in attribute_cols
+                _CONVERTERS[handler_type].units[column] for column in attribute_cols
             )
         ),
     )
@@ -250,7 +266,10 @@ def convert_handlers(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.VSiteMap | None] | None = None,
-) -> tuple[smee.TensorPotential, list[smee.ParameterMap]]:
+    potentials: (
+        list[tuple[smee.TensorPotential, list[smee.ParameterMap]]] | None
+    ) = None,
+) -> list[tuple[smee.TensorPotential, list[smee.ParameterMap]]]:
     """Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.
 
     Args:
@@ -258,12 +277,13 @@ def convert_handlers(
             objects to convert.
         topologies: The topologies associated with each interchange object.
         v_site_maps: The v-site maps associated with each interchange object.
+        potentials: Already converted parameter handlers that may be required as
+            dependencies.
 
     Returns:
         The potential containing the values of the parameters in each handler
         collection, and a list of maps (one per topology) between molecule elements
         (e.g. bond indices) and parameter indices.
-
 
     Examples:
 
@@ -296,7 +316,8 @@ def convert_handlers(
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")
 
     converter = _CONVERTERS[handler_type]
-    converter_spec = inspect.signature(converter)
+
+    converter_spec = inspect.signature(converter.fn)
 
     converter_kwargs = {}
 
@@ -306,7 +327,43 @@ def convert_handlers(
         assert v_site_maps is not None, "v-site maps must be provided"
         converter_kwargs["v_site_maps"] = v_site_maps
 
-    return converter(handlers, **converter_kwargs)
+    potentials_by_type = (
+        {}
+        if potentials is None
+        else {potential.type: (potential, maps) for potential, maps in potentials}
+    )
+
+    if converter.depends_on is not None:
+        missing_deps = {
+            dep for dep in converter.depends_on if dep not in potentials_by_type
+        }
+
+        if len(missing_deps) > 0:
+            raise ValueError(f"missing dependencies: {missing_deps}")
+
+    converted = converter.fn(handlers, **converter_kwargs)
+
+    if not isinstance(converted, list):
+        converted = [converted]
+
+    if converter.depends_on is None:
+        return converted
+
+    converted_by_type = {
+        potential.type: (potential, maps) for potential, maps in converted
+    }
+
+    potentials_by_type = {
+        **{
+            potential.type: (potential, maps)
+            for potential, maps in potentials_by_type
+            if potential.type not in converter.depends_on
+            and potential.type not in converted_by_type
+        },
+        **converted_by_type,
+    }
+
+    return [*potentials_by_type.values()]
 
 
 def _convert_topology(
@@ -349,6 +406,26 @@ def _convert_topology(
         v_sites=v_sites,
         constraints=constraints,
     )
+
+
+def _resolve_conversion_order(handler_types: list[str]) -> list[str]:
+    """Resolve the order in which the handlers should be converted, based on their
+    dependencies with each other."""
+    dep_graph = networkx.DiGraph()
+
+    for handler_type in handler_types:
+        dep_graph.add_node(handler_type)
+
+    for handler_type in handler_types:
+        converter = _CONVERTERS[handler_type]
+
+        if converter.depends_on is None:
+            continue
+
+        for dep in converter.depends_on:
+            dep_graph.add_edge(dep, handler_type)
+
+    return list(networkx.topological_sort(dep_graph))
 
 
 def convert_interchange(
@@ -417,19 +494,29 @@ def convert_interchange(
     if "Constraints" in handlers_by_type:
         constraints = _convert_constraints(handlers_by_type.pop("Constraints"))
 
-    potentials, parameter_maps_by_handler = [], {}
+    conversion_order = _resolve_conversion_order([*handlers_by_type])
+    converted = []
 
-    for handler_type, handlers in handlers_by_type.items():
+    for handler_type in conversion_order:
+        handlers = handlers_by_type[handler_type]
+
         if (
             sum(len(handler.potentials) for handler in handlers if handler is not None)
             == 0
         ):
             continue
 
-        potential, parameter_map = convert_handlers(handlers, topologies, v_site_maps)
-        potentials.append(potential)
+        converted = convert_handlers(handlers, topologies, v_site_maps, converted)
 
-        parameter_maps_by_handler[potential.type] = parameter_map
+    # handlers may either return multiple potentials, or condense multiple already
+    # converted potentials into a single one (e.g. electrostatics into some polarizable
+    # potential)
+    potentials = []
+    parameter_maps_by_handler = {}
+
+    for potential, parameter_maps in converted:
+        potentials.append(potential)
+        parameter_maps_by_handler[potential.type] = parameter_maps
 
     tensor_topologies = [
         _convert_topology(
