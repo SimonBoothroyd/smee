@@ -17,6 +17,8 @@ dependencies:
   - pydantic
   - nnpops
 
+  - networkx
+
   # Optional packages
 
   ### MM simulations
