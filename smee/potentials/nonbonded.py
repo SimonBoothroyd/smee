@@ -935,7 +935,7 @@ def compute_dampedexp6810_energy(
     return energy
 
 
-@smee.potentials.potential_energy_fn(smee.PotentialType.POLARIZATION, smee.EnergyFn.POLARIZATION)
+@smee.potentials.potential_energy_fn(smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION)
 def compute_multipole_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -944,7 +944,14 @@ def compute_multipole_energy(
     pairwise: PairwiseDistances | None = None,
 ) -> torch.Tensor:
 
-    raise NotImplementedError
+    coul_energy = compute_coulomb_energy(system, potential, conformer, box_vectors, pairwise)
+
+    # Au = E
+    # E = tensor(3N,) # electric field vector
+    # u = tensor(3N,) # induced dipole vector
+    # A = tensor(3N, 3N) # dipole-dipole interaction tensor + 1/polarity \delta(i, j)
+
+    return coul_energy
 
 
 def _compute_pme_exclusions(

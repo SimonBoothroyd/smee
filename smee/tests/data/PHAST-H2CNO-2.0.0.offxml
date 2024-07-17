@@ -331,22 +331,22 @@
         <Improper smirks="[*:1]~[#6X3:2](=[#7X2,#7X3+1:3])~[#7:4]" periodicity1="2" phase1="180.0 * degree" k1="10.12246975417 * mole**-1 * kilocalorie" id="i7"></Improper>
     </ImproperTorsions>
     <DampedExp6810 version="0.3" cutoff="0.9 * nanometer">
-        <Atom smirks="[#1:1]" id="H" rho="2.221305 * angstrom" beta="3.568835 * angstrom**-1" c6="1.065489e-04 * kilojoule_per_mole * nanometer**6" c8="2.591653e-06 * kilojoule_per_mole * nanometer**8" c10="8.454610e-08 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#1:1]-[#7,#8,#9,#17,#35]" id="Hpolar" rho="1.917125 * angstrom" beta="2.788962 * angstrom**-1" c6="7.116097e-05 * kilojoule_per_mole * nanometer**6" c8="1.674546e-06 * kilojoule_per_mole * nanometer**8" c10="5.285781e-08 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#6:1]" id="C" rho="3.426648 * angstrom" beta="3.513660 * angstrom**-1" c6="1.687397e-03 * kilojoule_per_mole * nanometer**6" c8="6.965649e-05 * kilojoule_per_mole * nanometer**8" c10="4.569720e-06 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#7:1]" id="N" rho="3.355413 * angstrom" beta="4.253204 * angstrom**-1" c6="1.708722e-03 * kilojoule_per_mole * nanometer**6" c8="7.078984e-05 * kilojoule_per_mole * nanometer**8" c10="4.554299e-06 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#8:1]" id="O" rho="3.111675 * angstrom" beta="4.140836 * angstrom**-1" c6="1.048069e-03 * kilojoule_per_mole * nanometer**6" c8="3.988988e-05 * kilojoule_per_mole * nanometer**8" c10="2.192350e-06 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#16:1]" id="S" rho="3.978319 * angstrom" beta="3.775766 * angstrom**-1" c6="6.547890e-03 * kilojoule_per_mole * nanometer**6" c8="5.147610e-04 * kilojoule_per_mole * nanometer**8" c10="5.285779e-05 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#9:1]" id="F" rho="2.879065 * angstrom" beta="4.635297 * angstrom**-1" c6="4.986040e-04 * kilojoule_per_mole * nanometer**6" c8="1.719635e-05 * kilojoule_per_mole * nanometer**8" c10="7.595627e-07 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#17:1]" id="Cl" rho="3.842797 * angstrom" beta="4.015815 * angstrom**-1" c6="5.182890e-03 * kilojoule_per_mole * nanometer**6" c8="3.757987e-04 * kilojoule_per_mole * nanometer**8" c10="3.528834e-05 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#2:1]" id="He" rho="2.38376 * angstrom" beta="4.68451 * angstrom**-1" c6="8.11262130362929E-05 * kilojoule_per_mole * nanometer**6" c8="1.79788750342682E-06 * kilojoule_per_mole * nanometer**8" c10="4.88090694983636E-08 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#10:1]" id="Ne" rho="2.802400 * angstrom" beta="4.994320 * angstrom**-1" c6="3.581767e-04 * kilojoule_per_mole * nanometer**6" c8="1.097581e-05 * kilojoule_per_mole * nanometer**8" c10="4.120140e-07 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#18:1]" id="Ar" rho="3.686230 * angstrom" beta="3.885250 * angstrom**-1" c6="3.773892e-03 * kilojoule_per_mole * nanometer**6" c8="2.322975e-04 * kilojoule_per_mole * nanometer**8" c10="1.751580e-05 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#36:1]" id="Kr" rho="4.03477 * angstrom" beta="3.52894 * angstrom**-1" c6="0.007500582958599 * kilojoule_per_mole * nanometer**6" c8="0.000642705208721 * kilojoule_per_mole * nanometer**8" c10="6.74626115732402E-05 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#54:1]" id="Xe" rho="4.47518 * angstrom" beta="3.24691 * angstrom**-1" c6="0.01662696483674 * kilojoule_per_mole * nanometer**6" c8="0.001838837560245 * kilojoule_per_mole * nanometer**8" c10="0.000249120922899 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#5:1]" id="B" rho="2.864655 * angstrom" beta="3.225488 * angstrom**-1" c6="1.581507e-03 * kilojoule_per_mole * nanometer**6" c8="6.733963e-05 * kilojoule_per_mole * nanometer**8" c10="4.438496e-06 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#15:1]" id="P" rho="4.074281 * angstrom" beta="4.018553 * angstrom**-1" c6="6.658994e-03 * kilojoule_per_mole * nanometer**6" c8="5.384740e-04 * kilojoule_per_mole * nanometer**8" c10="5.666673e-05 * kilojoule_per_mole * nanometer**10"></Atom>
-        <Atom smirks="[#14:1]" id="Si" rho="4.066740 * angstrom" beta="3.385986 * angstrom**-1" c6="6.052399e-03 * kilojoule_per_mole * nanometer**6" c8="4.637977e-04 * kilojoule_per_mole * nanometer**8" c10="4.752880e-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#1:1]" id="d_h" rho="2.221305 * angstrom" beta="3.568835 * angstrom**-1" c6="1.065489e-04 * kilojoule_per_mole * nanometer**6" c8="2.591653e-06 * kilojoule_per_mole * nanometer**8" c10="8.454610e-08 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#1:1]-[#7,#8,#9,#17,#35]" id="d_hpolar" rho="1.917125 * angstrom" beta="2.788962 * angstrom**-1" c6="7.116097e-05 * kilojoule_per_mole * nanometer**6" c8="1.674546e-06 * kilojoule_per_mole * nanometer**8" c10="5.285781e-08 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#6:1]" id="d_c" rho="3.426648 * angstrom" beta="3.513660 * angstrom**-1" c6="1.687397e-03 * kilojoule_per_mole * nanometer**6" c8="6.965649e-05 * kilojoule_per_mole * nanometer**8" c10="4.569720e-06 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#7:1]" id="d_n" rho="3.355413 * angstrom" beta="4.253204 * angstrom**-1" c6="1.708722e-03 * kilojoule_per_mole * nanometer**6" c8="7.078984e-05 * kilojoule_per_mole * nanometer**8" c10="4.554299e-06 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#8:1]" id="d_o" rho="3.111675 * angstrom" beta="4.140836 * angstrom**-1" c6="1.048069e-03 * kilojoule_per_mole * nanometer**6" c8="3.988988e-05 * kilojoule_per_mole * nanometer**8" c10="2.192350e-06 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#16:1]" id="d_s" rho="3.978319 * angstrom" beta="3.775766 * angstrom**-1" c6="6.547890e-03 * kilojoule_per_mole * nanometer**6" c8="5.147610e-04 * kilojoule_per_mole * nanometer**8" c10="5.285779e-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#9:1]" id="d_f" rho="2.879065 * angstrom" beta="4.635297 * angstrom**-1" c6="4.986040e-04 * kilojoule_per_mole * nanometer**6" c8="1.719635e-05 * kilojoule_per_mole * nanometer**8" c10="7.595627e-07 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#17:1]" id="d_cl" rho="3.842797 * angstrom" beta="4.015815 * angstrom**-1" c6="5.182890e-03 * kilojoule_per_mole * nanometer**6" c8="3.757987e-04 * kilojoule_per_mole * nanometer**8" c10="3.528834e-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#2:1]" id="d_he" rho="2.38376 * angstrom" beta="4.68451 * angstrom**-1" c6="8.11262130362929E-05 * kilojoule_per_mole * nanometer**6" c8="1.79788750342682E-06 * kilojoule_per_mole * nanometer**8" c10="4.88090694983636E-08 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#10:1]" id="d_ne" rho="2.802400 * angstrom" beta="4.994320 * angstrom**-1" c6="3.581767e-04 * kilojoule_per_mole * nanometer**6" c8="1.097581e-05 * kilojoule_per_mole * nanometer**8" c10="4.120140e-07 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#18:1]" id="d_ar" rho="3.686230 * angstrom" beta="3.885250 * angstrom**-1" c6="3.773892e-03 * kilojoule_per_mole * nanometer**6" c8="2.322975e-04 * kilojoule_per_mole * nanometer**8" c10="1.751580e-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#36:1]" id="d_kr" rho="4.03477 * angstrom" beta="3.52894 * angstrom**-1" c6="0.007500582958599 * kilojoule_per_mole * nanometer**6" c8="0.000642705208721 * kilojoule_per_mole * nanometer**8" c10="6.74626115732402E-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#54:1]" id="d_xe" rho="4.47518 * angstrom" beta="3.24691 * angstrom**-1" c6="0.01662696483674 * kilojoule_per_mole * nanometer**6" c8="0.001838837560245 * kilojoule_per_mole * nanometer**8" c10="0.000249120922899 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#5:1]" id="d_b" rho="2.864655 * angstrom" beta="3.225488 * angstrom**-1" c6="1.581507e-03 * kilojoule_per_mole * nanometer**6" c8="6.733963e-05 * kilojoule_per_mole * nanometer**8" c10="4.438496e-06 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#15:1]" id="d_p" rho="4.074281 * angstrom" beta="4.018553 * angstrom**-1" c6="6.658994e-03 * kilojoule_per_mole * nanometer**6" c8="5.384740e-04 * kilojoule_per_mole * nanometer**8" c10="5.666673e-05 * kilojoule_per_mole * nanometer**10"></Atom>
+        <Atom smirks="[#14:1]" id="d_si" rho="4.066740 * angstrom" beta="3.385986 * angstrom**-1" c6="6.052399e-03 * kilojoule_per_mole * nanometer**6" c8="4.637977e-04 * kilojoule_per_mole * nanometer**8" c10="4.752880e-05 * kilojoule_per_mole * nanometer**10"></Atom>
     </DampedExp6810>
     <Electrostatics version="0.3" scale12="0.0" scale13="0.0" scale14="0.0" scale15="1.0" cutoff="0.9 * nanometer" switch_width="0.0 * angstrom" method="PME"></Electrostatics>
     <LibraryCharges version="0.3">
@@ -367,22 +367,22 @@
     </LibraryCharges>
     <ToolkitAM1BCC version="0.3"></ToolkitAM1BCC>
     <Multipole version="0.3" polarization_type="extrapolated" cutoff="0.9 * nanometer">
-        <Atom smirks="[#1:1]" id="H" polarity="0.297758 * angstrom**3"></Atom>
-        <Atom smirks="[#1:1]-[#7,#8,#9,#17,#35]" id="Hpolar" polarity="0.242116 * angstrom**3"></Atom>
-        <Atom smirks="[#6:1]" id="C" polarity="0.984072 * angstrom**3"></Atom>
-        <Atom smirks="[#7:1]" id="N" polarity="0.943911 * angstrom**3"></Atom>
-        <Atom smirks="[#8:1]" id="O" polarity="0.663925 * angstrom**3"></Atom>
-        <Atom smirks="[#16:1]" id="S" polarity="2.253753 * angstrom**3"></Atom>
-        <Atom smirks="[#9:1]" id="F" polarity="0.434374 * angstrom**3"></Atom>
-        <Atom smirks="[#17:1]" id="Cl" polarity="1.921070 * angstrom**3"></Atom>
-        <Atom smirks="[#2:1]" id="He" polarity="0.2002 * angstrom**3"></Atom>
-        <Atom smirks="[#10:1]" id="Ne" polarity="0.382300 * angstrom**3"></Atom>
-        <Atom smirks="[#18:1]" id="Ar" polarity="1.655000 * angstrom**3"></Atom>
-        <Atom smirks="[#36:1]" id="Kr" polarity="2.4970 * angstrom**3"></Atom>
-        <Atom smirks="[#54:1]" id="Xe" polarity="4.026 * angstrom**3"></Atom>
-        <Atom smirks="[#5:1]" id="B" polarity="1.090870 * angstrom**3"></Atom>
-        <Atom smirks="[#15:1]" id="P" polarity="2.407520 * angstrom**3"></Atom>
-        <Atom smirks="[#14:1]" id="Si" polarity="2.372830 * angstrom**3"></Atom>
+        <Atom smirks="[#1:1]" id="m_h" polarity="0.297758 * angstrom**3"></Atom>
+        <Atom smirks="[#1:1]-[#7,#8,#9,#17,#35]" id="m_hpolar" polarity="0.242116 * angstrom**3"></Atom>
+        <Atom smirks="[#6:1]" id="m_c" polarity="0.984072 * angstrom**3"></Atom>
+        <Atom smirks="[#7:1]" id="m_n" polarity="0.943911 * angstrom**3"></Atom>
+        <Atom smirks="[#8:1]" id="m_o" polarity="0.663925 * angstrom**3"></Atom>
+        <Atom smirks="[#16:1]" id="m_s" polarity="2.253753 * angstrom**3"></Atom>
+        <Atom smirks="[#9:1]" id="m_f" polarity="0.434374 * angstrom**3"></Atom>
+        <Atom smirks="[#17:1]" id="m_cl" polarity="1.921070 * angstrom**3"></Atom>
+        <Atom smirks="[#2:1]" id="m_he" polarity="0.2002 * angstrom**3"></Atom>
+        <Atom smirks="[#10:1]" id="m_ne" polarity="0.382300 * angstrom**3"></Atom>
+        <Atom smirks="[#18:1]" id="m_ar" polarity="1.655000 * angstrom**3"></Atom>
+        <Atom smirks="[#36:1]" id="m_kr" polarity="2.4970 * angstrom**3"></Atom>
+        <Atom smirks="[#54:1]" id="m_xe" polarity="4.026 * angstrom**3"></Atom>
+        <Atom smirks="[#5:1]" id="m_b" polarity="1.090870 * angstrom**3"></Atom>
+        <Atom smirks="[#15:1]" id="m_p" polarity="2.407520 * angstrom**3"></Atom>
+        <Atom smirks="[#14:1]" id="m_si" polarity="2.372830 * angstrom**3"></Atom>
     </Multipole>
 </SMIRNOFF>
 

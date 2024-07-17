@@ -264,6 +264,7 @@ def convert_dampedexp6810(
         "polarity": _ANGSTROM**3,
         "cutoff": _ANGSTROM
     },
+    depends_on=["Electrostatics"],
 )
 def convert_multipole(
     handlers: list[
@@ -271,24 +272,66 @@ def convert_multipole(
     ],
     topologies: list[openff.toolkit.Topology],
     v_site_maps: list[smee.VSiteMap | None],
+    dependencies: dict[
+        str, tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]
+    ],
 ) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
-    import smee.potentials.nonbonded
+
+    potential_chg, parameter_maps_chg = dependencies["Electrostatics"]
 
     (
-        potential,
-        parameter_maps,
+        potential_pol,
+        parameter_maps_pol,
     ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
         handlers,
         "Multipole",
         topologies,
         v_site_maps,
-        ("polarity"),
-        ("cutoff"),
+        ("polarity",),
+        ("cutoff",),
+        has_exclusions=False
     )
-    potential.type = smee.PotentialType.POLARIZATION
-    potential.fn = smee.EnergyFn.POLARIZATION
 
-    return potential, parameter_maps
+    cutoff_idx_pol = potential_pol.attribute_cols.index("cutoff")
+    cutoff_idx_chg = potential_chg.attribute_cols.index("cutoff")
+
+    assert torch.isclose(
+        potential_pol.attributes[cutoff_idx_pol],
+        potential_chg.attributes[cutoff_idx_chg],
+    )
+
+    potential_chg.fn = smee.EnergyFn.POLARIZATION
+
+    potential_chg.parameter_cols = (
+        *potential_chg.parameter_cols,
+        *potential_pol.parameter_cols,
+    )
+    potential_chg.parameter_units = (
+        *potential_chg.parameter_units,
+        *potential_pol.parameter_units,
+    )
+    potential_chg.parameter_keys = [
+        *potential_chg.parameter_keys,
+        *potential_pol.parameter_keys,
+    ]
+
+    parameters_chg = torch.cat(
+        (potential_chg.parameters, torch.zeros_like(potential_chg.parameters)), dim=1
+    )
+    parameters_pol = torch.cat(
+        (torch.zeros_like(potential_pol.parameters), potential_pol.parameters), dim=1
+    )
+    potential_chg.parameters = torch.cat((parameters_chg, parameters_pol), dim=0)
+
+    for parameter_map_chg, parameter_map_pol in zip(
+        parameter_maps_chg, parameter_maps_pol, strict=True
+    ):
+        parameter_map_chg.assignment_matrix = torch.block_diag(
+            parameter_map_chg.assignment_matrix.to_dense(),
+            parameter_map_pol.assignment_matrix.to_dense(),
+        ).to_sparse()
+
+    return potential_chg, parameter_maps_chg
 
 
 def _make_v_site_electrostatics_compatible(

@@ -34,14 +34,13 @@ class PotentialType(_StrEnum):
 
     VDW = "vdW"
     ELECTROSTATICS = "Electrostatics"
-    POLARIZATION = "Polarization"
 
 
 class EnergyFn(_StrEnum):
     """An enumeration of the energy functions supported by ``smee`` out of the box."""
 
     COULOMB = "coul"
-    POLARIZATION = "pol"
+    POLARIZATION = "coul+pol"
 
     VDW_LJ = "4*epsilon*((sigma/r)**12-(sigma/r)**6)"
     VDW_DEXP = (
