@@ -30,6 +30,7 @@ def convert_nonbonded_handlers(
     v_site_maps: list[smee.VSiteMap | None],
     parameter_cols: tuple[str, ...],
     attribute_cols: tuple[str, ...] | None = None,
+    has_exclusions: bool = True,
 ) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
     """Convert a list of SMIRNOFF non-bonded handlers into a tensor potential and
     associated parameter maps.
@@ -45,6 +46,7 @@ def convert_nonbonded_handlers(
         parameter_cols: The ordering of the parameter array columns.
         attribute_cols: The handler attributes to include in the potential *in addition*
             to the intra-molecular scaling factors.
+        has_exclusions: Whether the handlers are excepted to define exclusions.
 
     Returns:
         The potential containing tensors of the parameter values, and a list of
@@ -55,11 +57,20 @@ def convert_nonbonded_handlers(
     assert len(topologies) == len(handlers), "topologies and handlers must match"
     assert len(v_site_maps) == len(handlers), "v-site maps and handlers must match"
 
+    if has_exclusions:
+        attribute_cols = (
+            "scale_12",
+            "scale_13",
+            "scale_14",
+            "scale_15",
+            *attribute_cols,
+        )
+
     potential = smee.converters.openff._openff._handlers_to_potential(
         handlers,
         handler_type,
         parameter_cols,
-        ("scale_12", "scale_13", "scale_14", "scale_15", *attribute_cols),
+        attribute_cols,
     )
 
     parameter_key_to_idx = {
@@ -107,12 +118,16 @@ def convert_nonbonded_handlers(
             for parameter_idx, count in assignment_map[particle_idx].items():
                 assignment_matrix[particle_idx, parameter_idx] = count
 
-        exclusion_to_scale = smee.utils.find_exclusions(topology, v_site_map)
-        exclusions = torch.tensor([*exclusion_to_scale])
-        exclusion_scale_idxs = torch.tensor(
-            [[attribute_to_idx[scale]] for scale in exclusion_to_scale.values()],
-            dtype=torch.int64,
-        )
+        if has_exclusions:
+            exclusion_to_scale = smee.utils.find_exclusions(topology, v_site_map)
+            exclusions = torch.tensor([*exclusion_to_scale])
+            exclusion_scale_idxs = torch.tensor(
+                [[attribute_to_idx[scale]] for scale in exclusion_to_scale.values()],
+                dtype=torch.int64,
+            )
+        else:
+            exclusions = torch.zeros((0, 2), dtype=torch.int64)
+            exclusion_scale_idxs = torch.zeros((0, 1), dtype=torch.int64)
 
         parameter_map = smee.NonbondedParameterMap(
             assignment_matrix=assignment_matrix.to_sparse(),
