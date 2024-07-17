@@ -316,9 +316,7 @@ def convert_handlers(
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")
 
     converter = _CONVERTERS[handler_type]
-
     converter_spec = inspect.signature(converter.fn)
-
     converter_kwargs = {}
 
     if "topologies" in converter_spec.parameters:
@@ -333,31 +331,32 @@ def convert_handlers(
         else {potential.type: (potential, maps) for potential, maps in potentials}
     )
 
-    if converter.depends_on is not None:
-        missing_deps = {
-            dep for dep in converter.depends_on if dep not in potentials_by_type
-        }
+    dependencies = {}
+    depends_on = converter.depends_on if converter.depends_on is not None else []
 
-        if len(missing_deps) > 0:
-            raise ValueError(f"missing dependencies: {missing_deps}")
+    if len(depends_on) > 0:
+        missing_deps = {dep for dep in depends_on if dep not in potentials_by_type}
+        assert len(missing_deps) == 0, "missing dependencies"
+
+        dependencies = {dep: potentials_by_type[dep] for dep in depends_on}
+        assert "dependencies" in converter_spec.parameters, "dependencies not accepted"
+
+    if "dependencies" in converter_spec.parameters:
+        converter_kwargs["dependencies"] = dependencies
 
     converted = converter.fn(handlers, **converter_kwargs)
-
-    if not isinstance(converted, list):
-        converted = [converted]
-
-    if converter.depends_on is None:
-        return converted
+    converted = [converted] if not isinstance(converted, list) else converted
 
     converted_by_type = {
         potential.type: (potential, maps) for potential, maps in converted
     }
+    assert len(converted_by_type) == len(converted), "duplicate potentials found"
 
     potentials_by_type = {
         **{
             potential.type: (potential, maps)
-            for potential, maps in potentials_by_type
-            if potential.type not in converter.depends_on
+            for potential, maps in potentials_by_type.values()
+            if potential.type not in depends_on
             and potential.type not in converted_by_type
         },
         **converted_by_type,

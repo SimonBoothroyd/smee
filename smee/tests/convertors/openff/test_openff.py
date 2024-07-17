@@ -1,3 +1,5 @@
+import importlib
+
 import openff.interchange.models
 import openff.toolkit
 import openff.units
@@ -5,10 +7,11 @@ import pytest
 import torch
 
 import smee
+import smee.tests.utils
 from smee.converters.openff._openff import (
     _CONVERTERS,
-    _DEFAULT_UNITS,
     _convert_topology,
+    _Converter,
     convert_handlers,
     convert_interchange,
     smirnoff_parameter_converter,
@@ -20,24 +23,27 @@ def test_parameter_converter():
         lambda x: None
     )
     assert "Dummy" in _CONVERTERS
-    assert "parm-a" in _DEFAULT_UNITS["Dummy"]
+    assert "parm-a" in _CONVERTERS["Dummy"].units
 
     with pytest.raises(KeyError, match="A Dummy converter is already"):
         smirnoff_parameter_converter("Dummy", {})(lambda x: None)
 
     del _CONVERTERS["Dummy"]
-    del _DEFAULT_UNITS["Dummy"]
 
 
 def test_convert_handler(ethanol, ethanol_interchange, mocker):
-    mock_result = mocker.MagicMock()
+    # avoid already registered converter error
+    importlib.import_module("smee.converters.openff.nonbonded")
 
-    mock_vectorize = mocker.patch(
-        "smee.converters.openff.nonbonded.convert_vdw",
+    mock_deps = [(mocker.MagicMock(type="mock"), [mocker.MagicMock()])]
+    mock_result = (mocker.MagicMock(), [])
+
+    mock_convert = mocker.patch(
+        "smee.tests.utils.mock_convert_fn_with_deps",
         autospec=True,
         return_value=mock_result,
     )
-    mocker.patch.dict(_CONVERTERS, {"vdW": mock_vectorize})
+    mocker.patch.dict(_CONVERTERS, {"vdW": _Converter(mock_convert, {}, ["mock"])})
 
     handlers = [ethanol_interchange.collections["vdW"]]
     topologies = [ethanol.to_topology()]
@@ -52,12 +58,15 @@ def test_convert_handler(ethanol, ethanol_interchange, mocker):
         smee.VSiteMap([v_site], {v_site: ethanol.n_atoms}, torch.tensor([[0]]))
     ]
 
-    result = convert_handlers(handlers, topologies, v_site_maps)
+    result = convert_handlers(handlers, topologies, v_site_maps, mock_deps)
 
-    mock_vectorize.assert_called_once_with(
-        handlers, topologies=topologies, v_site_maps=v_site_maps
+    mock_convert.assert_called_once_with(
+        handlers,
+        topologies=topologies,
+        v_site_maps=v_site_maps,
+        dependencies={"mock": mock_deps[0]},
     )
-    assert result == mock_result
+    assert result == [mock_result]
 
 
 def test_convert_topology(formaldehyde, mocker):
