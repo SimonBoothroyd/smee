@@ -12,6 +12,7 @@ from smee.converters.openff._openff import (
     _CONVERTERS,
     _convert_topology,
     _Converter,
+    _resolve_conversion_order,
     convert_handlers,
     convert_interchange,
     smirnoff_parameter_converter,
@@ -98,6 +99,20 @@ def test_convert_topology(formaldehyde, mocker):
     assert topology.parameters == parameters
     assert topology.v_sites == v_sites
     assert topology.constraints == constraints
+
+
+def test_resolve_conversion_order(mocker):
+    mocker.patch.dict(
+        _CONVERTERS,
+        {
+            "a": _Converter(mocker.MagicMock(), {}, ["c"]),
+            "b": _Converter(mocker.MagicMock(), {}, []),
+            "c": _Converter(mocker.MagicMock(), {}, ["b"]),
+        },
+    )
+
+    order = _resolve_conversion_order(["a", "b", "c"])
+    assert order == ["b", "c", "a"]
 
 
 def test_convert_interchange():
