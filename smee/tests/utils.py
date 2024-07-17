@@ -14,6 +14,17 @@ import smee.utils
 LJParam = typing.NamedTuple("LJParam", [("eps", float), ("sig", float)])
 
 
+def mock_convert_fn_with_deps(
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFvdWCollection],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+    dependencies: dict[
+        str, tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]
+    ],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    raise NotImplementedError()
+
+
 def convert_lj_to_dexp(potential: smee.TensorPotential):
     potential.fn = smee.EnergyFn.VDW_DEXP
 
