@@ -303,14 +303,14 @@ def convert_handlers(
         >>>
         >>> vdw_potential, applied_vdw_parameters = convert_handlers(interchanges)
     """
+    importlib.import_module("smee.converters.openff.nonbonded")
+    importlib.import_module("smee.converters.openff.valence")
+
     handler_types = {handler.type for handler in handlers}
     assert len(handler_types) == 1, "multiple handler types found"
     handler_type = next(iter(handler_types))
 
     assert len(handlers) == len(topologies), "mismatched number of topologies"
-
-    importlib.import_module("smee.converters.openff.nonbonded")
-    importlib.import_module("smee.converters.openff.valence")
 
     if handler_type not in _CONVERTERS:
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")
@@ -456,6 +456,9 @@ def convert_interchange(
         >>>
         >>> tensor_ff, tensor_topologies = convert_interchange(interchanges)
     """
+    importlib.import_module("smee.converters.openff.nonbonded")
+    importlib.import_module("smee.converters.openff.valence")
+
     interchanges = (
         [interchange]
         if isinstance(interchange, openff.interchange.Interchange)
