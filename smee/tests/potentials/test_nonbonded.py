@@ -22,6 +22,8 @@ from smee.potentials.nonbonded import (
     compute_coulomb_energy,
     compute_dexp_energy,
     compute_lj_energy,
+    compute_multipole_energy,
+    compute_dampedexp6810_energy,
     compute_pairwise,
     compute_pairwise_scales,
     prepare_lrc_types,
@@ -549,34 +551,26 @@ def test_compute_dampedexp6810_energy_non_periodic(test_data_dir):
             )
         )
     expected_energies = torch.tensor(expected_energies)
-    print(energies)
-    print(expected_energies)
     assert torch.allclose(energies, expected_energies.float(), atol=1.0e-4)
 
 
 def test_compute_multipole_energy_non_periodic(test_data_dir):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
-        ["[Ne]", "[Ne]"],
-        [1, 1],
+        ["CCC", "O"],
+        [3, 2],
         openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True)
     )
     tensor_sys.is_periodic = False
 
-    coords = torch.stack(
-        [
-            torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 0]) + torch.tensor([0, 0, 1.5 + i * 0.5])])
-            for i in range(20)
-        ]
-    )
+    coords, _ = smee.mm.generate_system_coords(tensor_sys, None)
+    coords = torch.tensor(coords.value_in_unit(openmm.unit.angstrom))
 
-    energies = smee.compute_energy(tensor_sys, tensor_ff, coords)
-    expected_energies = []
-    for coord in coords:
-        expected_energies.append(_compute_openmm_energy(
-            tensor_sys, coord, None, tensor_ff.potentials_by_type["vdW"]
-            )
-        )
-    expected_energies = torch.tensor(expected_energies)
-    print(energies)
-    print(expected_energies)
+    es_potential = tensor_ff.potentials_by_type["Electrostatics"]
+    es_potential.parameters.requires_grad = True
+
+    energy = compute_multipole_energy(tensor_sys, es_potential, coords.float(), None)
+    energy.backward()
+
+    expected_energy = _compute_openmm_energy(tensor_sys, coords, None, es_potential)
+
     assert torch.allclose(energies, expected_energies.float(), atol=1.0e-4)

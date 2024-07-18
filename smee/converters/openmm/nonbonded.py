@@ -563,13 +563,84 @@ def convert_dampedexp6810_potential(
     return convert_custom_vdw_potential(potential, system, energy_fn, mixing_fn)
 
 
+@smee.converters.openmm.potential_converter(
+    smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION
+)
 def convert_multipole_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.AmoebaMultipoleForce:
     """Convert a Multipole potential to OpenMM forces.
     """
 
-    raise NotImplementedError
+    thole = 0.39
+    cutoff_idx = potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)
+    cutoff = float(potential.attributes[cutoff_idx]) * _ANGSTROM
+
+    force: openmm.AmoebaMultipoleForce = openmm.AmoebaMultipoleForce()
+
+    if system.is_periodic:
+        force.setNonbondedMethod(openmm.AmoebaMultipoleForce.PME)
+    else:
+        force.setNonbondedMethod(openmm.AmoebaMultipoleForce.NoCutoff)
+    force.setPolarizationType(openmm.AmoebaMultipoleForce.Mutual)
+    force.setCutoffDistance(cutoff)
+    force.setEwaldErrorTolerance(0.0001)
+    force.setMutualInducedTargetEpsilon(0.00001)
+    force.setMutualInducedMaxIterations(60)
+    force.setExtrapolationCoefficients([-0.154, 0.017, 0.658, 0.474])
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+        parameters = parameter_map.assignment_matrix @ potential.parameters
+        parameters = parameters.detach().tolist()
+
+        for _ in range(n_copies):
+            for _ in range(topology.n_particles):
+                force.addMultipole(
+                    0,
+                    (0.0, 0.0, 0.0),
+                    (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                    openmm.AmoebaMultipoleForce.NoAxisType,
+                    -1,
+                    -1,
+                    -1,
+                    thole,
+                    0,
+                    0,
+                )
+
+            for idx, parameter in enumerate(parameters):
+                omm_idx = idx % topology.n_particles + idx_offset
+                omm_params = force.getMultipoleParameters(omm_idx)
+                if idx // topology.n_atoms == 0:
+                    omm_params[0] = parameter[0] * openmm.unit.elementary_charge
+                else:
+                    omm_params[8] = (parameter[1] / 1000) ** (1/6)
+                    omm_params[9] = parameter[1] * _ANGSTROM**3
+                force.setMultipoleParameters(omm_idx, *omm_params)
+
+
+            '''
+            for index, (i, j) in enumerate(parameter_map.exclusions):
+                q_i, q_j = parameters[i], parameters[j]
+                q = q_i * q_j
+
+                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
+
+                force.addException(
+                    i + idx_offset,
+                    j + idx_offset,
+                    scale * q,
+                    1.0,
+                    0.0,
+                )
+            '''
+
+            idx_offset += topology.n_particles
+
+    return force
 
 
 @smee.converters.openmm.potential_converter(
