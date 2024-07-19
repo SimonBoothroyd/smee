@@ -573,4 +573,38 @@ def test_compute_multipole_energy_non_periodic(test_data_dir):
 
     expected_energy = _compute_openmm_energy(tensor_sys, coords, None, es_potential)
 
+    assert torch.allclose(energy, expected_energy, atol=1.0e-4)
+
+
+def test_compute_multipole_energy_non_periodic_2(test_data_dir):
+    tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
+        ["C", "[Ne]"],
+        [1, 1],
+        openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True)
+    )
+    tensor_sys.is_periodic = False
+
+    #coords = torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 3.0])])
+
+    coords = torch.tensor(
+        [
+            [+0.00000, +0.00000, +0.00000],
+            [+0.00000, +0.00000, +1.08900],
+            [+1.02672, +0.00000, -0.36300],
+            [-0.51336, -0.88916, -0.36300],
+            [-0.51336, +0.88916, -0.36300],
+            [+4.00000, +0.00000, +0.00000],
+        ]
+    )
+
+    energies = smee.compute_energy(tensor_sys, tensor_ff, coords)
+    energies = compute_multipole_energy(tensor_sys, tensor_ff.potentials_by_type["Electrostatics"], coords, None)
+
+    expected_energies = []
+    for coord in coords:
+        expected_energies.append(_compute_openmm_energy(
+            tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
+        )
+        )
+    expected_energies = torch.tensor(expected_energies)
     assert torch.allclose(energies, expected_energies.float(), atol=1.0e-4)

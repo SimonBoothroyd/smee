@@ -944,12 +944,48 @@ def compute_multipole_energy(
     pairwise: PairwiseDistances | None = None,
 ) -> torch.Tensor:
 
-    coul_energy = compute_coulomb_energy(system, potential, conformer, box_vectors, pairwise)
+    box_vectors = None if not system.is_periodic else box_vectors
 
-    # Au = E
-    # E = tensor(3N,) # electric field vector
-    # u = tensor(3N,) # induced dipole vector
-    # A = tensor(3N, 3N) # dipole-dipole interaction tensor + 1/polarity \delta(i, j)
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
+    print("conformer", conformer)
+
+    pairwise = compute_pairwise(system, conformer, box_vectors, cutoff)
+
+    charges = smee.potentials.broadcast_parameters(system, potential)[:system.n_particles, 0]
+    polarizabilities = charges = smee.potentials.broadcast_parameters(system, potential)[system.n_particles:, 1]
+
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    print("charges", charges)
+
+    coul_energy = (
+            _COULOMB_PRE_FACTOR
+            * pair_scales
+            * charges[pairwise.idxs[:, 0]]
+            * charges[pairwise.idxs[:, 1]]
+            / pairwise.distances
+    ).sum(-1)
+
+    efield = torch.zeros((system.n_particles, 3))
+
+    for distance, delta, idx, scale in zip(pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales):
+        efield[idx[0]] += _COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
+        efield[idx[1]] += _COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
+
+    print("polarizabilities", polarizabilities)
+    print("coul_energy", coul_energy)
+    print("efield", efield)
+
+    u = torch.repeat_interleave(polarizabilities, 3) * efield.reshape(3*system.n_particles)
+
+    A = torch.zeros((3*system.n_particles, 3*system.n_particles))
+    A = torch.diagonal_scatter(
+        A,
+        torch.repeat_interleave(polarizabilities, 3)
+    )
+
+    for distance, delta, idx, scale in zip(pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales):
+        pass
 
     return coul_energy
 
