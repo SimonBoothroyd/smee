@@ -7,10 +7,10 @@ import torch
 import smee
 import smee.converters
 from smee.converters.openff.nonbonded import (
+    convert_dampedexp6810,
     convert_dexp,
     convert_electrostatics,
     convert_vdw,
-    convert_dampedexp6810
 )
 
 

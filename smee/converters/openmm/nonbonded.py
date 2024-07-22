@@ -557,7 +557,7 @@ def convert_dampedexp6810_potential(
         "rho": "0.5 * (rho1 + rho2)",
         "c6": "sqrt(c61*c62)",
         "c8": "sqrt(c81*c82)",
-        "c10": "sqrt(c101*c102)"
+        "c10": "sqrt(c101*c102)",
     }
 
     return convert_custom_vdw_potential(potential, system, energy_fn, mixing_fn)
@@ -569,8 +569,7 @@ def convert_dampedexp6810_potential(
 def convert_multipole_potential(
     potential: smee.TensorPotential, system: smee.TensorSystem
 ) -> openmm.AmoebaMultipoleForce:
-    """Convert a Multipole potential to OpenMM forces.
-    """
+    """Convert a Multipole potential to OpenMM forces."""
 
     thole = 0.39
     cutoff_idx = potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)
@@ -617,12 +616,11 @@ def convert_multipole_potential(
                 if idx // topology.n_atoms == 0:
                     omm_params[0] = parameter[0] * openmm.unit.elementary_charge
                 else:
-                    omm_params[8] = (parameter[1] / 1000) ** (1/6)
+                    omm_params[8] = (parameter[1] / 1000) ** (1 / 6)
                     omm_params[9] = parameter[1] * _ANGSTROM**3
                 force.setMultipoleParameters(omm_idx, *omm_params)
 
-
-            '''
+            """
             for index, (i, j) in enumerate(parameter_map.exclusions):
                 q_i, q_j = parameters[i], parameters[j]
                 q = q_i * q_j
@@ -636,7 +634,7 @@ def convert_multipole_potential(
                     1.0,
                     0.0,
                 )
-            '''
+            """
 
             idx_offset += topology.n_particles
 

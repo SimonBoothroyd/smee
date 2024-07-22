@@ -2,11 +2,10 @@ import copy
 import math
 
 import numpy
+import openff
 import openmm.unit
 import pytest
 import torch
-
-import openff
 
 import smee
 import smee.converters
@@ -20,10 +19,10 @@ from smee.potentials.nonbonded import (
     _compute_lj_lrc,
     _compute_pme_exclusions,
     compute_coulomb_energy,
+    compute_dampedexp6810_energy,
     compute_dexp_energy,
     compute_lj_energy,
     compute_multipole_energy,
-    compute_dampedexp6810_energy,
     compute_pairwise,
     compute_pairwise_scales,
     prepare_lrc_types,
@@ -532,13 +531,20 @@ def test_compute_dampedexp6810_energy_non_periodic(test_data_dir):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
         ["[Ne]", "[Ne]"],
         [1, 1],
-        openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-nonpolar-2.0.0.offxml"), load_plugins=True)
+        openff.toolkit.ForceField(
+            str(test_data_dir / "PHAST-H2CNO-nonpolar-2.0.0.offxml"), load_plugins=True
+        ),
     )
     tensor_sys.is_periodic = False
 
     coords = torch.stack(
         [
-            torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 0]) + torch.tensor([0, 0, 1.5 + i * 0.5])])
+            torch.vstack(
+                [
+                    torch.tensor([0, 0, 0]),
+                    torch.tensor([0, 0, 0]) + torch.tensor([0, 0, 1.5 + i * 0.5]),
+                ]
+            )
             for i in range(20)
         ]
     )
@@ -546,8 +552,9 @@ def test_compute_dampedexp6810_energy_non_periodic(test_data_dir):
     energies = smee.compute_energy(tensor_sys, tensor_ff, coords)
     expected_energies = []
     for coord in coords:
-        expected_energies.append(_compute_openmm_energy(
-            tensor_sys, coord, None, tensor_ff.potentials_by_type["vdW"]
+        expected_energies.append(
+            _compute_openmm_energy(
+                tensor_sys, coord, None, tensor_ff.potentials_by_type["vdW"]
             )
         )
     expected_energies = torch.tensor(expected_energies)
@@ -558,7 +565,9 @@ def test_compute_multipole_energy_non_periodic(test_data_dir):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
         ["CCC", "O"],
         [3, 2],
-        openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True)
+        openff.toolkit.ForceField(
+            str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True
+        ),
     )
     tensor_sys.is_periodic = False
 
@@ -580,11 +589,13 @@ def test_compute_multipole_energy_non_periodic_2(test_data_dir):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
         ["C", "[Ne]"],
         [1, 1],
-        openff.toolkit.ForceField(str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True)
+        openff.toolkit.ForceField(
+            str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True
+        ),
     )
     tensor_sys.is_periodic = False
 
-    #coords = torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 3.0])])
+    # coords = torch.vstack([torch.tensor([0, 0, 0]), torch.tensor([0, 0, 3.0])])
 
     coords = torch.tensor(
         [
@@ -598,13 +609,16 @@ def test_compute_multipole_energy_non_periodic_2(test_data_dir):
     )
 
     energies = smee.compute_energy(tensor_sys, tensor_ff, coords)
-    energies = compute_multipole_energy(tensor_sys, tensor_ff.potentials_by_type["Electrostatics"], coords, None)
+    energies = compute_multipole_energy(
+        tensor_sys, tensor_ff.potentials_by_type["Electrostatics"], coords, None
+    )
 
     expected_energies = []
     for coord in coords:
-        expected_energies.append(_compute_openmm_energy(
-            tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
-        )
+        expected_energies.append(
+            _compute_openmm_energy(
+                tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
+            )
         )
     expected_energies = torch.tensor(expected_energies)
     assert torch.allclose(energies, expected_energies.float(), atol=1.0e-4)

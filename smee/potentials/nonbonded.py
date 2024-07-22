@@ -809,7 +809,9 @@ def _compute_dampedexp6810_lrc(
     raise NotImplementedError
 
 
-@smee.potentials.potential_energy_fn(smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810)
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810
+)
 def compute_dampedexp6810_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -897,7 +899,9 @@ def compute_dampedexp6810_energy(
         c8[exception_idxs] = exceptions[:, c8_column]
         c10[exception_idxs] = exceptions[:, c10_column]
 
-    force_at_zero = potential.attributes[potential.attribute_cols.index("force_at_zero")]
+    force_at_zero = potential.attributes[
+        potential.attribute_cols.index("force_at_zero")
+    ]
 
     x = pairwise.distances
 
@@ -905,16 +909,23 @@ def compute_dampedexp6810_energy(
     br = beta * x
     expbr = torch.exp(-beta * x)
 
-    ttdamp6_sum = 1.0 + br + br**2/2 + br**3/6 + br**4/24 + br**5/120 + br**6/720
-    ttdamp8_sum = ttdamp6_sum + br**7/5040 + br**8/40320
-    ttdamp10_sum = ttdamp8_sum + br**9/362880 + br**10/3628800
+    ttdamp6_sum = (
+        1.0 + br + br**2 / 2 + br**3 / 6 + br**4 / 24 + br**5 / 120 + br**6 / 720
+    )
+    ttdamp8_sum = ttdamp6_sum + br**7 / 5040 + br**8 / 40320
+    ttdamp10_sum = ttdamp8_sum + br**9 / 362880 + br**10 / 3628800
 
     ttdamp6 = 1.0 - expbr * ttdamp6_sum
     ttdamp8 = 1.0 - expbr * ttdamp8_sum
     ttdamp10 = 1.0 - expbr * ttdamp10_sum
 
     repulsion = force_at_zero * 1.0 / beta * torch.exp(-beta * (x - rho))
-    energies = repulsion - ttdamp6 * c6 * x**-6 - ttdamp8 * c8 * x**-8 - ttdamp10 * c10 * x**-10
+    energies = (
+        repulsion
+        - ttdamp6 * c6 * x**-6
+        - ttdamp8 * c8 * x**-8
+        - ttdamp10 * c10 * x**-10
+    )
 
     if not system.is_periodic:
         return energies.sum(-1)
@@ -935,7 +946,9 @@ def compute_dampedexp6810_energy(
     return energy
 
 
-@smee.potentials.potential_energy_fn(smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION)
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION
+)
 def compute_multipole_energy(
     system: smee.TensorSystem,
     potential: smee.TensorPotential,
@@ -947,45 +960,76 @@ def compute_multipole_energy(
     box_vectors = None if not system.is_periodic else box_vectors
 
     cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
-    print("conformer", conformer)
 
     pairwise = compute_pairwise(system, conformer, box_vectors, cutoff)
 
-    charges = smee.potentials.broadcast_parameters(system, potential)[:system.n_particles, 0]
-    polarizabilities = charges = smee.potentials.broadcast_parameters(system, potential)[system.n_particles:, 1]
+    charges = []
+    polarizabilities = []
+
+    # Can't use broadcast parameters because this potential has two sets of parameters
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+        topology_parameters = parameter_map.assignment_matrix @ potential.parameters
+        charges.append(topology_parameters[: topology.n_particles * n_copies, 0])
+        polarizabilities.append(
+            topology_parameters[topology.n_particles * n_copies :, 1]
+        )
+
+    charges = torch.cat(charges)
+    polarizabilities = torch.cat(polarizabilities)
 
     pair_scales = compute_pairwise_scales(system, potential)
 
-    print("charges", charges)
-
+    # static partial charge - partial charge energy
     coul_energy = (
-            _COULOMB_PRE_FACTOR
-            * pair_scales
-            * charges[pairwise.idxs[:, 0]]
-            * charges[pairwise.idxs[:, 1]]
-            / pairwise.distances
+        _COULOMB_PRE_FACTOR
+        * pair_scales
+        * charges[pairwise.idxs[:, 0]]
+        * charges[pairwise.idxs[:, 1]]
+        / pairwise.distances
     ).sum(-1)
 
-    efield = torch.zeros((system.n_particles, 3))
+    efield_static = torch.zeros((system.n_particles, 3), dtype=torch.float64)
 
-    for distance, delta, idx, scale in zip(pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales):
-        efield[idx[0]] += _COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
-        efield[idx[1]] += _COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
+    # calculate electric field due to partial charges by hand
+    # TODO wolf summation for periodic
+    for distance, delta, idx, scale in zip(
+        pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
+    ):
+        efield_static[idx[0]] += (
+            _COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
+        )
+        efield_static[idx[1]] += (
+            _COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
+        )
 
-    print("polarizabilities", polarizabilities)
-    print("coul_energy", coul_energy)
-    print("efield", efield)
+    # reshape to (3*N) vector
+    efield_static = efield_static.reshape(3 * system.n_particles)
 
-    u = torch.repeat_interleave(polarizabilities, 3) * efield.reshape(3*system.n_particles)
+    # induced dipole vector
+    u = torch.repeat_interleave(polarizabilities, 3) * efield_static
 
-    A = torch.zeros((3*system.n_particles, 3*system.n_particles))
-    A = torch.diagonal_scatter(
-        A,
-        torch.repeat_interleave(polarizabilities, 3)
+    # dipole-dipole interaction tensor
+    A = torch.zeros(
+        (3 * system.n_particles, 3 * system.n_particles), dtype=torch.float64
     )
 
-    for distance, delta, idx, scale in zip(pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales):
-        pass
+    for distance, delta, idx, scale in zip(
+        pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
+    ):
+        t = torch.eye(3) * distance**-3 - 3 * torch.cross(delta, delta) * distance**-5
+        t *= _COULOMB_PRE_FACTOR * scale
+        A[3 * idx[0] : 3 * idx[0] + 3, 3 * idx[1] : 3 * idx[1] + 3] = t
+        A[3 * idx[1] : 3 * idx[1] + 3, 3 * idx[0] : 3 * idx[0] + 3] = t
+
+    # fixed iterations
+    for _ in range(60):
+        efield_induced = A @ u
+        u = torch.repeat_interleave(polarizabilities, 3) * (
+            efield_static + efield_induced
+        )
+
+    coul_energy += -0.5 * torch.dot(u, efield_static)
 
     return coul_energy
 

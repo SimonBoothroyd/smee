@@ -260,10 +260,7 @@ def convert_dampedexp6810(
 
 @smee.converters.smirnoff_parameter_converter(
     "Multipole",
-    {
-        "polarity": _ANGSTROM**3,
-        "cutoff": _ANGSTROM
-    },
+    {"polarity": _ANGSTROM**3, "cutoff": _ANGSTROM},
     depends_on=["Electrostatics"],
 )
 def convert_multipole(
@@ -289,7 +286,7 @@ def convert_multipole(
         v_site_maps,
         ("polarity",),
         ("cutoff",),
-        has_exclusions=False
+        has_exclusions=False,
     )
 
     cutoff_idx_pol = potential_pol.attribute_cols.index("cutoff")
