@@ -81,7 +81,7 @@ def create_openmm_system(
 
     omm_system = openmm.System()
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         for _ in range(n_copies):
             start_idx = omm_system.getNumParticles()
 
@@ -96,7 +96,7 @@ def create_openmm_system(
                 omm_system.addParticle(0.0)
 
             for key, parameter_idx in zip(
-                topology.v_sites.keys, topology.v_sites.parameter_idxs
+                topology.v_sites.keys, topology.v_sites.parameter_idxs, strict=True
             ):
                 system_idx = start_idx + topology.v_sites.key_to_idx[key]
                 assert system_idx >= start_idx
@@ -124,14 +124,16 @@ def create_openmm_system(
 def _apply_constraints(omm_system: openmm.System, system: smee.TensorSystem):
     idx_offset = 0
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         if topology.constraints is None:
             continue
 
         for _ in range(n_copies):
             atom_idxs = topology.constraints.idxs + idx_offset
 
-            for (i, j), distance in zip(atom_idxs, topology.constraints.distances):
+            for (i, j), distance in zip(
+                atom_idxs, topology.constraints.distances, strict=True
+            ):
                 omm_system.addConstraint(i, j, distance * _ANGSTROM)
 
             idx_offset += topology.n_particles
@@ -249,7 +251,7 @@ def convert_to_openmm_topology(
 
     omm_topology = openmm.app.Topology()
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         chain = omm_topology.addChain()
 
         is_water = topology.n_atoms == 3 and sorted(
@@ -275,12 +277,14 @@ def convert_to_openmm_topology(
                 )
                 atoms[i] = omm_topology.addAtom(name, element, residue)
 
-            for i in range(topology.n_v_sites):
+            for _ in range(topology.n_v_sites):
                 omm_topology.addAtom(
                     "X", openmm.app.Element.getByAtomicNumber(82), residue
                 )
 
-            for bond_idxs, bond_order in zip(topology.bond_idxs, topology.bond_orders):
+            for bond_idxs, bond_order in zip(
+                topology.bond_idxs, topology.bond_orders, strict=True
+            ):
                 idx_a, idx_b = int(bond_idxs[0]), int(bond_idxs[1])
 
                 bond_order = int(bond_order)

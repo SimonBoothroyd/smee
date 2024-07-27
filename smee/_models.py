@@ -246,7 +246,7 @@ class TensorSystem:
         """The number of atoms in the system."""
         return sum(
             topology.n_atoms * n_copies
-            for topology, n_copies in zip(self.topologies, self.n_copies)
+            for topology, n_copies in zip(self.topologies, self.n_copies, strict=True)
         )
 
     @property
@@ -254,7 +254,7 @@ class TensorSystem:
         """The number of v-sites in the system."""
         return sum(
             topology.n_v_sites * n_copies
-            for topology, n_copies in zip(self.topologies, self.n_copies)
+            for topology, n_copies in zip(self.topologies, self.n_copies, strict=True)
         )
 
     @property

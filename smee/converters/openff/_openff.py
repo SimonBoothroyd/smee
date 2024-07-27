@@ -197,7 +197,7 @@ def _convert_v_sites(
 
     v_site_maps = []
 
-    for topology, handler in zip(topologies, handlers):
+    for topology, handler in zip(topologies, handlers, strict=True):
         if handler is None:
             v_site_maps.append(None)
             continue

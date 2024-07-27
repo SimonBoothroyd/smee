@@ -1,6 +1,7 @@
 import typing
 
 import openff.interchange
+import openff.interchange.models
 import openff.toolkit
 import openff.units
 import torch
@@ -232,6 +233,13 @@ def add_explicit_lb_exceptions(
     potential.parameters = torch.vstack(
         [torch.zeros_like(potential.parameters), torch.stack([eps_ij, sig_ij], dim=-1)]
     )
+    for i in range(len(eps_ij)):
+        potential.parameter_keys.append(
+            openff.interchange.models.PotentialKey(
+                id=f"exception-{i}", associated_handler="vdW"
+            )
+        )
+
     potential.exceptions = {
         (int(idx_i), int(idx_j)): i + n_params
         for i, (idx_i, idx_j) in enumerate(zip(idxs_i, idxs_j, strict=True))

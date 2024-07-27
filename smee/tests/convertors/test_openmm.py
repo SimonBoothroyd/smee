@@ -122,7 +122,7 @@ def test_create_openmm_system_v_sites(v_site_force_field):
     ]
 
     for i, (v_site_interchange, v_site_smee) in enumerate(
-        zip(v_sites_interchange, v_sites_smee)
+        zip(v_sites_interchange, v_sites_smee, strict=True)
     ):
         assert v_site_smee.getNumParticles() == v_site_interchange.getNumParticles()
 
@@ -171,7 +171,7 @@ def test_convert_to_openmm_system_periodic():
     n_copies_per_mol = [5, 5]
 
     # carbonic acid has impropers, 1-5 interactions so should test most convertors
-    for smiles, n_copies in zip(["OC(=O)O", "O"], n_copies_per_mol):
+    for smiles, n_copies in zip(["OC(=O)O", "O"], n_copies_per_mol, strict=True):
         mol = openff.toolkit.Molecule.from_smiles(smiles)
         mol.generate_conformers(n_conformers=1)
 
@@ -251,7 +251,7 @@ def test_convert_to_openmm_system_dexp_periodic(test_data_dir):
 
     n_copies_per_mol = [5, 5]
 
-    for smiles, n_copies in zip(["OCCO", "O"], n_copies_per_mol):
+    for smiles, n_copies in zip(["OCCO", "O"], n_copies_per_mol, strict=True):
         mol = openff.toolkit.Molecule.from_smiles(smiles)
         mol.generate_conformers(n_conformers=1)
 

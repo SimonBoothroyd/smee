@@ -50,7 +50,7 @@ def broadcast_parameters(
 
     parameters = []
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
 
         topology_parameters = parameter_map.assignment_matrix @ potential.parameters
@@ -97,7 +97,7 @@ def broadcast_exceptions(
 
     parameter_idxs = []
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
 
         if isinstance(parameter_map, smee.ValenceParameterMap):
@@ -131,7 +131,7 @@ def broadcast_exceptions(
     parameter_idxs_a = parameter_idxs[idxs_a]
     parameter_idxs_b = parameter_idxs[idxs_b]
 
-    if len(set((min(i, j), max(i, j)) for i, j in potential.exceptions)) != len(
+    if len({(min(i, j), max(i, j)) for i, j in potential.exceptions}) != len(
         potential.exceptions
     ):
         raise NotImplementedError("cannot define different exceptions for i-j and j-i")
@@ -172,7 +172,7 @@ def broadcast_idxs(
 
     per_topology_idxs = []
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
         n_interacting_particles = parameter_map.particle_idxs.shape[-1]
 

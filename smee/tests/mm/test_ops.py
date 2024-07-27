@@ -86,7 +86,7 @@ def test_pack_unpack_force_field(mocker):
     expected_v_site = updated_tensors[-1]
 
     for i, (original, unpacked) in enumerate(
-        zip(force_field.potentials, unpacked_force_field.potentials)
+        zip(force_field.potentials, unpacked_force_field.potentials, strict=True)
     ):
         assert original.type == unpacked.type
         assert original.fn == unpacked.fn
@@ -238,7 +238,7 @@ def test_compute_observables(tmp_path, mock_argon_tensors, mock_argon_params):
     frames_path = tmp_path / ("frames.msgpack")
 
     with frames_path.open("wb") as file:
-        for coord, box_vector in zip(coords, box_vectors):
+        for coord, box_vector in zip(coords, box_vectors, strict=True):
             frame = (
                 torch.tensor(coord).float(),
                 torch.tensor(box_vector).float(),

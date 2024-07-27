@@ -139,7 +139,7 @@ def _compute_mass(system: smee.TensorSystem) -> float:
 
     return sum(
         sum(_get_mass(atomic_num) for atomic_num in topology.atomic_nums) * n_copies
-        for topology, n_copies in zip(system.topologies, system.n_copies)
+        for topology, n_copies in zip(system.topologies, system.n_copies, strict=True)
     )
 
 
@@ -315,7 +315,7 @@ class _EnsembleAverageOp(torch.autograd.Function):
 
         ctx.mark_non_differentiable(*avg_stds)
 
-        return tuple([*avg_values, *avg_stds, tuple(columns)])
+        return *avg_values, *avg_stds, tuple(columns)
 
     @staticmethod
     def backward(ctx, *grad_outputs):
@@ -436,7 +436,7 @@ class _ReweightAverageOp(torch.autograd.Function):
         ctx.columns = columns
         ctx.save_for_backward(*theta, *du_d_theta, delta, weights, values)
 
-        return tuple([*avg_values, columns])
+        return *avg_values, columns
 
     @staticmethod
     def backward(ctx, *grad_outputs):
@@ -555,8 +555,8 @@ def compute_ensemble_averages(
     avg_std = avg_outputs[len(avg_outputs) // 2 :]
 
     return (
-        {column: avg for avg, column in zip(avg_values, columns)},
-        {column: avg for avg, column in zip(avg_std, columns)},
+        {column: avg for avg, column in zip(avg_values, columns, strict=True)},
+        {column: avg for avg, column in zip(avg_std, columns, strict=True)},
     )
 
 
@@ -612,4 +612,4 @@ def reweight_ensemble_averages(
     }
 
     *avg_outputs, columns = _ReweightAverageOp.apply(kwargs, *tensors)
-    return {column: avg for avg, column in zip(avg_outputs, columns)}
+    return {column: avg for avg, column in zip(avg_outputs, columns, strict=True)}

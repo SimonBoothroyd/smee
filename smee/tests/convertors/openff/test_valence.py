@@ -39,7 +39,7 @@ def test_convert_bonds(ethanol, ethanol_interchange):
     actual_parameters = {
         tuple(particle_idxs.tolist()): parameter_keys[parameter_idxs.nonzero()]
         for parameter_idxs, particle_idxs in zip(
-            assignment_matrix, parameter_map.particle_idxs
+            assignment_matrix, parameter_map.particle_idxs, strict=True
         )
     }
     expected_parameters = {
@@ -91,7 +91,7 @@ def test_convert_propers(ethanol, ethanol_interchange):
             potential.parameter_keys[parameter_idxs.nonzero()].mult,
         )
         for parameter_idxs, particle_idxs in zip(
-            assignment_matrix, parameter_map.particle_idxs
+            assignment_matrix, parameter_map.particle_idxs, strict=True
         )
     }
     expected_parameters = {

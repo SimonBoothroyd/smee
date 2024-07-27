@@ -41,7 +41,6 @@ def find_exclusions(
     )
 
     if v_sites is not None:
-
         for v_site_key in v_sites.keys:
             v_site_idx = v_sites.key_to_idx[v_site_key]
             parent_idx = v_site_key.orientation_atom_indices[0]
