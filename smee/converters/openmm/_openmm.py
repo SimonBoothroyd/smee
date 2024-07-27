@@ -104,7 +104,7 @@ def create_openmm_system(
                 parent_idxs = [i + start_idx for i in key.orientation_atom_indices]
 
                 local_frame_coords = smee.geometry.polar_to_cartesian_coords(
-                    v_sites.parameters[[parameter_idx], :]
+                    v_sites.parameters[[parameter_idx], :].detach()
                 )
                 origin, x_dir, y_dir = v_sites.weights[parameter_idx]
 

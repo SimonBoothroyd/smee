@@ -24,7 +24,7 @@ def convert_bond_potential(
     for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameters = (
             topology.parameters[potential.type].assignment_matrix @ potential.parameters
-        )
+        ).detach()
 
         for _ in range(n_copies):
             atom_idxs = topology.parameters[potential.type].particle_idxs + idx_offset
@@ -56,7 +56,7 @@ def _convert_angle_potential(
     for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameters = (
             topology.parameters[potential.type].assignment_matrix @ potential.parameters
-        )
+        ).detach()
 
         for _ in range(n_copies):
             atom_idxs = topology.parameters[potential.type].particle_idxs + idx_offset
@@ -92,7 +92,7 @@ def convert_torsion_potential(
     for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameters = (
             topology.parameters[potential.type].assignment_matrix @ potential.parameters
-        )
+        ).detach()
 
         for _ in range(n_copies):
             atom_idxs = topology.parameters[potential.type].particle_idxs + idx_offset
