@@ -1820,13 +1820,13 @@ vdw_potential.parameters.requires_grad = True</div>
 <span class="n">energy</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 
 <span class="k">for</span> <span class="n">parameter_key</span><span class="p">,</span> <span class="n">gradient</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-    <span class="n">vdw_potential</span><span class="o">.</span><span class="n">parameter_keys</span><span class="p">,</span> <span class="n">vdw_potential</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+    <span class="n">vdw_potential</span><span class="o">.</span><span class="n">parameter_keys</span><span class="p">,</span> <span class="n">vdw_potential</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">):</span>
     <span class="n">parameter_cols</span> <span class="o">=</span> <span class="n">vdw_potential</span><span class="o">.</span><span class="n">parameter_cols</span>
 
     <span class="n">parameter_grads</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"dU/d</span><span class="si">{</span><span class="n">parameter_col</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="n">parameter_grad</span><span class="si">:</span><span class="s2"> 8.3f</span><span class="si">}</span><span class="s2">"</span>
-        <span class="k">for</span> <span class="n">parameter_col</span><span class="p">,</span> <span class="n">parameter_grad</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">parameter_cols</span><span class="p">,</span> <span class="n">gradient</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">parameter_col</span><span class="p">,</span> <span class="n">parameter_grad</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">parameter_cols</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parameter_key</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">ljust</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">parameter_grads</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
@@ -1836,13 +1836,13 @@ energy = smee.compute_energy(tensor_topology, tensor_ff, conformer)
 energy.backward()
 
 for parameter_key, gradient in zip(
-    vdw_potential.parameter_keys, vdw_potential.parameters.grad.numpy()
+    vdw_potential.parameter_keys, vdw_potential.parameters.grad.numpy(), strict=True
 ):
     parameter_cols = vdw_potential.parameter_cols
 
     parameter_grads = ", ".join(
         f"dU/d{parameter_col} = {parameter_grad: 8.3f}"
-        for parameter_col, parameter_grad in zip(parameter_cols, gradient)
+        for parameter_col, parameter_grad in zip(parameter_cols, gradient, strict=True)
     )
     print(f"{parameter_key.id.ljust(15)} - {parameter_grads}")</div>
 </div>
