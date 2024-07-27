@@ -9,7 +9,7 @@ import smee.utils
 
 def test_find_exclusions_simple():
     molecule = openff.toolkit.Molecule()
-    for i in range(6):
+    for _ in range(6):
         molecule.add_atom(6, 0, False)
     for i in range(5):
         molecule.add_bond(i, i + 1, 1, False)
@@ -35,7 +35,7 @@ def test_find_exclusions_simple():
 
 def test_find_exclusions_rings():
     molecule = openff.toolkit.Molecule()
-    for i in range(8):
+    for _ in range(8):
         molecule.add_atom(6, 0, False)
 
     # para substituted 6-membered ring
@@ -79,7 +79,7 @@ def test_find_exclusions_rings():
 
 def test_find_exclusions_dimer():
     molecule = openff.toolkit.Molecule()
-    for i in range(3):
+    for _ in range(3):
         molecule.add_atom(6, 0, False)
 
     molecule.add_bond(0, 1, 1, False)
@@ -102,7 +102,7 @@ def test_find_exclusions_dimer():
 
 def test_find_exclusions_v_sites():
     molecule = openff.toolkit.Molecule()
-    for i in range(4):
+    for _ in range(4):
         molecule.add_atom(6, 0, False)
     for i in range(3):
         molecule.add_bond(i, i + 1, 1, False)

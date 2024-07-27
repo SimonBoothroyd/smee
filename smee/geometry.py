@@ -190,7 +190,7 @@ def _build_v_site_coord_frames(
 
     stacked_frames = [[], [], [], []]
 
-    for key, weight in zip(v_sites.keys, weights):
+    for key, weight in zip(v_sites.keys, weights, strict=True):
         parent_coords = conformer[:, key.orientation_atom_indices, :]
         weighted_coords = torch.transpose(
             (torch.transpose(parent_coords, 1, 2) @ weight.T), 1, 2

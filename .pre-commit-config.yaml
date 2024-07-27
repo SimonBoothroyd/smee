@@ -1,38 +1,15 @@
 repos:
-  - repo: local
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
     hooks:
-      - id: isort
-        name: "[Package] Import formatting"
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+
+-   repo: local
+    hooks:
+    -   id: ruff
+        name: Autoformat python code
         language: system
-        entry: isort
+        entry: ruff
+        args: [check]
         files: \.py$
-
-      - id: black
-        name: "[Package] Code formatting"
-        language: system
-        entry: black
-        files: \.py$
-
-      - id: flake8
-        name: "[Package] Linting"
-        language: system
-        entry: flake8
-        files: \.py$
-
-      - id: isort-examples
-        name: "[Examples] Import formatting"
-        language: system
-        entry: nbqa isort
-        files: examples/.+\.ipynb$
-
-      - id: black-examples
-        name: "[Examples] Code formatting"
-        language: system
-        entry: nbqa black
-        files: examples/.+\.ipynb$
-
-      - id: flake8-examples
-        name: "[Examples] Linting"
-        language: system
-        entry: nbqa flake8 --ignore=E402
-        files: examples/.+\.ipynb$

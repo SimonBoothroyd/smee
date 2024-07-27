@@ -40,13 +40,10 @@ dependencies:
   - scipy  # test logsumexp implementation
   - smirnoff-plugins
 
-  - versioneer
+  - setuptools_scm >=8
 
   - pre-commit
-  - isort
-  - black
-  - flake8
-  - flake8-pyproject
+  - ruff
   - nbqa
 
   - pytest

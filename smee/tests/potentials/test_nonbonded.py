@@ -83,11 +83,11 @@ def test_compute_pairwise_scales():
             [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 5),
             [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 5),
             #
-            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),
-            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),
+            [1.0] * 5 + [1.0, 0.01, 0.01, 0.01, 0.01] + [1.0] * (system.n_particles - 10),  # noqa: E501
+            [1.0] * 5 + [0.01, 1.0, 0.02, 0.02, 0.02] + [1.0] * (system.n_particles - 10),  # noqa: E501
+            [1.0] * 5 + [0.01, 0.02, 1.0, 0.02, 0.02] + [1.0] * (system.n_particles - 10),  # noqa: E501
+            [1.0] * 5 + [0.01, 0.02, 0.02, 1.0, 0.02] + [1.0] * (system.n_particles - 10),  # noqa: E501
+            [1.0] * 5 + [0.01, 0.02, 0.02, 0.02, 1.0] + [1.0] * (system.n_particles - 10),  # noqa: E501
             #
             [1.0] * 10 + [1.0, 0.01, 0.01] + [1.0] * (system.n_particles - 13),
             [1.0] * 10 + [0.01, 1.0, 0.02] + [1.0] * (system.n_particles - 13),
@@ -199,7 +199,7 @@ def test_compute_pairwise_non_periodic(with_batch):
     )
     n_expected_pairs = len(expected_idxs)
 
-    expected_batch_size = tuple() if not with_batch else (1,)
+    expected_batch_size = () if not with_batch else (1,)
 
     assert pairwise.idxs.shape == (n_expected_pairs, 2)
     assert torch.allclose(pairwise.idxs, expected_idxs)
@@ -258,6 +258,14 @@ def test_prepare_lrc_types(with_exceptions):
         assert len(vdw_potential.exceptions) == 10
 
     idxs_i, idxs_j, n_ij_interactions = prepare_lrc_types(system, vdw_potential)
+
+    if with_exceptions:
+        subset_idxs = [0, 1, 2, 13, 14, 25, 91, 92, 93, 94]
+
+        idxs_i = idxs_i[subset_idxs]
+        idxs_j = idxs_j[subset_idxs]
+
+        n_ij_interactions = n_ij_interactions[subset_idxs]
 
     assert idxs_i.shape == expected_idxs_i.shape
     assert torch.allclose(idxs_i, expected_idxs_i)

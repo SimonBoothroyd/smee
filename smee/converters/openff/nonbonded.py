@@ -80,7 +80,9 @@ def convert_nonbonded_handlers(
 
     parameter_maps = []
 
-    for handler, topology, v_site_map in zip(handlers, topologies, v_site_maps):
+    for handler, topology, v_site_map in zip(
+        handlers, topologies, v_site_maps, strict=True
+    ):
         assignment_map = collections.defaultdict(lambda: collections.defaultdict(float))
 
         n_particles = topology.n_atoms + (

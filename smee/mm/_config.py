@@ -26,8 +26,10 @@ def _quantity_validator(
 
     try:
         return value.in_units_of(expected_units)
-    except TypeError:
-        raise ValueError(f"invalid units {value.unit} - expected {expected_units}")
+    except TypeError as e:
+        raise ValueError(
+            f"invalid units {value.unit} - expected {expected_units}"
+        ) from e
 
 
 def _quantity_serializer(value: openmm.unit.Quantity) -> str:

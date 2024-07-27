@@ -56,7 +56,7 @@ def _broadcast_exclusions(
     per_topology_exclusion_idxs = []
     per_topology_exclusion_scales = []
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         exclusion_idxs = topology.parameters[potential.type].exclusions
 
         exclusion_offset = (
@@ -212,10 +212,10 @@ def prepare_lrc_types(
     """
     n_by_type = collections.defaultdict(int)
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_counts = topology.parameters["vdW"].assignment_matrix.abs().sum(dim=0)
 
-        for key, count in zip(potential.parameter_keys, parameter_counts):
+        for key, count in zip(potential.parameter_keys, parameter_counts, strict=True):
             n_by_type[key] += count.item() * n_copies
 
     counts = smee.utils.tensor_like(
@@ -815,8 +815,8 @@ def _compute_pme_exclusions(
     ]
     max_exclusions = 0
 
-    for exclusions, topology, n_copies in zip(
-        exclusion_templates, system.topologies, system.n_copies
+    for exclusions, topology in zip(
+        exclusion_templates, system.topologies, strict=True
     ):
         for i, j in topology.parameters[potential.type].exclusions:
             exclusions[i].append(int(j))
@@ -830,7 +830,7 @@ def _compute_pme_exclusions(
     exclusions_per_type = []
 
     for exclusions, topology, n_copies in zip(
-        exclusion_templates, system.topologies, system.n_copies
+        exclusion_templates, system.topologies, system.n_copies, strict=True
     ):
         for atom_exclusions in exclusions:
             n_padding = max_exclusions - len(atom_exclusions)

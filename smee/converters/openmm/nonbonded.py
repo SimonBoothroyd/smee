@@ -132,7 +132,7 @@ def _build_vdw_lookup(
             for col, col_idx in parameter_col_to_idx.items()
         }
 
-        for col, col_idx in parameter_col_to_idx.items():
+        for col in parameter_col_to_idx:
             parameter_lookup[col][i + j * n_params] = float(
                 parameters[col] * unit_conversion[col]
             )
@@ -169,7 +169,7 @@ def _detect_parameters(
             assigned_vars.add(assigned_var.strip())
 
         parsed_fn = symengine.sympify(line)
-        free_vars.update(set(str(x) for x in parsed_fn.free_symbols) - assigned_vars)
+        free_vars.update({str(x) for x in parsed_fn.free_symbols} - assigned_vars)
 
     for assigned_var, fn in mixing_fn.items():
         fn = fn.strip().strip(";")
@@ -180,7 +180,7 @@ def _detect_parameters(
         assigned_vars.add(assigned_var.strip())
 
         parsed_fn = symengine.sympify(fn)
-        free_vars.update(set(str(x) for x in parsed_fn.free_symbols) - assigned_vars)
+        free_vars.update({str(x) for x in parsed_fn.free_symbols} - assigned_vars)
 
     free_vars -= assigned_vars
 
@@ -257,7 +257,7 @@ def _add_parameters_to_vdw_without_lookup(
 
     idx_offset = 0
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
         parameters = parameter_map.assignment_matrix @ potential.parameters
 
@@ -317,7 +317,7 @@ def _add_parameters_to_vdw_with_lookup(
 
     idx_offset = 0
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
 
         assignment_dense = parameter_map.assignment_matrix.to_dense()
@@ -463,7 +463,7 @@ def convert_lj_potential(
 
     idx_offset = 0
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
         parameters = parameter_map.assignment_matrix @ potential.parameters
 
@@ -534,7 +534,7 @@ def convert_coulomb_potential(
 
     idx_offset = 0
 
-    for topology, n_copies in zip(system.topologies, system.n_copies):
+    for topology, n_copies in zip(system.topologies, system.n_copies, strict=True):
         parameter_map = topology.parameters[potential.type]
         parameters = parameter_map.assignment_matrix @ potential.parameters
 
