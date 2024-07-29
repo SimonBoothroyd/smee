@@ -4,6 +4,7 @@ import collections
 import math
 import typing
 
+import numpy as np
 import openff.units
 import torch
 
@@ -993,43 +994,77 @@ def compute_multipole_energy(
 
     # calculate electric field due to partial charges by hand
     # TODO wolf summation for periodic
+    _SQRT_COULOMB_PRE_FACTOR = _COULOMB_PRE_FACTOR**(1/2)
     for distance, delta, idx, scale in zip(
         pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
     ):
         efield_static[idx[0]] += (
-            _COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
+            _SQRT_COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
         )
         efield_static[idx[1]] += (
-            _COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
+            _SQRT_COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
         )
 
     # reshape to (3*N) vector
     efield_static = efield_static.reshape(3 * system.n_particles)
 
     # induced dipole vector
-    u = torch.repeat_interleave(polarizabilities, 3) * efield_static
+    ind_dipoles = torch.repeat_interleave(polarizabilities, 3) * efield_static
 
     # dipole-dipole interaction tensor
-    A = torch.zeros(
-        (3 * system.n_particles, 3 * system.n_particles), dtype=torch.float64
-    )
+    #A = torch.zeros(
+    #    (3 * system.n_particles, 3 * system.n_particles), dtype=torch.float64
+    #)
+    A = torch.nan_to_num(torch.diag(torch.repeat_interleave(1.0 / polarizabilities, 3)))
 
     for distance, delta, idx, scale in zip(
         pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
     ):
-        t = torch.eye(3) * distance**-3 - 3 * torch.cross(delta, delta) * distance**-5
-        t *= _COULOMB_PRE_FACTOR * scale
+        if polarizabilities[idx[0]] * polarizabilities[idx[1]] != 0:
+            u = distance / (polarizabilities[idx[0]] * polarizabilities[idx[1]]) ** (
+                1.0 / 6.0
+            )
+        else:
+            u = distance
+        a = 0.572
+        damping_term1 = 1 - torch.exp(-a * u**3)
+        damping_term2 = 1 - (1 + a * u**3) * torch.exp(-a * u**3)
+
+        t = (
+            torch.eye(3) * damping_term1 * distance**-3
+            - 3 * damping_term2 * torch.einsum("i,j->ij", delta, delta) * distance**-5
+        )
+        t *= scale
         A[3 * idx[0] : 3 * idx[0] + 3, 3 * idx[1] : 3 * idx[1] + 3] = t
         A[3 * idx[1] : 3 * idx[1] + 3, 3 * idx[0] : 3 * idx[0] + 3] = t
 
+    precondition_m = torch.repeat_interleave(polarizabilities, 3)
+
+    residual = efield_static - A @ ind_dipoles
+
+    z = torch.einsum('i,i->i', precondition_m, residual)
+    p = torch.clone(z)
+
     # fixed iterations
     for _ in range(60):
-        efield_induced = A @ u
-        u = torch.repeat_interleave(polarizabilities, 3) * (
-            efield_static + efield_induced
-        )
+        alpha = torch.dot(residual, z) / (p.T @ A @ p)
+        ind_dipoles = ind_dipoles + alpha * p
 
-    coul_energy += -0.5 * torch.dot(u, efield_static)
+        prev_residual = torch.clone(residual)
+        prev_z = torch.clone(z)
+
+        residual = residual - alpha * A @ p
+
+        if torch.dot(residual, residual) < 1e-5:
+            break
+
+        z = torch.einsum('i,i->i', precondition_m, residual)
+
+        beta = torch.dot(z, residual) / torch.dot(prev_z, prev_residual)
+
+        p = z + beta * p
+
+    coul_energy += -0.5 * torch.dot(ind_dipoles, efield_static)
 
     return coul_energy
 
