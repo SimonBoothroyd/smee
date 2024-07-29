@@ -994,7 +994,7 @@ def compute_multipole_energy(
 
     # calculate electric field due to partial charges by hand
     # TODO wolf summation for periodic
-    _SQRT_COULOMB_PRE_FACTOR = _COULOMB_PRE_FACTOR**(1/2)
+    _SQRT_COULOMB_PRE_FACTOR = _COULOMB_PRE_FACTOR ** (1 / 2)
     for distance, delta, idx, scale in zip(
         pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
     ):
@@ -1012,9 +1012,9 @@ def compute_multipole_energy(
     ind_dipoles = torch.repeat_interleave(polarizabilities, 3) * efield_static
 
     # dipole-dipole interaction tensor
-    #A = torch.zeros(
+    # A = torch.zeros(
     #    (3 * system.n_particles, 3 * system.n_particles), dtype=torch.float64
-    #)
+    # )
     A = torch.nan_to_num(torch.diag(torch.repeat_interleave(1.0 / polarizabilities, 3)))
 
     for distance, delta, idx, scale in zip(
@@ -1042,7 +1042,7 @@ def compute_multipole_energy(
 
     residual = efield_static - A @ ind_dipoles
 
-    z = torch.einsum('i,i->i', precondition_m, residual)
+    z = torch.einsum("i,i->i", precondition_m, residual)
     p = torch.clone(z)
 
     # fixed iterations
@@ -1058,7 +1058,7 @@ def compute_multipole_energy(
         if torch.dot(residual, residual) < 1e-5:
             break
 
-        z = torch.einsum('i,i->i', precondition_m, residual)
+        z = torch.einsum("i,i->i", precondition_m, residual)
 
         beta = torch.dot(z, residual) / torch.dot(prev_z, prev_residual)
 

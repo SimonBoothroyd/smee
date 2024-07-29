@@ -636,6 +636,25 @@ def convert_multipole_potential(
                 )
             """
 
+            covalent_maps = {}
+
+            for i, j in parameter_map.exclusions:
+                i = int(i)
+                j = int(j)
+                if i in covalent_maps.keys():
+                    covalent_maps[i].append(j)
+                else:
+                    covalent_maps[i] = [j]
+                if j in covalent_maps.keys():
+                    covalent_maps[j].append(i)
+                else:
+                    covalent_maps[j] = [i]
+
+            for i in covalent_maps.keys():
+                force.setCovalentMap(
+                    i, openmm.AmoebaMultipoleForce.Covalent12, covalent_maps[i]
+                )
+
             idx_offset += topology.n_particles
 
     return force

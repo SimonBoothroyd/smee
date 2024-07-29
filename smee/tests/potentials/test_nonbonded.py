@@ -605,8 +605,8 @@ def test_compute_multipole_energy_non_periodic_2(test_data_dir):
     )
 
     expected_energy = _compute_openmm_energy(
-                tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
-            )
+        tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
+    )
 
     assert torch.allclose(energy, expected_energy, atol=1.0e-4)
 
@@ -637,7 +637,7 @@ def test_compute_multipole_energy_non_periodic_3(test_data_dir):
     )
 
     expected_energy = _compute_openmm_energy(
-                tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
-            )
+        tensor_sys, coords, None, tensor_ff.potentials_by_type["Electrostatics"]
+    )
 
     assert torch.allclose(energy, expected_energy, atol=1.0e-4)
