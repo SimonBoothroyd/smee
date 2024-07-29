@@ -990,6 +990,9 @@ def compute_multipole_energy(
         / pairwise.distances
     ).sum(-1)
 
+    if torch.allclose(polarizabilities, torch.tensor(0.0, dtype=torch.float64)):
+        return coul_energy
+
     efield_static = torch.zeros((system.n_particles, 3), dtype=torch.float64)
 
     # calculate electric field due to partial charges by hand
