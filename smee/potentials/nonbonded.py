@@ -1001,11 +1001,29 @@ def compute_multipole_energy(
     for distance, delta, idx, scale in zip(
         pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
     ):
-        efield_static[idx[0]] += (
-            _SQRT_COULOMB_PRE_FACTOR * scale * charges[idx[1]] * delta / distance**3
+        if polarizabilities[idx[0]] * polarizabilities[idx[1]] != 0:
+            u = distance / (polarizabilities[idx[0]] * polarizabilities[idx[1]]) ** (
+                1.0 / 6.0
+            )
+        else:
+            u = distance
+        a = 0.39
+        damping_term1 = 1 - torch.exp(-a * u**3)
+        efield_static[idx[0]] -= (
+            _SQRT_COULOMB_PRE_FACTOR
+            * scale
+            * damping_term1
+            * charges[idx[1]]
+            * delta
+            / distance**3
         )
         efield_static[idx[1]] += (
-            _SQRT_COULOMB_PRE_FACTOR * scale * charges[idx[0]] * delta / distance**3
+            _SQRT_COULOMB_PRE_FACTOR
+            * scale
+            * damping_term1
+            * charges[idx[0]]
+            * delta
+            / distance**3
         )
 
     # reshape to (3*N) vector
@@ -1029,7 +1047,7 @@ def compute_multipole_energy(
             )
         else:
             u = distance
-        a = 0.572
+        a = 0.39
         damping_term1 = 1 - torch.exp(-a * u**3)
         damping_term2 = 1 - (1 + a * u**3) * torch.exp(-a * u**3)
 
@@ -1058,7 +1076,7 @@ def compute_multipole_energy(
 
         residual = residual - alpha * A @ p
 
-        if torch.dot(residual, residual) < 1e-5:
+        if torch.dot(residual, residual) < 1e-7:
             break
 
         z = torch.einsum("i,i->i", precondition_m, residual)

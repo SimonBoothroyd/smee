@@ -613,7 +613,7 @@ def test_compute_multipole_energy_non_periodic_2(test_data_dir):
 
 def test_compute_multipole_energy_non_periodic_3(test_data_dir):
     tensor_sys, tensor_ff = smee.tests.utils.system_from_smiles(
-        ["C", "[Ne]"],
+        ["C", "[Xe]"],
         [1, 1],
         openff.toolkit.ForceField(
             str(test_data_dir / "PHAST-H2CNO-2.0.0.offxml"), load_plugins=True
@@ -628,7 +628,7 @@ def test_compute_multipole_energy_non_periodic_3(test_data_dir):
             [+1.02672, +0.00000, -0.36300],
             [-0.51336, -0.88916, -0.36300],
             [-0.51336, +0.88916, -0.36300],
-            [+4.00000, +0.00000, +0.00000],
+            [+3.00000, +0.00000, +0.00000],
         ]
     )
 

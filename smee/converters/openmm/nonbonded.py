@@ -654,6 +654,11 @@ def convert_multipole_potential(
                 force.setCovalentMap(
                     i, openmm.AmoebaMultipoleForce.Covalent12, covalent_maps[i]
                 )
+                force.setCovalentMap(
+                    i,
+                    openmm.AmoebaMultipoleForce.PolarizationCovalent11,
+                    covalent_maps[i],
+                )
 
             idx_offset += topology.n_particles
 
