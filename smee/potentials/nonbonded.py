@@ -971,9 +971,9 @@ def compute_multipole_energy(
     for topology, n_copies in zip(system.topologies, system.n_copies):
         parameter_map = topology.parameters[potential.type]
         topology_parameters = parameter_map.assignment_matrix @ potential.parameters
-        charges.append(topology_parameters[: topology.n_particles * n_copies, 0])
+        charges.append(topology_parameters[: topology.n_particles, 0].repeat(n_copies))
         polarizabilities.append(
-            topology_parameters[topology.n_particles * n_copies :, 1]
+            topology_parameters[topology.n_particles :, 1].repeat(n_copies)
         )
 
     charges = torch.cat(charges)
@@ -982,13 +982,69 @@ def compute_multipole_energy(
     pair_scales = compute_pairwise_scales(system, potential)
 
     # static partial charge - partial charge energy
-    coul_energy = (
-        _COULOMB_PRE_FACTOR
-        * pair_scales
-        * charges[pairwise.idxs[:, 0]]
-        * charges[pairwise.idxs[:, 1]]
-        / pairwise.distances
-    ).sum(-1)
+    if system.is_periodic == False:
+        coul_energy = (
+            _COULOMB_PRE_FACTOR
+            * pair_scales
+            * charges[pairwise.idxs[:, 0]]
+            * charges[pairwise.idxs[:, 1]]
+            / pairwise.distances
+        ).sum(-1)
+    else:
+        import NNPOps.pme
+
+        cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
+        error_tol = torch.tensor(0.0001)
+
+        exceptions = _compute_pme_exclusions(system, potential).to(charges.device)
+
+        grid_x, grid_y, grid_z, alpha = _compute_pme_grid(box_vectors, cutoff, error_tol)
+
+        pme = NNPOps.pme.PME(
+            grid_x, grid_y, grid_z, _PME_ORDER, alpha, _COULOMB_PRE_FACTOR, exceptions
+        )
+
+        energy_direct = torch.ops.pme.pme_direct(
+            conformer.float(),
+            charges.float(),
+            pairwise.idxs.T,
+            pairwise.deltas,
+            pairwise.distances,
+            pme.exclusions,
+            pme.alpha,
+            pme.coulomb,
+        )
+        energy_self = -torch.sum(charges ** 2) * pme.coulomb * pme.alpha / math.sqrt(torch.pi)
+        energy_recip = energy_self + torch.ops.pme.pme_reciprocal(
+            conformer.float(),
+            charges.float(),
+            box_vectors.float(),
+            pme.gridx,
+            pme.gridy,
+            pme.gridz,
+            pme.order,
+            pme.alpha,
+            pme.coulomb,
+            pme.moduli[0].to(charges.device),
+            pme.moduli[1].to(charges.device),
+            pme.moduli[2].to(charges.device),
+        )
+
+        exclusion_idxs, exclusion_scales = _broadcast_exclusions(system, potential)
+
+        exclusion_distances = (
+                conformer[exclusion_idxs[:, 0], :] - conformer[exclusion_idxs[:, 1], :]
+        ).norm(dim=-1)
+
+        energy_exclusion = (
+                _COULOMB_PRE_FACTOR
+                * exclusion_scales
+                * charges[exclusion_idxs[:, 0]]
+                * charges[exclusion_idxs[:, 1]]
+                / exclusion_distances
+        ).sum(-1)
+
+        coul_energy = energy_direct + energy_recip + energy_exclusion
 
     if torch.allclose(polarizabilities, torch.tensor(0.0, dtype=torch.float64)):
         return coul_energy
@@ -1032,10 +1088,7 @@ def compute_multipole_energy(
     # induced dipole vector
     ind_dipoles = torch.repeat_interleave(polarizabilities, 3) * efield_static
 
-    # dipole-dipole interaction tensor
-    # A = torch.zeros(
-    #    (3 * system.n_particles, 3 * system.n_particles), dtype=torch.float64
-    # )
+    # dipole-dipole interaction tensor T^{ij}_{\alpha \beta}
     A = torch.nan_to_num(torch.diag(torch.repeat_interleave(1.0 / polarizabilities, 3)))
 
     for distance, delta, idx, scale in zip(

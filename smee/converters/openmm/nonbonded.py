@@ -620,27 +620,11 @@ def convert_multipole_potential(
                     omm_params[9] = parameter[1] * _ANGSTROM**3
                 force.setMultipoleParameters(omm_idx, *omm_params)
 
-            """
-            for index, (i, j) in enumerate(parameter_map.exclusions):
-                q_i, q_j = parameters[i], parameters[j]
-                q = q_i * q_j
-
-                scale = potential.attributes[parameter_map.exclusion_scale_idxs[index]]
-
-                force.addException(
-                    i + idx_offset,
-                    j + idx_offset,
-                    scale * q,
-                    1.0,
-                    0.0,
-                )
-            """
-
             covalent_maps = {}
 
             for i, j in parameter_map.exclusions:
-                i = int(i)
-                j = int(j)
+                i = int(i) + idx_offset
+                j = int(j) + idx_offset
                 if i in covalent_maps.keys():
                     covalent_maps[i].append(j)
                 else:
