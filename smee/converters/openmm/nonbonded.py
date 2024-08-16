@@ -527,6 +527,132 @@ def convert_dexp_potential(
 
 
 @smee.converters.openmm.potential_converter(
+    smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810
+)
+def convert_dampedexp6810_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> tuple[openmm.CustomNonbondedForce, openmm.CustomBondForce]:
+    """Convert a DampedExp6810 potential to OpenMM forces.
+
+    The intermolcular interactions are described by a custom nonbonded force, while the
+    intramolecular interactions are described by a custom bond force.
+
+    If the potential has custom mixing rules (i.e. exceptions), a lookup table will be
+    used to store the parameters. Otherwise, the mixing rules will be applied directly
+    in the energy function.
+    """
+    energy_fn = (
+        "repulsion - ttdamp6*c6*invR^6 - ttdamp8*c8*invR^8 - ttdamp10*c10*invR^10;"
+        "repulsion = force_at_zero*invbeta*exp(-beta*(r-rho));"
+        "ttdamp10 = select(expbr, 1.0 - expbr * ttdamp10Sum, 1);"
+        "ttdamp8 = select(expbr, 1.0 - expbr * ttdamp8Sum, 1);"
+        "ttdamp6 = select(expbr, 1.0 - expbr * ttdamp6Sum, 1);"
+        "ttdamp10Sum = ttdamp8Sum + br^9/362880 + br^10/3628800;"
+        "ttdamp8Sum = ttdamp6Sum + br^7/5040 + br^8/40320;"
+        "ttdamp6Sum = 1.0 + br + br^2/2 + br^3/6 + br^4/24 + br^5/120 + br^6/720;"
+        "expbr = exp(-br);"
+        "br = beta*r;"
+        "invR = 1.0/r;"
+        "invbeta = 1.0/beta;"
+    )
+    mixing_fn = {
+        "beta": "2.0 * beta1 * beta2 / (beta1 + beta2)",
+        "rho": "0.5 * (rho1 + rho2)",
+        "c6": "sqrt(c61*c62)",
+        "c8": "sqrt(c81*c82)",
+        "c10": "sqrt(c101*c102)",
+    }
+
+    return convert_custom_vdw_potential(potential, system, energy_fn, mixing_fn)
+
+
+@smee.converters.openmm.potential_converter(
+    smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION
+)
+def convert_multipole_potential(
+    potential: smee.TensorPotential, system: smee.TensorSystem
+) -> openmm.AmoebaMultipoleForce:
+    """Convert a Multipole potential to OpenMM forces."""
+
+    thole = 0.39
+    cutoff_idx = potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)
+    cutoff = float(potential.attributes[cutoff_idx]) * _ANGSTROM
+
+    force: openmm.AmoebaMultipoleForce = openmm.AmoebaMultipoleForce()
+
+    if system.is_periodic:
+        force.setNonbondedMethod(openmm.AmoebaMultipoleForce.PME)
+    else:
+        force.setNonbondedMethod(openmm.AmoebaMultipoleForce.NoCutoff)
+    force.setPolarizationType(openmm.AmoebaMultipoleForce.Mutual)
+    force.setCutoffDistance(cutoff)
+    force.setEwaldErrorTolerance(0.0001)
+    force.setMutualInducedTargetEpsilon(0.00001)
+    force.setMutualInducedMaxIterations(60)
+    force.setExtrapolationCoefficients([-0.154, 0.017, 0.658, 0.474])
+
+    idx_offset = 0
+
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+        parameters = parameter_map.assignment_matrix @ potential.parameters
+        parameters = parameters.detach().tolist()
+
+        for _ in range(n_copies):
+            for _ in range(topology.n_particles):
+                force.addMultipole(
+                    0,
+                    (0.0, 0.0, 0.0),
+                    (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                    openmm.AmoebaMultipoleForce.NoAxisType,
+                    -1,
+                    -1,
+                    -1,
+                    thole,
+                    0,
+                    0,
+                )
+
+            for idx, parameter in enumerate(parameters):
+                omm_idx = idx % topology.n_particles + idx_offset
+                omm_params = force.getMultipoleParameters(omm_idx)
+                if idx // topology.n_atoms == 0:
+                    omm_params[0] = parameter[0] * openmm.unit.elementary_charge
+                else:
+                    omm_params[8] = (parameter[1] / 1000) ** (1 / 6)
+                    omm_params[9] = parameter[1] * _ANGSTROM**3
+                force.setMultipoleParameters(omm_idx, *omm_params)
+
+            covalent_maps = {}
+
+            for i, j in parameter_map.exclusions:
+                i = int(i) + idx_offset
+                j = int(j) + idx_offset
+                if i in covalent_maps.keys():
+                    covalent_maps[i].append(j)
+                else:
+                    covalent_maps[i] = [j]
+                if j in covalent_maps.keys():
+                    covalent_maps[j].append(i)
+                else:
+                    covalent_maps[j] = [i]
+
+            for i in covalent_maps.keys():
+                force.setCovalentMap(
+                    i, openmm.AmoebaMultipoleForce.Covalent12, covalent_maps[i]
+                )
+                force.setCovalentMap(
+                    i,
+                    openmm.AmoebaMultipoleForce.PolarizationCovalent11,
+                    covalent_maps[i],
+                )
+
+            idx_offset += topology.n_particles
+
+    return force
+
+
+@smee.converters.openmm.potential_converter(
     smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB
 )
 def convert_coulomb_potential(

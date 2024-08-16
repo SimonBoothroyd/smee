@@ -217,6 +217,122 @@ def convert_dexp(
     return potential, parameter_maps
 
 
+@smee.converters.smirnoff_parameter_converter(
+    "DampedExp6810",
+    {
+        "rho": _ANGSTROM,
+        "beta": _ANGSTROM**-1,
+        "c6": _KCAL_PER_MOL * _ANGSTROM**6,
+        "c8": _KCAL_PER_MOL * _ANGSTROM**8,
+        "c10": _KCAL_PER_MOL * _ANGSTROM**10,
+        "force_at_zero": _KCAL_PER_MOL * _ANGSTROM**-1,
+        "scale_12": _UNITLESS,
+        "scale_13": _UNITLESS,
+        "scale_14": _UNITLESS,
+        "scale_15": _UNITLESS,
+        "cutoff": _ANGSTROM,
+        "switch_width": _ANGSTROM,
+    },
+)
+def convert_dampedexp6810(
+    handlers: list[
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFDampedExp6810Collection"
+    ],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    import smee.potentials.nonbonded
+
+    (
+        potential,
+        parameter_maps,
+    ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
+        handlers,
+        "DampedExp6810",
+        topologies,
+        v_site_maps,
+        ("rho", "beta", "c6", "c8", "c10"),
+        ("cutoff", "switch_width", "force_at_zero"),
+    )
+    potential.type = smee.PotentialType.VDW
+    potential.fn = smee.EnergyFn.VDW_DAMPEDEXP6810
+
+    return potential, parameter_maps
+
+
+@smee.converters.smirnoff_parameter_converter(
+    "Multipole",
+    {"polarity": _ANGSTROM**3, "cutoff": _ANGSTROM},
+    depends_on=["Electrostatics"],
+)
+def convert_multipole(
+    handlers: list[
+        "smirnoff_plugins.collections.nonbonded.SMIRNOFFMultipoleCollection"
+    ],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+    dependencies: dict[
+        str, tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]
+    ],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+
+    potential_chg, parameter_maps_chg = dependencies["Electrostatics"]
+
+    (
+        potential_pol,
+        parameter_maps_pol,
+    ) = smee.converters.openff.nonbonded.convert_nonbonded_handlers(
+        handlers,
+        "Multipole",
+        topologies,
+        v_site_maps,
+        ("polarity",),
+        ("cutoff",),
+        has_exclusions=False,
+    )
+
+    cutoff_idx_pol = potential_pol.attribute_cols.index("cutoff")
+    cutoff_idx_chg = potential_chg.attribute_cols.index("cutoff")
+
+    assert torch.isclose(
+        potential_pol.attributes[cutoff_idx_pol],
+        potential_chg.attributes[cutoff_idx_chg],
+    )
+
+    potential_chg.fn = smee.EnergyFn.POLARIZATION
+
+    potential_chg.parameter_cols = (
+        *potential_chg.parameter_cols,
+        *potential_pol.parameter_cols,
+    )
+    potential_chg.parameter_units = (
+        *potential_chg.parameter_units,
+        *potential_pol.parameter_units,
+    )
+    potential_chg.parameter_keys = [
+        *potential_chg.parameter_keys,
+        *potential_pol.parameter_keys,
+    ]
+
+    parameters_chg = torch.cat(
+        (potential_chg.parameters, torch.zeros_like(potential_chg.parameters)), dim=1
+    )
+    parameters_pol = torch.cat(
+        (torch.zeros_like(potential_pol.parameters), potential_pol.parameters), dim=1
+    )
+    potential_chg.parameters = torch.cat((parameters_chg, parameters_pol), dim=0)
+
+    for parameter_map_chg, parameter_map_pol in zip(
+        parameter_maps_chg, parameter_maps_pol, strict=True
+    ):
+        parameter_map_chg.assignment_matrix = torch.block_diag(
+            parameter_map_chg.assignment_matrix.to_dense(),
+            parameter_map_pol.assignment_matrix.to_dense(),
+        ).to_sparse()
+
+    return potential_chg, parameter_maps_chg
+
+
 def _make_v_site_electrostatics_compatible(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFElectrostaticsCollection],
 ):

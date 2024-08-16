@@ -4,6 +4,7 @@ import collections
 import math
 import typing
 
+import numpy as np
 import openff.units
 import torch
 
@@ -794,6 +795,352 @@ def compute_dexp_energy(
     )
 
     return energy
+
+
+def _compute_dampedexp6810_lrc(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    rs: torch.Tensor | None,
+    rc: torch.Tensor | None,
+    volume: torch.Tensor,
+) -> torch.Tensor:
+    """Computes the long range dispersion correction due to the double exponential
+    potential, possibly with a switching function."""
+
+    raise NotImplementedError
+
+
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.VDW, smee.EnergyFn.VDW_DAMPEDEXP6810
+)
+def compute_dampedexp6810_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
+) -> torch.Tensor:
+    """Compute the potential energy [kcal / mol] of the vdW interactions using the
+    DampedExp6810 potential.
+
+    Notes:
+        * No cutoff function will be applied if the system is not periodic.
+
+    Args:
+        system: The system to compute the energy for.
+        potential: The potential energy function to evaluate.
+        conformer: The conformer [Å] to evaluate the potential at with
+            ``shape=(n_confs, n_particles, 3)`` or ``shape=(n_particles, 3)``.
+        box_vectors: The box vectors [Å] of the system with ``shape=(n_confs, 3, 3)``
+            or ``shape=(3, 3)`` if the system is periodic, or ``None`` otherwise.
+        pairwise: Pre-computed distances between each pair of particles
+            in the system.
+
+    Returns:
+        The evaluated potential energy [kcal / mol].
+    """
+    box_vectors = None if not system.is_periodic else box_vectors
+
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
+
+    pairwise = (
+        pairwise
+        if pairwise is not None
+        else compute_pairwise(system, conformer, box_vectors, cutoff)
+    )
+
+    if system.is_periodic and not torch.isclose(pairwise.cutoff, cutoff):
+        raise ValueError("the pairwise cutoff does not match the potential.")
+
+    parameters = smee.potentials.broadcast_parameters(system, potential)
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    pairs_1d = smee.utils.to_upper_tri_idx(
+        pairwise.idxs[:, 0], pairwise.idxs[:, 1], len(parameters)
+    )
+    pair_scales = pair_scales[pairs_1d]
+
+    rho_column = potential.parameter_cols.index("rho")
+    beta_column = potential.parameter_cols.index("beta")
+    c6_column = potential.parameter_cols.index("c6")
+    c8_column = potential.parameter_cols.index("c8")
+    c10_column = potential.parameter_cols.index("c10")
+
+    rho_a = parameters[pairwise.idxs[:, 0], rho_column]
+    rho_b = parameters[pairwise.idxs[:, 1], rho_column]
+    beta_a = parameters[pairwise.idxs[:, 0], beta_column]
+    beta_b = parameters[pairwise.idxs[:, 1], beta_column]
+    c6_a = parameters[pairwise.idxs[:, 0], c6_column]
+    c6_b = parameters[pairwise.idxs[:, 1], c6_column]
+    c8_a = parameters[pairwise.idxs[:, 0], c8_column]
+    c8_b = parameters[pairwise.idxs[:, 1], c8_column]
+    c10_a = parameters[pairwise.idxs[:, 0], c10_column]
+    c10_b = parameters[pairwise.idxs[:, 1], c10_column]
+
+    rho = 0.5 * (rho_a + rho_b)
+    beta = 2.0 * beta_a * beta_b / (beta_a + beta_b)
+    c6 = smee.utils.geometric_mean(c6_a, c6_b)
+    c8 = smee.utils.geometric_mean(c8_a, c8_b)
+    c10 = smee.utils.geometric_mean(c10_a, c10_b)
+
+    if potential.exceptions is not None:
+        exception_idxs, exceptions = smee.potentials.broadcast_exceptions(
+            system, potential, pairwise.idxs[:, 0], pairwise.idxs[:, 1]
+        )
+
+        rho = rho.clone()  # prevent in-place modification
+        beta = beta.clone()
+        c6 = c6.clone()
+        c8 = c8.clone()
+        c10 = c10.clone()
+
+        rho[exception_idxs] = exceptions[:, rho_column]
+        beta[exception_idxs] = exceptions[:, beta_column]
+        c6[exception_idxs] = exceptions[:, c6_column]
+        c8[exception_idxs] = exceptions[:, c8_column]
+        c10[exception_idxs] = exceptions[:, c10_column]
+
+    force_at_zero = potential.attributes[
+        potential.attribute_cols.index("force_at_zero")
+    ]
+
+    x = pairwise.distances
+
+    invR = 1.0 / x
+    br = beta * x
+    expbr = torch.exp(-beta * x)
+
+    ttdamp6_sum = (
+        1.0 + br + br**2 / 2 + br**3 / 6 + br**4 / 24 + br**5 / 120 + br**6 / 720
+    )
+    ttdamp8_sum = ttdamp6_sum + br**7 / 5040 + br**8 / 40320
+    ttdamp10_sum = ttdamp8_sum + br**9 / 362880 + br**10 / 3628800
+
+    ttdamp6 = 1.0 - expbr * ttdamp6_sum
+    ttdamp8 = 1.0 - expbr * ttdamp8_sum
+    ttdamp10 = 1.0 - expbr * ttdamp10_sum
+
+    repulsion = force_at_zero * 1.0 / beta * torch.exp(-beta * (x - rho))
+    energies = (
+        repulsion
+        - ttdamp6 * c6 * x**-6
+        - ttdamp8 * c8 * x**-8
+        - ttdamp10 * c10 * x**-10
+    )
+
+    if not system.is_periodic:
+        return energies.sum(-1)
+
+    switch_fn, switch_width = _compute_switch_fn(potential, pairwise)
+    energies *= switch_fn
+
+    energy = energies.sum(-1)
+
+    energy += _compute_dampedexp6810_lrc(
+        system,
+        potential.to(precision="double"),
+        switch_width.double(),
+        pairwise.cutoff.double(),
+        torch.det(box_vectors),
+    )
+
+    return energy
+
+
+@smee.potentials.potential_energy_fn(
+    smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.POLARIZATION
+)
+def compute_multipole_energy(
+    system: smee.TensorSystem,
+    potential: smee.TensorPotential,
+    conformer: torch.Tensor,
+    box_vectors: torch.Tensor | None = None,
+    pairwise: PairwiseDistances | None = None,
+) -> torch.Tensor:
+
+    box_vectors = None if not system.is_periodic else box_vectors
+
+    cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
+
+    pairwise = compute_pairwise(system, conformer, box_vectors, cutoff)
+
+    charges = []
+    polarizabilities = []
+
+    # Can't use broadcast parameters because this potential has two sets of parameters
+    for topology, n_copies in zip(system.topologies, system.n_copies):
+        parameter_map = topology.parameters[potential.type]
+        topology_parameters = parameter_map.assignment_matrix @ potential.parameters
+        charges.append(topology_parameters[: topology.n_particles, 0].repeat(n_copies))
+        polarizabilities.append(
+            topology_parameters[topology.n_particles :, 1].repeat(n_copies)
+        )
+
+    charges = torch.cat(charges)
+    polarizabilities = torch.cat(polarizabilities)
+
+    pair_scales = compute_pairwise_scales(system, potential)
+
+    # static partial charge - partial charge energy
+    if system.is_periodic == False:
+        coul_energy = (
+            _COULOMB_PRE_FACTOR
+            * pair_scales
+            * charges[pairwise.idxs[:, 0]]
+            * charges[pairwise.idxs[:, 1]]
+            / pairwise.distances
+        ).sum(-1)
+    else:
+        import NNPOps.pme
+
+        cutoff = potential.attributes[potential.attribute_cols.index(smee.CUTOFF_ATTRIBUTE)]
+        error_tol = torch.tensor(0.0001)
+
+        exceptions = _compute_pme_exclusions(system, potential).to(charges.device)
+
+        grid_x, grid_y, grid_z, alpha = _compute_pme_grid(box_vectors, cutoff, error_tol)
+
+        pme = NNPOps.pme.PME(
+            grid_x, grid_y, grid_z, _PME_ORDER, alpha, _COULOMB_PRE_FACTOR, exceptions
+        )
+
+        energy_direct = torch.ops.pme.pme_direct(
+            conformer.float(),
+            charges.float(),
+            pairwise.idxs.T,
+            pairwise.deltas,
+            pairwise.distances,
+            pme.exclusions,
+            pme.alpha,
+            pme.coulomb,
+        )
+        energy_self = -torch.sum(charges ** 2) * pme.coulomb * pme.alpha / math.sqrt(torch.pi)
+        energy_recip = energy_self + torch.ops.pme.pme_reciprocal(
+            conformer.float(),
+            charges.float(),
+            box_vectors.float(),
+            pme.gridx,
+            pme.gridy,
+            pme.gridz,
+            pme.order,
+            pme.alpha,
+            pme.coulomb,
+            pme.moduli[0].to(charges.device),
+            pme.moduli[1].to(charges.device),
+            pme.moduli[2].to(charges.device),
+        )
+
+        exclusion_idxs, exclusion_scales = _broadcast_exclusions(system, potential)
+
+        exclusion_distances = (
+                conformer[exclusion_idxs[:, 0], :] - conformer[exclusion_idxs[:, 1], :]
+        ).norm(dim=-1)
+
+        energy_exclusion = (
+                _COULOMB_PRE_FACTOR
+                * exclusion_scales
+                * charges[exclusion_idxs[:, 0]]
+                * charges[exclusion_idxs[:, 1]]
+                / exclusion_distances
+        ).sum(-1)
+
+        coul_energy = energy_direct + energy_recip + energy_exclusion
+
+    if torch.allclose(polarizabilities, torch.tensor(0.0, dtype=torch.float64)):
+        return coul_energy
+
+    efield_static = torch.zeros((system.n_particles, 3), dtype=torch.float64)
+
+    # calculate electric field due to partial charges by hand
+    # TODO wolf summation for periodic
+    _SQRT_COULOMB_PRE_FACTOR = _COULOMB_PRE_FACTOR ** (1 / 2)
+    for distance, delta, idx, scale in zip(
+        pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
+    ):
+        if polarizabilities[idx[0]] * polarizabilities[idx[1]] != 0:
+            u = distance / (polarizabilities[idx[0]] * polarizabilities[idx[1]]) ** (
+                1.0 / 6.0
+            )
+        else:
+            u = distance
+        a = 0.39
+        damping_term1 = 1 - torch.exp(-a * u**3)
+        efield_static[idx[0]] -= (
+            _SQRT_COULOMB_PRE_FACTOR
+            * scale
+            * damping_term1
+            * charges[idx[1]]
+            * delta
+            / distance**3
+        )
+        efield_static[idx[1]] += (
+            _SQRT_COULOMB_PRE_FACTOR
+            * scale
+            * damping_term1
+            * charges[idx[0]]
+            * delta
+            / distance**3
+        )
+
+    # reshape to (3*N) vector
+    efield_static = efield_static.reshape(3 * system.n_particles)
+
+    # induced dipole vector
+    ind_dipoles = torch.repeat_interleave(polarizabilities, 3) * efield_static
+
+    # dipole-dipole interaction tensor T^{ij}_{\alpha \beta}
+    A = torch.nan_to_num(torch.diag(torch.repeat_interleave(1.0 / polarizabilities, 3)))
+
+    for distance, delta, idx, scale in zip(
+        pairwise.distances, pairwise.deltas, pairwise.idxs, pair_scales
+    ):
+        if polarizabilities[idx[0]] * polarizabilities[idx[1]] != 0:
+            u = distance / (polarizabilities[idx[0]] * polarizabilities[idx[1]]) ** (
+                1.0 / 6.0
+            )
+        else:
+            u = distance
+        a = 0.39
+        damping_term1 = 1 - torch.exp(-a * u**3)
+        damping_term2 = 1 - (1 + a * u**3) * torch.exp(-a * u**3)
+
+        t = (
+            torch.eye(3) * damping_term1 * distance**-3
+            - 3 * damping_term2 * torch.einsum("i,j->ij", delta, delta) * distance**-5
+        )
+        t *= scale
+        A[3 * idx[0] : 3 * idx[0] + 3, 3 * idx[1] : 3 * idx[1] + 3] = t
+        A[3 * idx[1] : 3 * idx[1] + 3, 3 * idx[0] : 3 * idx[0] + 3] = t
+
+    precondition_m = torch.repeat_interleave(polarizabilities, 3)
+
+    residual = efield_static - A @ ind_dipoles
+
+    z = torch.einsum("i,i->i", precondition_m, residual)
+    p = torch.clone(z)
+
+    # fixed iterations
+    for _ in range(60):
+        alpha = torch.dot(residual, z) / (p.T @ A @ p)
+        ind_dipoles = ind_dipoles + alpha * p
+
+        prev_residual = torch.clone(residual)
+        prev_z = torch.clone(z)
+
+        residual = residual - alpha * A @ p
+
+        if torch.dot(residual, residual) < 1e-7:
+            break
+
+        z = torch.einsum("i,i->i", precondition_m, residual)
+
+        beta = torch.dot(z, residual) / torch.dot(prev_z, prev_residual)
+
+        p = z + beta * p
+
+    coul_energy += -0.5 * torch.dot(ind_dipoles, efield_static)
+
+    return coul_energy
 
 
 def _compute_pme_exclusions(
