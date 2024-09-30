@@ -1,8 +1,4 @@
-"""
-smee
-
-Differentiably evaluate energies of molecules using SMIRNOFF force fields
-"""
+"""Differentiably evaluate energies of molecules using SMIRNOFF force fields"""
 
 import importlib.metadata
 

@@ -1,89 +1,25 @@
 """Configuration from MM simulations."""
 
-import functools
-import typing
-
-import openff.units
 import openmm.unit
 import pydantic
-import pydantic_core
+from pydantic_units import OpenMMQuantity, quantity_serializer
 
 _KCAL_PER_MOL = openmm.unit.kilocalories_per_mole
 _ANGSTROM = openmm.unit.angstrom
 _GRAMS_PER_ML = openmm.unit.grams / openmm.unit.milliliters
 
 
-def _quantity_validator(
-    value: str | openmm.unit.Quantity | openff.units.unit.Quantity,
-    expected_units: openmm.unit.Unit,
-) -> openmm.unit.Quantity:
-    if isinstance(value, str):
-        value = openff.units.Quantity(value)
-    if isinstance(value, openff.units.Quantity):
-        value = openff.units.openmm.to_openmm(value)
+if pydantic.__version__.startswith("1."):
 
-    assert isinstance(value, openmm.unit.Quantity), f"invalid type - {type(value)}"
+    class BaseModel(pydantic.BaseModel):
+        class Config:
+            json_encoders = {openmm.unit.Quantity: quantity_serializer}
 
-    try:
-        return value.in_units_of(expected_units)
-    except TypeError as e:
-        raise ValueError(
-            f"invalid units {value.unit} - expected {expected_units}"
-        ) from e
+else:
+    BaseModel = pydantic.BaseModel
 
 
-def _quantity_serializer(value: openmm.unit.Quantity) -> str:
-    unit_str = openff.units.openmm.openmm_unit_to_string(value.unit)
-    return f"{value.value_in_unit(value.unit):.8f} {unit_str}"
-
-
-class _OpenMMQuantityAnnotation:
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls,
-        _source_type: typing.Any,
-        _handler: pydantic.GetCoreSchemaHandler,
-    ) -> pydantic_core.core_schema.CoreSchema:
-        from_value_schema = pydantic_core.core_schema.no_info_plain_validator_function(
-            lambda x: x
-        )
-
-        return pydantic_core.core_schema.json_or_python_schema(
-            json_schema=from_value_schema,
-            python_schema=from_value_schema,
-            serialization=pydantic_core.core_schema.plain_serializer_function_ser_schema(
-                _quantity_serializer
-            ),
-        )
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls,
-        _core_schema: pydantic_core.core_schema.CoreSchema,
-        handler: pydantic.GetJsonSchemaHandler,
-    ) -> "pydantic.json_schema.JsonSchemaValue":
-        return handler(pydantic_core.core_schema.str_schema())
-
-
-class _OpenMMQuantityMeta(type):
-    def __getitem__(cls, item: openmm.unit.Unit):
-        validator = functools.partial(_quantity_validator, expected_units=item)
-        return typing.Annotated[
-            openmm.unit.Quantity,
-            _OpenMMQuantityAnnotation,
-            pydantic.BeforeValidator(validator),
-        ]
-
-
-class OpenMMQuantity(openmm.unit.Quantity, metaclass=_OpenMMQuantityMeta):
-    """A pydantic safe OpenMM quantity type validates unit compatibility."""
-
-
-if typing.TYPE_CHECKING:
-    OpenMMQuantity = openmm.unit.Quantity  # noqa: F811
-
-
-class GenerateCoordsConfig(pydantic.BaseModel):
+class GenerateCoordsConfig(BaseModel):
     """Configure how coordinates should be generated for a system using PACKMOL."""
 
     target_density: OpenMMQuantity[_GRAMS_PER_ML] = pydantic.Field(
@@ -113,7 +49,7 @@ class GenerateCoordsConfig(pydantic.BaseModel):
     )
 
 
-class MinimizationConfig(pydantic.BaseModel):
+class MinimizationConfig(BaseModel):
     """Configure how a system should be energy minimized."""
 
     tolerance: OpenMMQuantity[_KCAL_PER_MOL / _ANGSTROM] = pydantic.Field(
@@ -128,7 +64,7 @@ class MinimizationConfig(pydantic.BaseModel):
     )
 
 
-class SimulationConfig(pydantic.BaseModel):
+class SimulationConfig(BaseModel):
     temperature: OpenMMQuantity[openmm.unit.kelvin] = pydantic.Field(
         ...,
         description="The temperature to simulate at.",

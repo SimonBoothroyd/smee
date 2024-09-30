@@ -14,8 +14,10 @@ dependencies:
   - openff-interchange-base >=0.3.17
 
   - pytorch
-  - pydantic
   - nnpops
+
+  - pydantic
+  - pydantic-units
 
   - networkx
 
