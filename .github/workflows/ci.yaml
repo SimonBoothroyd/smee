@@ -20,12 +20,16 @@ jobs:
     - name: Setup Conda Environment
       run: |
         apt update && apt install -y git make
-        
+
         make env
         make lint
         make test
         make test-examples
         make docs-build
+
+#       TODO: Remove this line once pydantic 1.0 support is dropped
+        mamba install --name smee --yes "pydantic <2"
+        make test
 
     - name: CodeCov
       uses: codecov/codecov-action@v4.1.1

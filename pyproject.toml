@@ -28,7 +28,7 @@ select = ["B","C","E","F","W","B9"]
 convention = "google"
 
 [tool.coverage.run]
-omit = ["**/tests/*", "**/_version.py"]
+omit = ["**/tests/*"]
 
 [tool.coverage.report]
 exclude_lines = [
