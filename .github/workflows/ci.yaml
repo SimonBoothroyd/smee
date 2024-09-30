@@ -27,7 +27,7 @@ jobs:
         make test-examples
         make docs-build
 
-#       TODO: Remove this line once pydantic 1.0 support is dropped
+        # TODO: Remove this line once pydantic 1.0 support is dropped
         mamba install --name smee --yes "pydantic <2"
         make test
 
