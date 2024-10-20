@@ -55,12 +55,13 @@ dependencies:
   - codecov
 
   # Docs
-  - mkdocs <1.6
+  - mkdocs
   - mkdocs-material
   - mkdocs-gen-files
   - mkdocs-literate-nav
   - mkdocs-jupyter
   - mkdocstrings
-  - mkdocstrings-python
+  - mkdocstrings-python >=1.10.8
+  - griffe-pydantic
   - black
   - mike

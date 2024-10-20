@@ -101,7 +101,7 @@ plugins:
         import:
          - http://docs.openmm.org/latest/api-python/objects.inv
         options:
-          # extensions: [ griffe_pydantic ]
+          extensions: [ griffe_pydantic ]
           docstring_options:
             ignore_init_summary: true
             returns_multiple_items: false

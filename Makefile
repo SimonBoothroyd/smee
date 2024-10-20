@@ -4,7 +4,7 @@ CONDA_ENV_RUN := conda run --no-capture-output --name $(PACKAGE_NAME)
 EXAMPLES_SKIP := examples/md-simulations.ipynb
 EXAMPLES := $(filter-out $(EXAMPLES_SKIP), $(wildcard examples/*.ipynb))
 
-.PHONY: env lint format test test-examples docs-build docs-deploy docs-insiders
+.PHONY: env lint format test test-examples docs docs-deploy
 
 env:
 	mamba create     --name $(PACKAGE_NAME)
@@ -28,7 +28,7 @@ test:
 test-examples:
 	$(CONDA_ENV_RUN) jupyter nbconvert --to notebook --execute $(EXAMPLES)
 
-docs-build:
+docs:
 	$(CONDA_ENV_RUN) mkdocs build
 
 docs-deploy:
@@ -36,7 +36,3 @@ ifndef VERSION
 	$(error VERSION is not set)
 endif
 	$(CONDA_ENV_RUN) mike deploy --push --update-aliases $(VERSION)
-
-docs-insiders:
-	$(CONDA_ENV_RUN) pip install git+https://$(INSIDER_DOCS_TOKEN)@github.com/SimonBoothroyd/mkdocstrings-python.git \
-                    			 git+https://$(INSIDER_DOCS_TOKEN)@github.com/SimonBoothroyd/griffe-pydantic.git
