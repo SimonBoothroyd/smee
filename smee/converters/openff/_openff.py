@@ -269,6 +269,7 @@ def convert_handlers(
     potentials: (
         list[tuple[smee.TensorPotential, list[smee.ParameterMap]]] | None
     ) = None,
+    constraints: list[smee.TensorConstraints | None] | None = None,
 ) -> list[tuple[smee.TensorPotential, list[smee.ParameterMap]]]:
     """Convert a set of SMIRNOFF parameter handlers into a set of tensor potentials.
 
@@ -277,6 +278,7 @@ def convert_handlers(
             objects to convert.
         topologies: The topologies associated with each interchange object.
         v_site_maps: The v-site maps associated with each interchange object.
+        constraints: Any distance constraints between atoms.
         potentials: Already converted parameter handlers that may be required as
             dependencies.
 
@@ -315,6 +317,8 @@ def convert_handlers(
     if handler_type not in _CONVERTERS:
         raise NotImplementedError(f"{handler_type} handlers is not yet supported.")
 
+    constraints = [None] * len(topologies) if constraints is None else constraints
+
     converter = _CONVERTERS[handler_type]
     converter_spec = inspect.signature(converter.fn)
     converter_kwargs = {}
@@ -324,6 +328,11 @@ def convert_handlers(
     if "v_site_maps" in converter_spec.parameters:
         assert v_site_maps is not None, "v-site maps must be provided"
         converter_kwargs["v_site_maps"] = v_site_maps
+    if "constraints" in converter_spec.parameters:
+        constraint_idxs = [[] if v is None else v.idxs.tolist() for v in constraints]
+        unique_idxs = [{tuple(sorted(idxs)) for idxs in v} for v in constraint_idxs]
+
+        converter_kwargs["constraints"] = unique_idxs
 
     potentials_by_type = (
         {}
@@ -508,7 +517,9 @@ def convert_interchange(
         ):
             continue
 
-        converted = convert_handlers(handlers, topologies, v_site_maps, converted)
+        converted = convert_handlers(
+            handlers, topologies, v_site_maps, converted, constraints
+        )
 
     # handlers may either return multiple potentials, or condense multiple already
     # converted potentials into a single one (e.g. electrostatics into some polarizable

@@ -50,7 +50,7 @@ def _compare_smee_and_interchange(
 ):
     system_smee = convert_to_openmm_system(tensor_ff, tensor_system)
     assert isinstance(system_smee, openmm.System)
-    system_interchange = interchange.to_openmm(False, True)
+    system_interchange = interchange.to_openmm(False, False)
 
     coords += (numpy.random.randn(*coords.shape) * 0.1) * openmm.unit.angstrom
 
@@ -145,7 +145,8 @@ def test_create_openmm_system_v_sites(v_site_force_field):
         )
 
 
-def test_convert_to_openmm_system_vacuum():
+@pytest.mark.parametrize("with_constraints", [True, False])
+def test_convert_to_openmm_system_vacuum(with_constraints):
     # carbonic acid has impropers, 1-5 interactions so should test most convertors
     mol = openff.toolkit.Molecule.from_smiles("OC(=O)O")
     mol.generate_conformers(n_conformers=1)
@@ -153,8 +154,13 @@ def test_convert_to_openmm_system_vacuum():
     coords = mol.conformers[0].m_as(openff.units.unit.angstrom)
     coords = coords * openmm.unit.angstrom
 
+    force_field = openff.toolkit.ForceField(
+        "openff-2.0.0.offxml"
+        if with_constraints
+        else "openff_unconstrained-2.0.0.offxml"
+    )
     interchange = openff.interchange.Interchange.from_smirnoff(
-        openff.toolkit.ForceField("openff-2.0.0.offxml"), mol.to_topology()
+        force_field, mol.to_topology()
     )
 
     tensor_ff, [tensor_top] = smee.converters.convert_interchange(interchange)
@@ -162,8 +168,13 @@ def test_convert_to_openmm_system_vacuum():
     _compare_smee_and_interchange(tensor_ff, tensor_top, interchange, coords, None)
 
 
-def test_convert_to_openmm_system_periodic():
-    ff = openff.toolkit.ForceField("openff-2.0.0.offxml")
+@pytest.mark.parametrize("with_constraints", [True, False])
+def test_convert_to_openmm_system_periodic(with_constraints):
+    ff = openff.toolkit.ForceField(
+        "openff-2.0.0.offxml"
+        if with_constraints
+        else "openff_unconstrained-2.0.0.offxml"
+    )
     top = openff.toolkit.Topology()
 
     interchanges = []

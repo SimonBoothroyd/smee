@@ -12,6 +12,67 @@ _RADIANS = openff.units.unit.radians
 _KCAL_PER_MOL = openff.units.unit.kilocalories / openff.units.unit.mole
 
 
+def strip_constrained_bonds(
+    parameter_maps: list[smee.ValenceParameterMap],
+    constraints: list[set[tuple[int, int]]],
+):
+    """Remove bonded interactions between distance-constrained atoms.
+
+    Args:
+        parameter_maps: The parameter maps to strip.
+        constraints: The distanced constrained bonds to exclude for each parameter map.
+    """
+
+    for parameter_map, bonds_to_exclude in zip(
+        parameter_maps, constraints, strict=True
+    ):
+        bonds_to_exclude = {tuple(sorted(idxs)) for idxs in bonds_to_exclude}
+
+        bond_idxs = [
+            tuple(sorted(idxs)) for idxs in parameter_map.particle_idxs.tolist()
+        ]
+        include = [idxs not in bonds_to_exclude for idxs in bond_idxs]
+
+        parameter_map.particle_idxs = parameter_map.particle_idxs[include]
+        parameter_map.assignment_matrix = parameter_map.assignment_matrix.to_dense()[
+            include, :
+        ].to_sparse()
+
+
+def strip_constrained_angles(
+    parameter_maps: list[smee.ValenceParameterMap],
+    constraints: list[set[tuple[int, int]]],
+):
+    """Remove angle interactions between angles where all three atoms are constrained
+    with distance constraints.
+
+    Args:
+        parameter_maps: The parameter maps to strip.
+        constraints: The distanced constrained bonds to exclude for each parameter map.
+    """
+
+    def is_constrained(idxs_, excluded):
+        bonds = {
+            tuple(sorted([idxs_[0], idxs_[1]])),
+            tuple(sorted([idxs_[0], idxs_[2]])),
+            tuple(sorted([idxs_[1], idxs_[2]])),
+        }
+        return len(bonds & excluded) == 3
+
+    for parameter_map, bonds_to_exclude in zip(
+        parameter_maps, constraints, strict=True
+    ):
+        bonds_to_exclude = {tuple(sorted(idxs)) for idxs in bonds_to_exclude}
+
+        angle_idxs = parameter_map.particle_idxs.tolist()
+        include = [not is_constrained(idxs, bonds_to_exclude) for idxs in angle_idxs]
+
+        parameter_map.particle_idxs = parameter_map.particle_idxs[include]
+        parameter_map.assignment_matrix = parameter_map.assignment_matrix.to_dense()[
+            include, :
+        ].to_sparse()
+
+
 def convert_valence_handlers(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
     handler_type: str,
@@ -64,8 +125,14 @@ def convert_valence_handlers(
 )
 def convert_bonds(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFBondCollection],
+    constraints: list[set[tuple[int, int]]],
 ) -> tuple[smee.TensorPotential, list[smee.ValenceParameterMap]]:
-    return convert_valence_handlers(handlers, "Bonds", ("k", "length"))
+    potential, parameter_maps = convert_valence_handlers(
+        handlers, "Bonds", ("k", "length")
+    )
+    strip_constrained_bonds(parameter_maps, constraints)
+
+    return potential, parameter_maps
 
 
 @smee.converters.smirnoff_parameter_converter(
@@ -73,8 +140,14 @@ def convert_bonds(
 )
 def convert_angles(
     handlers: list[openff.interchange.smirnoff.SMIRNOFFAngleCollection],
+    constraints: list[set[tuple[int, int]]],
 ) -> tuple[smee.TensorPotential, list[smee.ValenceParameterMap]]:
-    return convert_valence_handlers(handlers, "Angles", ("k", "angle"))
+    potential, parameter_maps = convert_valence_handlers(
+        handlers, "Angles", ("k", "angle")
+    )
+    strip_constrained_angles(parameter_maps, constraints)
+
+    return potential, parameter_maps
 
 
 @smee.converters.smirnoff_parameter_converter(
