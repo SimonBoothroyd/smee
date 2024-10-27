@@ -123,7 +123,7 @@ def generate_dg_solv_data(
         (output_dir / phase / "system.pkl").write_bytes(pickle.dumps(state))
 
     def _parameterize(
-        *_, phase: typing.Literal["solvent-a", "solvent-b"]
+        top, coords, phase: typing.Literal["solvent-a", "solvent-b"]
     ) -> openmm.System:
         return smee.converters.convert_to_openmm_system(force_field, topologies[phase])
 
