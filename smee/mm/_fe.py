@@ -86,11 +86,11 @@ def generate_dg_solv_data(
         alchemical_protocol_b=solvent_protocol,
     )
 
-    solute_mol = openff.toolkit.Molecule.from_smiles(
+    solute_mol = openff.toolkit.Molecule.from_rdkit(
         smee.mm._utils.topology_to_rdkit(solute),
         allow_undefined_stereo=True,
     )
-    solvent_mol = openff.toolkit.Molecule.from_smiles(
+    solvent_mol = openff.toolkit.Molecule.from_rdkit(
         smee.mm._utils.topology_to_rdkit(solvent),
         allow_undefined_stereo=True,
     )
