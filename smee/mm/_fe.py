@@ -62,6 +62,7 @@ def generate_dg_solv_data(
                 integrator=femto.md.config.LangevinIntegrator(
                     timestep=1.0 * openmm.unit.femtosecond
                 ),
+                trajectory_interval=1,
             ),
             lambda_sterics=absolv.config.DEFAULT_LAMBDA_STERICS_VACUUM,
             lambda_electrostatics=absolv.config.DEFAULT_LAMBDA_ELECTROSTATICS_VACUUM,
@@ -74,6 +75,8 @@ def generate_dg_solv_data(
                 integrator=femto.md.config.LangevinIntegrator(
                     timestep=4.0 * openmm.unit.femtosecond
                 ),
+                trajectory_interval=1,
+                trajectory_enforce_pbc=True,
             ),
             lambda_sterics=absolv.config.DEFAULT_LAMBDA_STERICS_SOLVENT,
             lambda_electrostatics=absolv.config.DEFAULT_LAMBDA_ELECTROSTATICS_SOLVENT,
