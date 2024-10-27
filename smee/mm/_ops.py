@@ -180,11 +180,9 @@ def _compute_frame_observables(
         return values
 
     volume = torch.det(box_vectors)
-
     values.update({"volume": volume, "volume^2": volume**2})
 
     total_mass = _compute_mass(system)
-
     values["density"] = total_mass / volume * _DENSITY_CONVERSION
 
     if pressure is not None:
@@ -613,3 +611,182 @@ def reweight_ensemble_averages(
 
     *avg_outputs, columns = _ReweightAverageOp.apply(kwargs, *tensors)
     return {column: avg for avg, column in zip(avg_outputs, columns, strict=True)}
+
+
+class _ComputeDGSolv(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, kwargs, *theta: torch.Tensor):
+        from smee.mm._fe import compute_dg_and_grads
+
+        force_field = _unpack_force_field(
+            theta,
+            kwargs["parameter_lookup"],
+            kwargs["attribute_lookup"],
+            kwargs["has_v_sites"],
+            kwargs["force_field"],
+        )
+
+        dg_a, dg_d_theta_a = compute_dg_and_grads(
+            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+        )
+        dg_b, dg_d_theta_b = compute_dg_and_grads(
+            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+        )
+
+        dg = dg_a - dg_b
+        dg_d_theta = (
+            v_a - v_b for v_a, v_b in zip(dg_d_theta_a, dg_d_theta_b, strict=True)
+        )
+
+        ctx.beta = kwargs["beta"]
+        ctx.n_theta = len(theta)
+        ctx.save_for_backward(*theta, *dg_d_theta, dg)
+
+        return dg
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        theta = ctx.saved_tensors[: ctx.n_theta]
+        dg_d_theta_0 = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+
+        grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
+
+        grads = [None] * len(theta)
+
+        for i in range(len(dg_d_theta_0)):
+            grads[i] = dg_d_theta_0[i] @ grad_outputs
+
+        # we need to return one extra 'gradient' for kwargs.
+        return tuple([None] + grads)
+
+
+class _ReweightDGSolv(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, kwargs, *theta: torch.Tensor):
+        from smee.mm._fe import reweight_dg_and_grads
+
+        force_field = _unpack_force_field(
+            theta,
+            kwargs["parameter_lookup"],
+            kwargs["attribute_lookup"],
+            kwargs["has_v_sites"],
+            kwargs["force_field"],
+        )
+
+        dg_0 = kwargs["dg_0"]
+
+        # new FF G - old FF G
+        dg_a, dg_d_theta_a, n_effective_a = reweight_dg_and_grads(
+            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+        )
+        dg_b, dg_d_theta_b, n_effective_b = reweight_dg_and_grads(
+            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+        )
+
+        dg = -dg_a + dg_0 + dg_b
+
+        dg_d_theta = (
+            v_a - v_b for v_a, v_b in zip(dg_d_theta_a, dg_d_theta_b, strict=True)
+        )
+
+        ctx.beta = kwargs["beta"]
+        ctx.n_theta = len(theta)
+        ctx.save_for_backward(*theta, *dg_d_theta, dg)
+
+        return dg, min(n_effective_a, n_effective_b)
+
+    @staticmethod
+    def backward(ctx, *grad_outputs):
+        theta = ctx.saved_tensors[: ctx.n_theta]
+        dg_d_theta_0 = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+
+        grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
+
+        grads = [None] * len(theta)
+
+        for i in range(len(dg_d_theta_0)):
+            grads[i] = dg_d_theta_0[i] @ grad_outputs
+
+        # we need to return one extra 'gradient' for kwargs.
+        return tuple([None] + grads)
+
+
+def compute_dg_solv(
+    force_field: smee.TensorForceField, fep_dir: pathlib.Path
+) -> torch.Tensor:
+    """Computes ∆G_solv from existing FEP data.
+
+    Notes:
+        Currently the gradient of the pure solvent is not computed. This will mean the
+        gradient w.r.t. water parameters currently will be incorrect when using this
+        to compute hydration free energies.
+
+    Args:
+        force_field: The force field used to generate the FEP data.
+        fep_dir: The directory containing the FEP data.
+
+    Returns:
+        ∆G_solv [kcal/mol].
+    """
+
+    tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
+        force_field
+    )
+
+    kwargs = {
+        "force_field": force_field,
+        "parameter_lookup": parameter_lookup,
+        "attribute_lookup": attribute_lookup,
+        "has_v_sites": has_v_sites,
+        "fep_dir": fep_dir,
+    }
+    return _ComputeDGSolv.apply(kwargs, *tensors)
+
+
+def reweight_dg_solv(
+    force_field: smee.TensorForceField,
+    fep_dir: pathlib.Path,
+    dg_0: torch.Tensor,
+    min_samples: int = 50,
+) -> tuple[torch.Tensor, int]:
+    """Computes ∆G_solv by re-weighting existing FEP data.
+
+    Notes:
+        Currently the gradient of the pure solvent is not computed. This will mean the
+        gradient w.r.t. water parameters currently will be incorrect when using this
+        to compute hydration free energies.
+
+    Args:
+        force_field: The force field to reweight to.
+        fep_dir: The directory containing the FEP data.
+        dg_0: ∆G_solv [kcal/mol] computed with the force field used to generate the
+            FEP data.
+        min_samples: The minimum number of effective samples required to re-weight.
+
+    Raises:
+        NotEnoughSamplesError: If the number of effective samples is less than
+            ``min_samples``.
+
+    Returns:
+        The re-weighted ∆G_solv [kcal/mol], and the minimum number of effective samples
+        between the two phases.
+    """
+    tensors, parameter_lookup, attribute_lookup, has_v_sites = _pack_force_field(
+        force_field
+    )
+
+    kwargs = {
+        "force_field": force_field,
+        "parameter_lookup": parameter_lookup,
+        "attribute_lookup": attribute_lookup,
+        "has_v_sites": has_v_sites,
+        "fep_dir": fep_dir,
+        "dg_0": dg_0,
+    }
+
+    dg, n_eff = _ReweightDGSolv.apply(kwargs, *tensors)
+
+    if n_eff < min_samples:
+        raise NotEnoughSamplesError
+
+    return dg, n_eff
