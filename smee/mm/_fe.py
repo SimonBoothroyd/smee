@@ -14,6 +14,7 @@ import torch
 import smee
 import smee.converters
 import smee.mm._utils
+import smee.utils
 
 if typing.TYPE_CHECKING:
     import absolv.config
@@ -200,7 +201,7 @@ def _load_trajectory(
 
 
 def _load_samples(
-    output_dir: pathlib.Path,
+    output_dir: pathlib.Path, device: str | torch.device
 ) -> tuple[
     smee.TensorSystem,
     float,
@@ -214,7 +215,7 @@ def _load_samples(
     import pymbar.timeseries
 
     state = pickle.loads((output_dir / "state.pkl").read_bytes())
-    system = state["system"]
+    system: smee.TensorSystem = state["system"]
 
     temperature = state["temperature"] * openmm.unit.kelvin
 
@@ -266,13 +267,13 @@ def _load_samples(
     n_k = numpy.array([len(uncorrelated_frames)] * u_kn.shape[0])
 
     return (
-        system,
+        system.to(device),
         beta,
         pressure,
-        torch.tensor(u_kn),
-        torch.tensor(n_k),
-        torch.tensor(xyz_0),
-        torch.tensor(box_0) if box_0 is not None else None,
+        torch.tensor(u_kn, device=device),
+        torch.tensor(n_k, device=device),
+        torch.tensor(xyz_0, device=device),
+        torch.tensor(box_0, device=device) if box_0 is not None else None,
     )
 
 
@@ -301,10 +302,12 @@ def compute_dg_and_grads(
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...]]:
     import pymbar
 
-    system, beta, _, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir)
+    device = force_field.potentials[0].parameters.device
+
+    system, beta, _, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir, device)
     assert (box_0 is not None) == system.is_periodic
 
-    mbar = pymbar.MBAR(u_kn.numpy(), n_k.numpy())
+    mbar = pymbar.MBAR(u_kn.detach().cpu().numpy(), n_k.detach().cpu().numpy())
 
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
     dg = (f_i[-1] - f_i[0]) / beta
@@ -316,7 +319,7 @@ def compute_dg_and_grads(
         if len(theta) > 0:
             grads = torch.autograd.grad(energy.mean(), theta)
 
-    return torch.tensor(dg), grads
+    return torch.tensor(dg, device=device), grads
 
 
 def reweight_dg_and_grads(
@@ -326,7 +329,9 @@ def reweight_dg_and_grads(
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], int]:
     import pymbar
 
-    system, beta, pressure, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir)
+    device = force_field.potentials[0].parameters.device
+
+    system, beta, pressure, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir, device)
     assert (box_0 is not None) == system.is_periodic
     assert (box_0 is not None) == (pressure is not None)
 
@@ -340,7 +345,7 @@ def reweight_dg_and_grads(
         if pressure is not None:
             u_0_new += pressure * torch.det(box_0) * beta
 
-        u_kn = numpy.stack([u_0_old.numpy(), u_0_new.numpy()])
+        u_kn = numpy.stack([u_0_old.cpu().numpy(), u_0_new.cpu().numpy()])
         n_k = numpy.array([n_k[0], 0])
 
         mbar = pymbar.MBAR(u_kn, n_k)
@@ -350,10 +355,10 @@ def reweight_dg_and_grads(
         f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
         dg = (f_i[-1] - f_i[0]) / beta
 
-        weights = torch.tensor(mbar.W_nk[:, 1])
+        weights = smee.utils.tensor_like(mbar.W_nk[:, 1], energy_0)
         grads = ()
 
         if len(theta) > 0:
             grads = torch.autograd.grad((energy_0 * weights).sum(), theta)
 
-    return torch.tensor(dg), grads, n_eff
+    return torch.tensor(dg, device=device), grads, n_eff
