@@ -626,37 +626,36 @@ class _ComputeDGSolv(torch.autograd.Function):
             kwargs["force_field"],
         )
 
+        needs_grad = [
+            i for i, v in enumerate(theta) if v is not None and v.requires_grad
+        ]
+        theta_grad = tuple(theta[i] for i in needs_grad)
+
         dg_a, dg_d_theta_a = compute_dg_and_grads(
-            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-a"
         )
         dg_b, dg_d_theta_b = compute_dg_and_grads(
-            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
         )
 
         dg = dg_a - dg_b
-        dg_d_theta = (
-            v_a - v_b for v_a, v_b in zip(dg_d_theta_a, dg_d_theta_b, strict=True)
-        )
+        dg_d_theta = [None] * len(theta)
 
-        ctx.beta = kwargs["beta"]
-        ctx.n_theta = len(theta)
-        ctx.save_for_backward(*theta, *dg_d_theta, dg)
+        for grad_idx, orig_idx in enumerate(needs_grad):
+            dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
+
+        ctx.save_for_backward(*dg_d_theta)
 
         return dg
 
     @staticmethod
     def backward(ctx, *grad_outputs):
-        theta = ctx.saved_tensors[: ctx.n_theta]
-        dg_d_theta_0 = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+        dg_d_theta_0 = ctx.saved_tensors
 
-        grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
-
-        grads = [None] * len(theta)
-
-        for i in range(len(dg_d_theta_0)):
-            grads[i] = dg_d_theta_0[i] @ grad_outputs
-
-        # we need to return one extra 'gradient' for kwargs.
+        grads = [
+            None if v is None else v @ grad_outputs[0].reshape(-1, 1)
+            for v in dg_d_theta_0
+        ]
         return tuple([None] + grads)
 
 
@@ -675,39 +674,37 @@ class _ReweightDGSolv(torch.autograd.Function):
 
         dg_0 = kwargs["dg_0"]
 
+        needs_grad = [
+            i for i, v in enumerate(theta) if v is not None and v.requires_grad
+        ]
+        theta_grad = tuple(theta[i] for i in needs_grad)
+
         # new FF G - old FF G
         dg_a, dg_d_theta_a, n_effective_a = reweight_dg_and_grads(
-            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-a"
         )
         dg_b, dg_d_theta_b, n_effective_b = reweight_dg_and_grads(
-            force_field, tuple(v for v in theta if v.requires_grad), kwargs["fep_dir"]
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
         )
 
         dg = -dg_a + dg_0 + dg_b
+        dg_d_theta = [None] * len(theta)
 
-        dg_d_theta = (
-            v_a - v_b for v_a, v_b in zip(dg_d_theta_a, dg_d_theta_b, strict=True)
-        )
+        for grad_idx, orig_idx in enumerate(needs_grad):
+            dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
 
-        ctx.beta = kwargs["beta"]
-        ctx.n_theta = len(theta)
-        ctx.save_for_backward(*theta, *dg_d_theta, dg)
+        ctx.save_for_backward(*dg_d_theta)
 
         return dg, min(n_effective_a, n_effective_b)
 
     @staticmethod
     def backward(ctx, *grad_outputs):
-        theta = ctx.saved_tensors[: ctx.n_theta]
-        dg_d_theta_0 = ctx.saved_tensors[ctx.n_theta : 2 * ctx.n_theta]
+        dg_d_theta_0 = ctx.saved_tensors
 
-        grad_outputs = torch.stack(grad_outputs[: (len(grad_outputs) - 1) // 2])
-
-        grads = [None] * len(theta)
-
-        for i in range(len(dg_d_theta_0)):
-            grads[i] = dg_d_theta_0[i] @ grad_outputs
-
-        # we need to return one extra 'gradient' for kwargs.
+        grads = [
+            None if v is None else v @ grad_outputs[0].reshape(-1, 1)
+            for v in dg_d_theta_0
+        ]
         return tuple([None] + grads)
 
 
@@ -748,7 +745,7 @@ def reweight_dg_solv(
     fep_dir: pathlib.Path,
     dg_0: torch.Tensor,
     min_samples: int = 50,
-) -> tuple[torch.Tensor, int]:
+) -> tuple[torch.Tensor, float]:
     """Computes ∆G_solv by re-weighting existing FEP data.
 
     Notes:

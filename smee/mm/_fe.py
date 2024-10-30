@@ -134,7 +134,7 @@ def generate_dg_solv_data(
         system_config, config, _parameterize
     )
     absolv.runner.run_eq(
-        config, prepared_system_a, prepared_system_b, "CUDA", output_dir
+        config, prepared_system_a, prepared_system_b, "CUDA", output_dir, parallel=True
     )
 
 
@@ -214,7 +214,6 @@ def _load_samples(
     import pymbar.timeseries
 
     state = pickle.loads((output_dir / "state.pkl").read_bytes())
-
     system = state["system"]
 
     temperature = state["temperature"] * openmm.unit.kelvin
@@ -310,8 +309,12 @@ def compute_dg_and_grads(
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
     dg = (f_i[-1] - f_i[0]) / beta
 
-    energy = _compute_energy(system, force_field, xyz_0, box_0)
-    grads = torch.autograd.grad(energy.mean(), theta)
+    with torch.enable_grad():
+        energy = _compute_energy(system, force_field, xyz_0, box_0)
+        grads = ()
+
+        if len(theta) > 0:
+            grads = torch.autograd.grad(energy.mean(), theta)
 
     return torch.tensor(dg), grads
 
@@ -328,24 +331,29 @@ def reweight_dg_and_grads(
     assert (box_0 is not None) == (pressure is not None)
 
     u_0_old = u_kn[0, : n_k[0]]
-    energy_0 = _compute_energy(system, force_field, xyz_0, box_0)
 
-    u_0_new = energy_0.detach().clone() * beta
+    with torch.enable_grad():
+        energy_0 = _compute_energy(system, force_field, xyz_0, box_0)
 
-    if pressure is not None:
-        u_0_new += pressure * torch.det(torch.tensor(box_0)) * beta
+        u_0_new = energy_0.detach().clone() * beta
 
-    u_kn = numpy.stack([u_0_old.numpy(), u_0_new.numpy()])
-    n_k = numpy.array([n_k[0], 0])
+        if pressure is not None:
+            u_0_new += pressure * torch.det(box_0) * beta
 
-    mbar = pymbar.MBAR(u_kn, n_k)
+        u_kn = numpy.stack([u_0_old.numpy(), u_0_new.numpy()])
+        n_k = numpy.array([n_k[0], 0])
 
-    n_eff = mbar.compute_effective_sample_number()
+        mbar = pymbar.MBAR(u_kn, n_k)
 
-    f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
-    dg = (f_i[-1] - f_i[0]) / beta
+        n_eff = mbar.compute_effective_sample_number().min().item()
 
-    weights = torch.tensor(mbar.W_nk[:, 1])
-    grads = torch.autograd.grad((energy_0 * weights).sum(), theta)
+        f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
+        dg = (f_i[-1] - f_i[0]) / beta
+
+        weights = torch.tensor(mbar.W_nk[:, 1])
+        grads = ()
+
+        if len(theta) > 0:
+            grads = torch.autograd.grad((energy_0 * weights).sum(), theta)
 
     return torch.tensor(dg), grads, n_eff
