@@ -186,6 +186,102 @@ def test_convert_electrostatics_tip4p():
     assert torch.allclose(charges, expected_charges)
 
 
+def test_convert_bci_and_vsite():
+    ff_off = openff.toolkit.ForceField()
+    ff_off.get_parameter_handler("Electrostatics")
+    ff_off.get_parameter_handler("vdW")
+
+    charge_handler = ff_off.get_parameter_handler("ChargeIncrementModel")
+    charge_handler.partial_charge_method = "am1-mulliken"
+    charge_handler.add_parameter(
+        {"smirks": "[O:1]-[H:2]", "charge_increment1": -0.1 * openff.units.unit.e}
+    )
+    v_site_handler = ff_off.get_parameter_handler("VirtualSites")
+    v_site_handler.add_parameter(
+        {
+            "type": "DivalentLonePair",
+            "smirks": "[#1:2]-[#8X2H2+0:1]-[#1:3]",
+            "distance": -0.1 * openff.units.unit.angstrom,
+            "outOfPlaneAngle": 0.0 * openff.units.unit.degree,
+            "match": "once",
+            "charge_increment1": 0.0 * openff.units.unit.e,
+            "charge_increment2": 0.53 * openff.units.unit.e,
+            "charge_increment3": 0.53 * openff.units.unit.e,
+        }
+    )
+
+    mol = openff.toolkit.Molecule.from_mapped_smiles("[O:1]([H:2])[H:3]")
+    mol.assign_partial_charges(charge_handler.partial_charge_method)
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        ff_off, mol.to_topology()
+    )
+
+    expected_charges = [
+        q.m_as("e") for q in interchange.collections["Electrostatics"].charges.values()
+    ]
+
+    ff, [top] = smee.converters.convert_interchange(interchange)
+
+    charge_pot = ff.potentials_by_type["Electrostatics"]
+
+    assert charge_pot.attribute_cols == (
+        "scale_12",
+        "scale_13",
+        "scale_14",
+        "scale_15",
+        "cutoff",
+    )
+    assert torch.allclose(
+        charge_pot.attributes,
+        torch.tensor([0.0000, 0.0000, 1.0 / 1.2, 1.0000, 9.0000], dtype=torch.float64),
+    )
+
+    assert charge_pot.parameter_cols == ("charge",)
+
+    found_keys = [
+        (key.associated_handler, key.id, key.mult) for key in charge_pot.parameter_keys
+    ]
+    expected_keys = [
+        ("ChargeModel", "[O:1]([H:2])[H:3]", 0),
+        ("ChargeModel", "[O:1]([H:2])[H:3]", 1),
+        ("ChargeModel", "[O:1]([H:2])[H:3]", 2),
+        ("ChargeModel", "[#1:2]-[#8X2H2+0:1]-[#1:3] EP once", 0),
+        ("ChargeModel", "[#1:2]-[#8X2H2+0:1]-[#1:3] EP once", 1),
+        ("ChargeModel", "[#1:2]-[#8X2H2+0:1]-[#1:3] EP once", 2),
+        ("ChargeIncrementModel", "[O:1]-[H:2]", 0),
+    ]
+    assert found_keys == expected_keys
+
+    expected_charge_params = torch.tensor(
+        [*mol.partial_charges.m_as("e"), 0.0, 0.53, 0.53, -0.1]
+    ).reshape(-1, 1)
+    assert torch.allclose(charge_pot.parameters, expected_charge_params)
+
+    param_map = top.parameters["Electrostatics"]
+
+    found_exclusions = sorted((i, j) for i, j in param_map.exclusions.tolist())
+    expected_exclusions = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+    assert found_exclusions == expected_exclusions
+
+    expected_assignment = torch.tensor(
+        [
+            [1, 0, 0, +1, +0, +0, +2],
+            [0, 1, 0, +0, +1, +0, -1],
+            [0, 0, 1, +0, +0, +1, -1],
+            [0, 0, 0, -1, -1, -1, +0],
+        ],
+        dtype=torch.float64,
+    )
+    found_assignment = param_map.assignment_matrix.to_dense()
+
+    assert found_assignment.shape == expected_assignment.shape
+    assert torch.allclose(found_assignment, expected_assignment)
+
+    found_charges = param_map.assignment_matrix @ charge_pot.parameters
+    assert torch.allclose(found_charges.flatten(), torch.tensor(expected_charges))
+
+
 def test_convert_vdw(ethanol, ethanol_interchange):
     vdw_collection = ethanol_interchange.collections["vdW"]
 
