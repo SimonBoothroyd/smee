@@ -259,10 +259,102 @@ def _make_v_site_electrostatics_compatible(
         handlers[handler_idx] = handler
 
 
+def _convert_charge_increment_handlers(
+    handlers: list[openff.interchange.smirnoff.SMIRNOFFCollection],
+    topologies: list[openff.toolkit.Topology],
+    v_site_maps: list[smee.VSiteMap | None],
+) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
+    assert len(topologies) == len(handlers), "topologies and handlers must match"
+    assert len(v_site_maps) == len(handlers), "v-site maps and handlers must match"
+
+    handlers_base, handlers_bci = [], []
+
+    for handler in handlers:
+        handler_base = copy.deepcopy(handler)
+        handler_bci = copy.deepcopy(handler)
+
+        for key in handler.potentials:
+            if key.associated_handler == "ChargeIncrementModel":
+                handler_base.potentials.pop(key)
+                if key.mult != 0:
+                    handler_bci.potentials.pop(key)
+            else:
+                handler_bci.potentials.pop(key)
+
+        for key, val in handler.key_map.items():
+            if val.associated_handler == "ChargeIncrementModel":
+                handler_base.key_map.pop(key)
+                if val.mult != 0:
+                    handler_bci.key_map.pop(key)
+            else:
+                handler_bci.key_map.pop(key)
+
+        handlers_base.append(handler_base)
+        handlers_bci.append(handler_bci)
+
+    potential, parameter_maps = convert_nonbonded_handlers(
+        handlers_base,
+        "Electrostatics",
+        topologies,
+        v_site_maps,
+        ("charge",),
+        ("cutoff",),
+    )
+
+    for key in potential.parameter_keys:
+        key.associated_handler = "ChargeModel"
+
+    potential_bci = smee.converters.openff._openff._handlers_to_potential(
+        handlers_bci, "Electrostatics", ("charge_increment",), ()
+    )
+
+    if potential.exceptions is not None and potential_bci.exceptions is not None:
+        raise NotImplementedError("exceptions are not supported for charge increments")
+
+    potential.parameter_keys.extend(potential_bci.parameter_keys)
+    potential.parameters = torch.vstack(
+        [potential.parameters, potential_bci.parameters]
+    )
+
+    parameter_key_to_idx = {
+        parameter_key: i for i, parameter_key in enumerate(potential.parameter_keys)
+    }
+
+    for handler_bci, parameter_map in zip(handlers_bci, parameter_maps, strict=True):
+        assignment_matrix = torch.zeros(
+            (len(parameter_map.assignment_matrix), len(potential.parameters)),
+            dtype=torch.float64,
+        )
+
+        n_charges = parameter_map.assignment_matrix.shape[1]
+        assignment_matrix[:, :n_charges] += parameter_map.assignment_matrix.to_dense()
+
+        for topology_key, parameter_key in handler_bci.key_map.items():
+            if not isinstance(
+                topology_key, openff.interchange.models.ChargeIncrementTopologyKey
+            ):
+                raise NotImplementedError("only charge increment keys are supported")
+            if len(topology_key.other_atom_indices) != 1:
+                raise NotImplementedError("only 1-1 charge increments are supported")
+
+            atom_idx_0 = topology_key.this_atom_index
+            atom_idx_1 = topology_key.other_atom_indices[0]
+
+            param_idx = parameter_key_to_idx[parameter_key]
+
+            assignment_matrix[atom_idx_0, param_idx] += 1.0
+            assignment_matrix[atom_idx_1, param_idx] += -1.0
+
+        parameter_map.assignment_matrix = assignment_matrix.to_sparse()
+
+    return potential, parameter_maps
+
+
 @smee.converters.smirnoff_parameter_converter(
     "Electrostatics",
     {
         "charge": _ELEMENTARY_CHARGE,
+        "charge_increment": _ELEMENTARY_CHARGE,
         "scale_12": _UNITLESS,
         "scale_13": _UNITLESS,
         "scale_14": _UNITLESS,
@@ -277,6 +369,15 @@ def convert_electrostatics(
 ) -> tuple[smee.TensorPotential, list[smee.NonbondedParameterMap]]:
     handlers = [*handlers]
     _make_v_site_electrostatics_compatible(handlers)
+
+    has_charge_increment = any(
+        key.associated_handler == "ChargeIncrementModel"
+        for handler in handlers
+        for key in handler.potentials
+    )
+
+    if has_charge_increment:
+        return _convert_charge_increment_handlers(handlers, topologies, v_site_maps)
 
     return convert_nonbonded_handlers(
         handlers, "Electrostatics", topologies, v_site_maps, ("charge",), ("cutoff",)
