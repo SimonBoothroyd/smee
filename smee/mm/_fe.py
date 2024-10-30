@@ -346,7 +346,7 @@ def reweight_dg_and_grads(
             u_0_new += pressure * torch.det(box_0) * beta
 
         u_kn = numpy.stack([u_0_old.cpu().numpy(), u_0_new.cpu().numpy()])
-        n_k = numpy.array([n_k[0], 0])
+        n_k = numpy.array([n_k[0].cpu(), 0])
 
         mbar = pymbar.MBAR(u_kn, n_k)
 
