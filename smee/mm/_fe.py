@@ -5,7 +5,6 @@ import pathlib
 import pickle
 import typing
 
-import mdtraj
 import numpy
 import openff.toolkit
 import openmm.unit
@@ -167,6 +166,8 @@ def _load_trajectory(
     replica_to_state_idx: numpy.ndarray,
     state_idx: int = 0,
 ) -> tuple[numpy.ndarray, numpy.ndarray | None]:
+    import mdtraj
+
     n_states = len(list(trajectory_dir.glob("r*.dcd")))
 
     topology_omm = smee.converters.convert_to_openmm_topology(system)

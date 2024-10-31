@@ -32,7 +32,7 @@ def load_systems(solute: str, solvent: str):
 @pytest.mark.fe
 def test_fe_ops(tmp_cwd):
     # taken from a run on commit 7915d1e323318d2314a8b0322e7f44968c660c21
-    expected_dg = torch.tensor(-3.8).double()
+    expected_dg = torch.tensor(-3.8262).double()
     expected_dg_dtheta = torch.tensor(
         [
             [1.0288e01],
