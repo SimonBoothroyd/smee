@@ -266,6 +266,11 @@ def _load_samples(
     u_kn = numpy.hstack(u_kn_per_k)
     n_k = numpy.array([len(uncorrelated_frames)] * u_kn.shape[0])
 
+    n_expected_frames = int(u_kn.shape[1] // len(u_kn))
+
+    assert len(xyz_0) == n_expected_frames
+    assert box_0 is None or len(box_0) == n_expected_frames
+
     return (
         system.to(device),
         beta,
