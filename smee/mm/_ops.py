@@ -652,10 +652,7 @@ class _ComputeDGSolv(torch.autograd.Function):
     def backward(ctx, *grad_outputs):
         dg_d_theta_0 = ctx.saved_tensors
 
-        grads = [
-            None if v is None else v @ grad_outputs[0].reshape(-1, 1)
-            for v in dg_d_theta_0
-        ]
+        grads = [None if v is None else v * grad_outputs[0] for v in dg_d_theta_0]
         return tuple([None] + grads)
 
 
@@ -701,10 +698,7 @@ class _ReweightDGSolv(torch.autograd.Function):
     def backward(ctx, *grad_outputs):
         dg_d_theta_0 = ctx.saved_tensors
 
-        grads = [
-            None if v is None else v @ grad_outputs[0].reshape(-1, 1)
-            for v in dg_d_theta_0
-        ]
+        grads = [None if v is None else v * grad_outputs[0] for v in dg_d_theta_0]
         return tuple([None] + grads)
 
 

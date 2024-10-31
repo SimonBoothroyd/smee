@@ -11,6 +11,7 @@ from rdkit import Chem
 import smee
 import smee.converters
 import smee.mm
+import smee.mm._utils
 import smee.tests.utils
 from smee.mm._mm import (
     _apply_hmr,
@@ -20,7 +21,6 @@ from smee.mm._mm import (
     _get_platform,
     _get_state_log,
     _run_simulation,
-    _topology_to_rdkit,
     _topology_to_xyz,
     generate_system_coords,
     simulate,
@@ -133,7 +133,7 @@ def test_topology_to_rdkit():
         constraints=None,
     )
 
-    mol = _topology_to_rdkit(topology)
+    mol = smee.mm._utils.topology_to_rdkit(topology)
     assert Chem.MolToSmiles(mol) == "[H]C([H])[O-].[H]O[H]"
 
     atomic_nums = [atom.GetAtomicNum() for atom in mol.GetAtoms()]
@@ -153,7 +153,7 @@ def test_topology_to_xyz(mocker):
 
     mock_molecule.AddConformer(conformer)
 
-    mocker.patch("smee.mm._mm._topology_to_rdkit", return_value=mock_molecule)
+    mocker.patch("smee.mm._utils.topology_to_rdkit", return_value=mock_molecule)
 
     interchange = openff.interchange.Interchange.from_smirnoff(
         openff.toolkit.ForceField("tip4p_fb.offxml"),

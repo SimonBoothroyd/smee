@@ -30,6 +30,8 @@ dependencies:
   - packmol
   - numpy
   - msgpack-python
+  - mdtraj
+  - absolv >=1.0.1
 
   # Examples
   - jupyter
