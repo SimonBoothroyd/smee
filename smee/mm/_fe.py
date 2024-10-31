@@ -276,7 +276,7 @@ def _load_samples(
         beta,
         pressure,
         torch.tensor(u_kn, device=device, dtype=dtype),
-        torch.tensor(n_k, device=device, dtype=dtype),
+        torch.tensor(n_k, device=device),
         torch.tensor(xyz_0, device=device, dtype=dtype),
         torch.tensor(box_0, device=device, dtype=dtype) if box_0 is not None else None,
     )
