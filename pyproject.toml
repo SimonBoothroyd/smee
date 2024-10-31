@@ -28,7 +28,7 @@ select = ["B","C","E","F","W","B9"]
 convention = "google"
 
 [tool.coverage.run]
-omit = ["**/tests/*"]
+omit = ["**/tests/*", "smee/mm/_fe.py"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -39,3 +39,9 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "if typing.TYPE_CHECKING:",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "fe: run free energy regression tests",
+]
+addopts = "-m 'not fe'"

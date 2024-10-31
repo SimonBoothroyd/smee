@@ -31,6 +31,10 @@ dependencies:
   - numpy
   - msgpack-python
 
+  # FE simulations
+  - mdtraj
+  - absolv >=1.0.1
+
   # Examples
   - jupyter
   - nbconvert
