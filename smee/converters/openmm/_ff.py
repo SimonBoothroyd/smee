@@ -25,6 +25,10 @@ _ANGSTROM_TO_NM = 1.0 / 10.0
 def force_field_converter(potential_type: str, energy_expression: str):
     """A decorator used to flag a function as being able to convert a tensor potential
     of a given type and energy function to an OpenMM force field XML representation.
+
+    The decorated function should take a `smee.TensorPotential`, and
+    the associated `smee.ParameterMap` and list of atom types, and return a
+    ``xml.etree.ElementTree`` representing the potential.
     """
 
     def _openmm_converter_inner(func):
