@@ -10,9 +10,7 @@ from smee.converters.openmm import (
     convert_to_openmm_force,
     convert_to_openmm_system,
     convert_to_openmm_topology,
-)
-from smee.converters.openmm import (
-    force_field_converter as openmm_force_field_converter,
+    ffxml_converter,
 )
 
 __all__ = [
@@ -22,6 +20,6 @@ __all__ = [
     "convert_to_openmm_topology",
     "convert_to_openmm_ffxml",
     "convert_to_openmm_force",
-    "openmm_force_field_converter",
+    "ffxml_converter",
     "smirnoff_parameter_converter",
 ]

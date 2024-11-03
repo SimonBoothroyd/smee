@@ -22,7 +22,7 @@ _CONVERTER_FUNCTIONS: dict[
 _ANGSTROM_TO_NM = 1.0 / 10.0
 
 
-def force_field_converter(potential_type: str, energy_expression: str):
+def ffxml_converter(potential_type: str, energy_expression: str):
     """A decorator used to flag a function as being able to convert a tensor potential
     of a given type and energy function to an OpenMM force field XML representation.
 
@@ -183,7 +183,7 @@ def default_valence_converter(
     return force_xml
 
 
-@force_field_converter(smee.PotentialType.VDW, smee.EnergyFn.VDW_LJ)
+@ffxml_converter(smee.PotentialType.VDW, smee.EnergyFn.VDW_LJ)
 def convert_lj_force(
     pot: smee.TensorPotential, param_map: smee.NonbondedParameterMap, types: list[str]
 ) -> ElementTree.Element:
@@ -223,7 +223,7 @@ def convert_lj_force(
     return force_xml
 
 
-@force_field_converter(smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB)
+@ffxml_converter(smee.PotentialType.ELECTROSTATICS, smee.EnergyFn.COULOMB)
 def convert_electrostatics_force(
     pot: smee.TensorPotential, param_map: smee.NonbondedParameterMap, types: list[str]
 ) -> ElementTree.Element:
@@ -257,7 +257,7 @@ def convert_electrostatics_force(
     return force_xml
 
 
-@force_field_converter(smee.PotentialType.BONDS, smee.EnergyFn.BOND_HARMONIC)
+@ffxml_converter(smee.PotentialType.BONDS, smee.EnergyFn.BOND_HARMONIC)
 def convert_bond_potential(
     pot: smee.TensorPotential, param_map: smee.ValenceParameterMap, types: list[str]
 ):
@@ -266,7 +266,7 @@ def convert_bond_potential(
     )
 
 
-@force_field_converter(smee.PotentialType.ANGLES, smee.EnergyFn.ANGLE_HARMONIC)
+@ffxml_converter(smee.PotentialType.ANGLES, smee.EnergyFn.ANGLE_HARMONIC)
 def convert_angle_potential(
     pot: smee.TensorPotential, param_map: smee.ValenceParameterMap, types: list[str]
 ):
@@ -275,10 +275,8 @@ def convert_angle_potential(
     )
 
 
-@force_field_converter(smee.PotentialType.PROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE)
-@force_field_converter(
-    smee.PotentialType.IMPROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE
-)
+@ffxml_converter(smee.PotentialType.PROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE)
+@ffxml_converter(smee.PotentialType.IMPROPER_TORSIONS, smee.EnergyFn.TORSION_COSINE)
 def convert_torsion_potential(
     pot: smee.TensorPotential, param_map: smee.ValenceParameterMap, types: list[str]
 ):
