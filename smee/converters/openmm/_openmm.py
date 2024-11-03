@@ -235,7 +235,7 @@ def convert_to_openmm_topology(
     """Convert a ``smee`` system to an OpenMM topology.
 
     Notes:
-        Virtual sites are given the element symbol "X" and atomic number 82.
+        Virtual sites are given the name "X{i}".
 
     Args:
         system: The system to convert.
@@ -258,7 +258,7 @@ def convert_to_openmm_topology(
             int(v) for v in topology.atomic_nums
         ) == [1, 1, 8]
 
-        residue_name = "WAT" if is_water else "UNK"
+        residue_name = "HOH" if is_water else "UNK"
 
         for _ in range(n_copies):
             residue = omm_topology.addResidue(residue_name, chain)
@@ -277,10 +277,8 @@ def convert_to_openmm_topology(
                 )
                 atoms[i] = omm_topology.addAtom(name, element, residue)
 
-            for _ in range(topology.n_v_sites):
-                omm_topology.addAtom(
-                    "X", openmm.app.Element.getByAtomicNumber(82), residue
-                )
+            for i in range(topology.n_v_sites):
+                omm_topology.addAtom(f"X{i + 1}", None, residue)
 
             for bond_idxs, bond_order in zip(
                 topology.bond_idxs, topology.bond_orders, strict=True

@@ -312,7 +312,7 @@ def test_convert_to_openmm_topology():
     assert openmm_topology.getNumResidues() == 3  # 1 methane, 2 water
 
     residue_names = [residue.name for residue in openmm_topology.residues()]
-    assert residue_names == ["UNK", "WAT", "WAT"]
+    assert residue_names == ["UNK", "HOH", "HOH"]
 
     atom_names = [atom.name for atom in openmm_topology.atoms()]
     expected_atom_names = [
