@@ -616,7 +616,7 @@ def reweight_ensemble_averages(
 class _ComputeDGSolv(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *theta: torch.Tensor):
-        from smee.mm._fe import compute_dg_and_grads
+        from smee.mm._fe import compute_dg_and_grads, compute_grads_solvent
 
         force_field = _unpack_force_field(
             theta,
@@ -638,11 +638,19 @@ class _ComputeDGSolv(torch.autograd.Function):
             force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
         )
 
+        if (kwargs["fep_dir"] / "solvent-a" / "pure.pt").exists():
+            raise NotImplementedError("solvent-a is expected to be vacuum")
+
+        dg_solv_b_d_theta = compute_grads_solvent(
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
+        )
+
         dg = dg_a - dg_b
         dg_d_theta = [None] * len(theta)
 
         for grad_idx, orig_idx in enumerate(needs_grad):
             dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
+            dg_d_theta[orig_idx] += dg_solv_b_d_theta[grad_idx]
 
         ctx.save_for_backward(*dg_d_theta)
 
@@ -659,7 +667,7 @@ class _ComputeDGSolv(torch.autograd.Function):
 class _ReweightDGSolv(torch.autograd.Function):
     @staticmethod
     def forward(ctx, kwargs, *theta: torch.Tensor):
-        from smee.mm._fe import reweight_dg_and_grads
+        from smee.mm._fe import reweight_dg_and_grads, reweight_grads_solvent
 
         force_field = _unpack_force_field(
             theta,
@@ -684,15 +692,23 @@ class _ReweightDGSolv(torch.autograd.Function):
             force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
         )
 
+        if (kwargs["fep_dir"] / "solvent-a" / "pure.pt").exists():
+            raise NotImplementedError("solvent-a is expected to be vacuum")
+
+        dg_solv_b_d_theta, n_effective_solv = reweight_grads_solvent(
+            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
+        )
+
         dg = -dg_a + dg_0 + dg_b
         dg_d_theta = [None] * len(theta)
 
         for grad_idx, orig_idx in enumerate(needs_grad):
             dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
+            dg_d_theta[orig_idx] += dg_solv_b_d_theta[grad_idx]
 
         ctx.save_for_backward(*dg_d_theta)
 
-        return dg, min(n_effective_a, n_effective_b)
+        return dg, min(n_effective_a, n_effective_b, n_effective_solv)
 
     @staticmethod
     def backward(ctx, *grad_outputs):
@@ -708,9 +724,8 @@ def compute_dg_solv(
     """Computes ∆G_solv from existing FEP data.
 
     Notes:
-        Currently the gradient of the pure solvent is not computed. This will mean the
-        gradient w.r.t. water parameters currently will be incorrect when using this
-        to compute hydration free energies.
+        It is assumed that FEP data was generated using the same force field as
+        ``force_field``, and using ``generate_dg_solv_data``
 
     Args:
         force_field: The force field used to generate the FEP data.
@@ -743,9 +758,7 @@ def reweight_dg_solv(
     """Computes ∆G_solv by re-weighting existing FEP data.
 
     Notes:
-        Currently the gradient of the pure solvent is not computed. This will mean the
-        gradient w.r.t. water parameters currently will be incorrect when using this
-        to compute hydration free energies.
+        It is assumed that FEP data was generated using ``generate_dg_solv_data``.
 
     Args:
         force_field: The force field to reweight to.
