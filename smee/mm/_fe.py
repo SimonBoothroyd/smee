@@ -326,19 +326,23 @@ def compute_dg_and_grads(
     system, beta, _, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir, device, dtype)
     assert (box_0 is not None) == system.is_periodic
 
-    mbar = pymbar.MBAR(u_kn.detach().cpu().numpy(), n_k.detach().cpu().numpy())
+    mbar = pymbar.MBAR(
+        u_kn.detach().cpu().numpy(),
+        n_k.detach().cpu().numpy(),
+        solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
+    )
 
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
     dg = (f_i[-1] - f_i[0]) / beta
 
-    with torch.enable_grad():
-        energy = _compute_energy(system, force_field, xyz_0, box_0)
-        grads = ()
+    grads = ()
 
-        if len(theta) > 0:
+    if len(theta) > 0:
+        with torch.enable_grad():
+            energy = _compute_energy(system, force_field, xyz_0, box_0)
             grads = torch.autograd.grad(energy.mean(), theta)
 
-    return smee.utils.tensor_like(dg, energy), grads
+    return smee.utils.tensor_like(dg, force_field.potentials[0].parameters), grads
 
 
 def reweight_dg_and_grads(
@@ -370,7 +374,11 @@ def reweight_dg_and_grads(
         u_kn = numpy.stack([u_0_old.cpu().numpy(), u_0_new.cpu().numpy()])
         n_k = numpy.array([n_k[0].cpu(), 0])
 
-        mbar = pymbar.MBAR(u_kn, n_k)
+        mbar = pymbar.MBAR(
+            u_kn,
+            n_k,
+            solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
+        )
 
         n_eff = mbar.compute_effective_sample_number().min().item()
 
