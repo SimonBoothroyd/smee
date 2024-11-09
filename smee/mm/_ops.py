@@ -650,7 +650,7 @@ class _ComputeDGSolv(torch.autograd.Function):
 
         for grad_idx, orig_idx in enumerate(needs_grad):
             dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
-            dg_d_theta[orig_idx] += dg_solv_b_d_theta[grad_idx]
+            dg_d_theta[orig_idx] -= dg_solv_b_d_theta[grad_idx]
 
         ctx.save_for_backward(*dg_d_theta)
 
@@ -704,7 +704,7 @@ class _ReweightDGSolv(torch.autograd.Function):
 
         for grad_idx, orig_idx in enumerate(needs_grad):
             dg_d_theta[orig_idx] = dg_d_theta_b[grad_idx] - dg_d_theta_a[grad_idx]
-            dg_d_theta[orig_idx] += dg_solv_b_d_theta[grad_idx]
+            dg_d_theta[orig_idx] -= dg_solv_b_d_theta[grad_idx]
 
         ctx.save_for_backward(*dg_d_theta)
 
