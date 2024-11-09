@@ -8,6 +8,7 @@ import typing
 import numpy
 import openff.toolkit
 import openmm.unit
+import parmed.openmm
 import torch
 
 import smee
@@ -51,6 +52,7 @@ def generate_dg_solv_data(
     import absolv.config
     import absolv.runner
     import femto.md.config
+    import femto.md.system
 
     output_dir = pathlib.Path.cwd() if output_dir is None else output_dir
 
@@ -123,7 +125,7 @@ def generate_dg_solv_data(
         }
 
         (output_dir / phase).mkdir(exist_ok=True, parents=True)
-        (output_dir / phase / "system.pkl").write_bytes(pickle.dumps(state))
+        (output_dir / phase / "state.pkl").write_bytes(pickle.dumps(state))
 
     def _parameterize(
         top, coords, phase: typing.Literal["solvent-a", "solvent-b"]
@@ -133,6 +135,16 @@ def generate_dg_solv_data(
     prepared_system_a, prepared_system_b = absolv.runner.setup(
         system_config, config, _parameterize
     )
+
+    femto.md.system.apply_hmr(
+        prepared_system_a.system,
+        parmed.openmm.load_topology(prepared_system_a.topology.to_openmm()),
+    )
+    femto.md.system.apply_hmr(
+        prepared_system_b.system,
+        parmed.openmm.load_topology(prepared_system_a.topology.to_openmm()),
+    )
+
     return absolv.runner.run_eq(
         config, prepared_system_a, prepared_system_b, "CUDA", output_dir, parallel=True
     )
