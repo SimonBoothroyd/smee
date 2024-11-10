@@ -54,7 +54,9 @@ def test_fe_ops(tmp_cwd):
     output_dir = pathlib.Path("CCO")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    smee.mm.generate_dg_solv_data(top_solute, top_solvent, ff, output_dir=output_dir)
+    smee.mm.generate_dg_solv_data(
+        top_solute, None, top_solvent, ff, output_dir=output_dir
+    )
 
     params = ff.potentials_by_type["Electrostatics"].parameters
     params.requires_grad_(True)
