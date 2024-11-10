@@ -502,6 +502,11 @@ def test_reweight_dg_solv_error(mocker, tmp_path, mock_argon_tensors):
             (torch.tensor(5.0).double(), (torch.tensor([[6.0, 7.0]]).double(),), 8.0),
         ],
     )
+    mocker.patch(
+        "smee.mm._fe.reweight_grads_solvent",
+        side_effect=[((torch.tensor([[9.0, 10.0]]).double(),), 11.0)],
+    )
+
     dg_0 = torch.tensor(-3.0).double()
 
     with pytest.raises(smee.mm.NotEnoughSamplesError):
