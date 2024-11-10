@@ -396,7 +396,7 @@ def compute_dg_and_grads(
 
         if (output_dir / "pure.pt").exists():
             grads_solvent = _compute_grads_solvent(force_field, theta, output_dir)
-            grads = tuple(g + g_s for g, g_s in zip(grads, grads_solvent, strict=True))
+            grads = tuple(g - g_s for g, g_s in zip(grads, grads_solvent, strict=True))
 
     return dg, grads
 
