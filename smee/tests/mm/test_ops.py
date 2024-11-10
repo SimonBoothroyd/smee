@@ -448,16 +448,12 @@ def test_compute_dg_solv(mocker, tmp_path, mock_argon_tensors):
             (torch.tensor(4.0).double(), (torch.tensor([[5.0, 6.0]]).double(),)),
         ],
     )
-    mocker.patch(
-        "smee.mm._fe.compute_grads_solvent",
-        side_effect=[(torch.tensor([[8.0, 9.0]]).double(),)],
-    )
 
     dg = smee.mm.compute_dg_solv(tensor_ff, tmp_path)
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     assert torch.isclose(dg, torch.tensor(-3.0).double())
-    assert torch.allclose(dg_dtheta, torch.tensor([[-5.0, -6.0]]).double())
+    assert torch.allclose(dg_dtheta, torch.tensor([[3.0, 3.0]]).double())
 
 
 def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
@@ -473,10 +469,6 @@ def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
             (torch.tensor(5.0).double(), (torch.tensor([[6.0, 7.0]]).double(),), 8.0),
         ],
     )
-    mocker.patch(
-        "smee.mm._fe.reweight_grads_solvent",
-        side_effect=[((torch.tensor([[9.0, 10.0]]).double(),), 11.0)],
-    )
 
     dg_0 = torch.tensor(-3.0).double()
 
@@ -484,7 +476,7 @@ def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     assert torch.isclose(dg, torch.tensor(1.0).double())
-    assert torch.allclose(dg_dtheta, torch.tensor([[-5.0, -6.0]]).double())
+    assert torch.allclose(dg_dtheta, torch.tensor([[4.0, 4.0]]).double())
 
     assert n_eff == 4.0
 
@@ -501,10 +493,6 @@ def test_reweight_dg_solv_error(mocker, tmp_path, mock_argon_tensors):
             (torch.tensor(1.0).double(), (torch.tensor([[2.0, 3.0]]).double(),), 4.0),
             (torch.tensor(5.0).double(), (torch.tensor([[6.0, 7.0]]).double(),), 8.0),
         ],
-    )
-    mocker.patch(
-        "smee.mm._fe.reweight_grads_solvent",
-        side_effect=[((torch.tensor([[9.0, 10.0]]).double(),), 11.0)],
     )
 
     dg_0 = torch.tensor(-3.0).double()
