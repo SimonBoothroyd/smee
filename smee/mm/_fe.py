@@ -346,6 +346,23 @@ def _compute_energy(
     return energy
 
 
+def _compute_grads_solvent(
+    force_field: smee.TensorForceField,
+    theta: tuple[torch.Tensor, ...],
+    output_dir: pathlib.Path,
+) -> tuple[torch.Tensor, ...]:
+    device = force_field.potentials[0].parameters.device
+
+    system, xyz, box, *_ = torch.load(output_dir / "pure.pt")
+    system.to(device)
+
+    with torch.enable_grad():
+        energy = _compute_energy(system, force_field, xyz, box)
+        grads = torch.autograd.grad(energy.mean(), theta)
+
+    return grads
+
+
 def compute_dg_and_grads(
     force_field: smee.TensorForceField,
     theta: tuple[torch.Tensor, ...],
@@ -366,66 +383,47 @@ def compute_dg_and_grads(
     )
 
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
+
     dg = (f_i[-1] - f_i[0]) / beta
+    dg = smee.utils.tensor_like(dg, force_field.potentials[0].parameters)
 
-    grads = ()
+    if len(theta) == 0:
+        return dg, ()
 
-    if len(theta) > 0:
-        with torch.enable_grad():
-            energy = _compute_energy(system, force_field, xyz_0, box_0)
-            grads = torch.autograd.grad(energy.mean(), theta)
+    with torch.enable_grad():
+        energy = _compute_energy(system, force_field, xyz_0, box_0)
+        grads = torch.autograd.grad(energy.mean(), theta)
 
-    return smee.utils.tensor_like(dg, force_field.potentials[0].parameters), grads
+        if (output_dir / "pure.pt").exists():
+            grads_solvent = _compute_grads_solvent(force_field, theta, output_dir)
+            grads = tuple(g + g_s for g, g_s in zip(grads, grads_solvent, strict=True))
+
+    return dg, grads
 
 
-def compute_grads_solvent(
+def _reweight_dg_and_grads(
+    system: smee.TensorSystem,
     force_field: smee.TensorForceField,
+    xyz: torch.Tensor,
+    box: torch.Tensor | None,
+    u_0: torch.Tensor,
+    n_0: torch.Tensor,
+    beta: float,
+    pressure: float | None,
     theta: tuple[torch.Tensor, ...],
-    output_dir: pathlib.Path,
-) -> tuple[torch.Tensor, ...]:
-    device = force_field.potentials[0].parameters.device
-
-    system, xyz, box, *_ = torch.load(output_dir / "pure.pt")
-    system.to(device)
-
-    grads = ()
-
-    if len(theta) > 0:
-        with torch.enable_grad():
-            energy = _compute_energy(system, force_field, xyz, box)
-            grads = torch.autograd.grad(energy.mean(), theta)
-
-    return grads
-
-
-def reweight_dg_and_grads(
-    force_field: smee.TensorForceField,
-    theta: tuple[torch.Tensor, ...],
-    output_dir: pathlib.Path,
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], float]:
     import pymbar
 
-    device = force_field.potentials[0].parameters.device
-    dtype = force_field.potentials[0].parameters.dtype
-
-    system, beta, pressure, u_kn, n_k, xyz_0, box_0 = _load_samples(
-        output_dir, device, dtype
-    )
-    assert (box_0 is not None) == system.is_periodic
-    assert (box_0 is not None) == (pressure is not None)
-
-    u_0_old = u_kn[0, : n_k[0]]
-
     with torch.enable_grad():
-        energy_0 = _compute_energy(system, force_field, xyz_0, box_0)
+        energy_new = _compute_energy(system, force_field, xyz, box)
 
-        u_0_new = energy_0.detach().clone() * beta
+        u_new = energy_new.detach().clone() * beta
 
         if pressure is not None:
-            u_0_new += pressure * torch.det(box_0) * beta
+            u_new += pressure * torch.det(box) * beta
 
-        u_kn = numpy.stack([u_0_old.cpu().numpy(), u_0_new.cpu().numpy()])
-        n_k = numpy.array([n_k[0].cpu(), 0])
+        u_kn = numpy.stack([u_0.detach().cpu().numpy(), u_new.detach().cpu().numpy()])
+        n_k = numpy.array([n_0.detach().cpu().numpy().item(), 0])
 
         mbar = pymbar.MBAR(
             u_kn,
@@ -436,52 +434,9 @@ def reweight_dg_and_grads(
         n_eff = mbar.compute_effective_sample_number().min().item()
 
         f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
+
         dg = (f_i[-1] - f_i[0]) / beta
-
-        weights = smee.utils.tensor_like(mbar.W_nk[:, 1], energy_0)
-        grads = ()
-
-        if len(theta) > 0:
-            grads = torch.autograd.grad((energy_0 * weights).sum(), theta)
-
-    return smee.utils.tensor_like(dg, energy_0), grads, n_eff
-
-
-def reweight_grads_solvent(
-    force_field: smee.TensorForceField,
-    theta: tuple[torch.Tensor, ...],
-    output_dir: pathlib.Path,
-) -> tuple[tuple[torch.Tensor, ...], float]:
-    import pymbar
-
-    device = force_field.potentials[0].parameters.device
-
-    system, xyz, box, beta, pressure, energy_old = torch.load(output_dir / "pure.pt")
-    system.to(device)
-
-    u_old = energy_old.detach().clone() * beta
-
-    if pressure is not None:
-        u_old += pressure * torch.det(box) * beta
-
-    with torch.enable_grad():
-        energy_new = _compute_energy(system, force_field, xyz, box)
-
-        u_new = energy_new.detach().clone() * beta
-
-        if pressure is not None:
-            u_new += pressure * torch.det(box) * beta
-
-        u_kn = numpy.stack([u_old.cpu().numpy(), u_new.cpu().numpy()])
-        n_k = numpy.array([len(u_old), 0])
-
-        mbar = pymbar.MBAR(
-            u_kn,
-            n_k,
-            solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
-        )
-
-        n_eff = mbar.compute_effective_sample_number().min().item()
+        dg = smee.utils.tensor_like(dg, force_field.potentials[0].parameters)
 
         weights = smee.utils.tensor_like(mbar.W_nk[:, 1], energy_new)
         grads = ()
@@ -489,4 +444,57 @@ def reweight_grads_solvent(
         if len(theta) > 0:
             grads = torch.autograd.grad((energy_new * weights).sum(), theta)
 
-    return grads, n_eff
+    return dg, grads, n_eff
+
+
+def reweight_dg_and_grads(
+    force_field: smee.TensorForceField,
+    theta: tuple[torch.Tensor, ...],
+    output_dir: pathlib.Path,
+) -> tuple[torch.Tensor, tuple[torch.Tensor, ...], float]:
+    device = force_field.potentials[0].parameters.device
+    dtype = force_field.potentials[0].parameters.dtype
+
+    system, beta, pressure, u_kn, n_k, xyz_0, box_0 = _load_samples(
+        output_dir, device, dtype
+    )
+    assert (box_0 is not None) == system.is_periodic
+    assert (box_0 is not None) == (pressure is not None)
+
+    u_0 = u_kn[0, : n_k[0]]
+    n_0 = n_k[0]
+
+    dg, grads, n_eff = _reweight_dg_and_grads(
+        system, force_field, xyz_0, box_0, u_0, n_0, beta, pressure, theta
+    )
+
+    if not (output_dir / "pure.pt").exists():
+        return dg, grads, n_eff
+
+    system_solv, xyz_solv, box_solv, _, _, energy_solv = torch.load(
+        output_dir / "pure.pt"
+    )
+
+    u_0_solv = energy_solv.detach().clone() * beta
+
+    if pressure is not None:
+        u_0_solv += pressure * torch.det(box_solv) * beta
+
+    n_0_solv = smee.utils.tensor_like([len(u_0_solv)], u_0_solv)
+
+    dg_solv, grads_solv, n_eff_solv = _reweight_dg_and_grads(
+        system_solv,
+        force_field,
+        xyz_solv,
+        box_solv,
+        u_0_solv,
+        n_0_solv,
+        beta,
+        pressure,
+        theta,
+    )
+
+    dg -= dg_solv
+    grads = tuple(g - g_s for g, g_s in zip(grads, grads_solv, strict=True))
+
+    return dg, grads, min(n_eff, n_eff_solv)
