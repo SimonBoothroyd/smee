@@ -191,7 +191,7 @@ def generate_dg_solv_data(
     )
     femto.md.system.apply_hmr(
         prepared_system_b.system,
-        parmed.openmm.load_topology(prepared_system_a.topology.to_openmm()),
+        parmed.openmm.load_topology(prepared_system_b.topology.to_openmm()),
     )
 
     result = absolv.runner.run_eq(
