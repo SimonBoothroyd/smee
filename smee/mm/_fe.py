@@ -455,7 +455,7 @@ def compute_dg_and_grads(
     mbar = pymbar.MBAR(
         u_kn.detach().cpu().numpy(),
         n_k.detach().cpu().numpy(),
-        solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
+        solver_protocol="robust",
     )
 
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
@@ -505,11 +505,7 @@ def _reweight_dg_and_grads(
         u_kn = numpy.stack([u_0.detach().cpu().numpy(), u_new.detach().cpu().numpy()])
         n_k = numpy.array([n_0.detach().cpu().numpy().item(), 0])
 
-        mbar = pymbar.MBAR(
-            u_kn,
-            n_k,
-            solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
-        )
+        mbar = pymbar.MBAR(u_kn, n_k, solver_protocol="robust")
 
         n_eff = mbar.compute_effective_sample_number().min().item()
 
