@@ -61,7 +61,7 @@ def test_fe_ops(tmp_cwd):
     params = ff.potentials_by_type["Electrostatics"].parameters
     params.requires_grad_(True)
 
-    dg = smee.mm.compute_dg_solv(ff, output_dir)
+    dg = smee.mm.compute_dg_solv(top_solute, None, top_solvent, ff, output_dir)
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     print("dg COMP", dg, flush=True)
@@ -70,7 +70,9 @@ def test_fe_ops(tmp_cwd):
     assert dg == pytest.approx(expected_dg, abs=0.5)
     assert dg_dtheta == pytest.approx(expected_dg_dtheta, rel=1.1)
 
-    dg, n_eff = smee.mm.reweight_dg_solv(ff, output_dir, dg)
+    dg, n_eff = smee.mm.reweight_dg_solv(
+        top_solute, None, top_solvent, ff, output_dir, dg
+    )
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     print("dg REWEIGHT", dg, flush=True)
