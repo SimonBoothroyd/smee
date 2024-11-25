@@ -549,12 +549,13 @@ def reweight_dg_and_grads(
     if not (output_dir / "pure.pkl").exists():
         return dg, grads, n_eff
 
-    n_solvent = int(xyz_0.shape[1] // solvent.n_particles)
-    assert n_solvent * solvent.n_particles == xyz_0.shape[1]
-
     xyz_solv, box_solv, energy_solv = pickle.loads(
         (output_dir / "pure.pkl").read_bytes()
     )
+
+    n_solvent = int(xyz_solv.shape[1] // solvent.n_particles)
+    assert n_solvent * solvent.n_particles == xyz_solv.shape[1]
+
     system_solv = smee.TensorSystem([solvent], [n_solvent], is_periodic=True).to(device)
 
     u_0_solv = energy_solv.detach().clone() * beta
