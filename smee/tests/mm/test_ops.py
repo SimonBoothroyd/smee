@@ -436,7 +436,7 @@ def test_reweight_ensemble_averages(mocker, tmp_path, mock_argon_tensors):
 
 
 def test_compute_dg_solv(mocker, tmp_path, mock_argon_tensors):
-    tensor_ff, _ = mock_argon_tensors
+    tensor_ff, tensor_top = mock_argon_tensors
 
     params = tensor_ff.potentials_by_type["vdW"].parameters
     params.requires_grad = True
@@ -449,7 +449,7 @@ def test_compute_dg_solv(mocker, tmp_path, mock_argon_tensors):
         ],
     )
 
-    dg = smee.mm.compute_dg_solv(tensor_ff, tmp_path)
+    dg = smee.mm.compute_dg_solv(tensor_top, None, tensor_top, tensor_ff, tmp_path)
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     assert torch.isclose(dg, torch.tensor(-3.0).double())
@@ -457,7 +457,7 @@ def test_compute_dg_solv(mocker, tmp_path, mock_argon_tensors):
 
 
 def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
-    tensor_ff, _ = mock_argon_tensors
+    tensor_ff, tensor_top = mock_argon_tensors
 
     params = tensor_ff.potentials_by_type["vdW"].parameters
     params.requires_grad = True
@@ -472,7 +472,9 @@ def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
 
     dg_0 = torch.tensor(-3.0).double()
 
-    dg, n_eff = smee.mm.reweight_dg_solv(tensor_ff, tmp_path, dg_0, 3)
+    dg, n_eff = smee.mm.reweight_dg_solv(
+        tensor_top, None, tensor_top, tensor_ff, tmp_path, dg_0, 3
+    )
     dg_dtheta = torch.autograd.grad(dg, params)[0]
 
     assert torch.isclose(dg, torch.tensor(1.0).double())
@@ -482,7 +484,7 @@ def test_reweight_dg_solv(mocker, tmp_path, mock_argon_tensors):
 
 
 def test_reweight_dg_solv_error(mocker, tmp_path, mock_argon_tensors):
-    tensor_ff, _ = mock_argon_tensors
+    tensor_ff, tensor_top = mock_argon_tensors
 
     params = tensor_ff.potentials_by_type["vdW"].parameters
     params.requires_grad = True
@@ -498,4 +500,6 @@ def test_reweight_dg_solv_error(mocker, tmp_path, mock_argon_tensors):
     dg_0 = torch.tensor(-3.0).double()
 
     with pytest.raises(smee.mm.NotEnoughSamplesError):
-        smee.mm.reweight_dg_solv(tensor_ff, tmp_path, dg_0, 100)
+        smee.mm.reweight_dg_solv(
+            tensor_top, None, tensor_top, tensor_ff, tmp_path, dg_0, 100
+        )

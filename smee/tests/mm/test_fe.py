@@ -61,20 +61,22 @@ def test_fe_ops(tmp_cwd):
     params = ff.potentials_by_type["Electrostatics"].parameters
     params.requires_grad_(True)
 
-    dg = smee.mm.compute_dg_solv(ff, output_dir)
-    dg_dtheta = torch.autograd.grad(dg, params)[0]
+    dg_comp = smee.mm.compute_dg_solv(top_solute, None, top_solvent, ff, output_dir)
+    dg_comp_dtheta = torch.autograd.grad(dg_comp, params)[0]
 
-    print("dg COMP", dg, flush=True)
-    print("dg_dtheta COMP", dg_dtheta, dg, flush=True)
+    print("dg COMP", dg_comp, flush=True)
+    print("dg_dtheta COMP", dg_comp_dtheta, dg_comp, flush=True)
 
-    assert dg == pytest.approx(expected_dg, abs=0.5)
-    assert dg_dtheta == pytest.approx(expected_dg_dtheta, rel=1.1)
+    dg_rw, n_eff = smee.mm.reweight_dg_solv(
+        top_solute, None, top_solvent, ff, output_dir, dg_comp
+    )
+    dg_rw_dtheta = torch.autograd.grad(dg_rw, params)[0]
 
-    dg, n_eff = smee.mm.reweight_dg_solv(ff, output_dir, dg)
-    dg_dtheta = torch.autograd.grad(dg, params)[0]
+    print("dg REWEIGHT", dg_rw, flush=True)
+    print("dg_dtheta REWEIGHT", dg_rw_dtheta, dg_rw, flush=True)
 
-    print("dg REWEIGHT", dg, flush=True)
-    print("dg_dtheta REWEIGHT", dg_dtheta, dg, flush=True)
+    assert dg_comp.detach() == pytest.approx(expected_dg.detach(), abs=0.5)
+    assert dg_comp_dtheta.detach() == pytest.approx(expected_dg_dtheta, rel=1.1)
 
-    assert dg == pytest.approx(expected_dg, abs=0.5)
-    assert dg_dtheta == pytest.approx(expected_dg_dtheta, rel=1.1)
+    assert dg_rw.detach() == pytest.approx(expected_dg.detach(), abs=0.5)
+    assert dg_rw_dtheta.detach() == pytest.approx(expected_dg_dtheta, rel=1.1)

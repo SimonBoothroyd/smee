@@ -10,6 +10,7 @@ import openff.toolkit
 import openmm.unit
 import parmed.openmm
 import torch
+import yaml
 
 import smee
 import smee.converters
@@ -24,14 +25,30 @@ _LOGGER = logging.getLogger(__name__)
 _NM_TO_ANGSTROM = 10.0
 
 
+class _Sample(typing.NamedTuple):
+    system: smee.TensorSystem
+
+    beta: float
+    pressure: float | None
+
+    u_kn: torch.Tensor
+    n_k: torch.Tensor
+
+    xyz: torch.Tensor
+    box: torch.Tensor | None
+
+
 def _extract_pure_solvent(
-    force_field: smee.TensorForceField, output_dir: pathlib.Path
-) -> tuple[smee.TensorSystem, torch.Tensor, torch.Tensor, float, float, torch.Tensor]:
+    solute: smee.TensorTopology,
+    solvent: smee.TensorTopology | None,
+    force_field: smee.TensorForceField,
+    output_dir: pathlib.Path,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     device = force_field.potentials[0].parameters.device
     dtype = force_field.potentials[0].parameters.dtype
 
     system, beta, pressure, u_kn, n_k, xyz, box = _load_samples(
-        output_dir, device, dtype, coord_state_idx=-1
+        solute, solvent, output_dir, device, dtype, coord_state_idx=-1
     )
 
     if len(system.topologies) != 2 or system.n_copies[0] != 1:
@@ -45,7 +62,7 @@ def _extract_pure_solvent(
     )
     energy = _compute_energy(system, force_field, xyz, box)
 
-    return system, xyz, box, beta, pressure, energy
+    return xyz, box, energy
 
 
 def _to_solvent_dict(
@@ -165,16 +182,20 @@ def generate_dg_solv_data(
         if solvent_b is None
         else pressure.value_in_unit(openmm.unit.atmosphere),
     }
+    n_solvent = {
+        "solvent-a": None if solvent_a is None else n_solvent_a,
+        "solvent-b": None if solvent_b is None else n_solvent_b,
+    }
 
-    for phase, topology in topologies.items():
+    for phase in topologies:
         state = {
-            "system": topology,
             "temperature": temperature.value_in_unit(openmm.unit.kelvin),
             "pressure": pressures[phase],
+            "n_solvent": n_solvent[phase],
         }
 
         (output_dir / phase).mkdir(exist_ok=True, parents=True)
-        (output_dir / phase / "state.pkl").write_bytes(pickle.dumps(state))
+        (output_dir / phase / "state.yaml").write_text(yaml.safe_dump(state))
 
     def _parameterize(
         top, coords, phase: typing.Literal["solvent-a", "solvent-b"]
@@ -187,11 +208,11 @@ def generate_dg_solv_data(
 
     femto.md.system.apply_hmr(
         prepared_system_a.system,
-        parmed.openmm.load_topology(prepared_system_a.topology.to_openmm()),
+        parmed.openmm.load_topology(prepared_system_a.topology),
     )
     femto.md.system.apply_hmr(
         prepared_system_b.system,
-        parmed.openmm.load_topology(prepared_system_b.topology.to_openmm()),
+        parmed.openmm.load_topology(prepared_system_b.topology),
     )
 
     result = absolv.runner.run_eq(
@@ -199,11 +220,19 @@ def generate_dg_solv_data(
     )
 
     if solvent_a is not None:
-        solvent_a_output = _extract_pure_solvent(force_field, output_dir / "solvent-a")
-        torch.save(solvent_a_output, output_dir / "solvent-a" / "pure.pt")
+        solvent_a_output = _extract_pure_solvent(
+            solute, solvent_a, force_field, output_dir / "solvent-a"
+        )
+        (output_dir / "solvent-a" / "pure.pkl").write_bytes(
+            pickle.dumps(solvent_a_output)
+        )
     if solvent_b is not None:
-        solvent_b_output = _extract_pure_solvent(force_field, output_dir / "solvent-b")
-        torch.save(solvent_b_output, output_dir / "solvent-b" / "pure.pt")
+        solvent_b_output = _extract_pure_solvent(
+            solute, solvent_b, force_field, output_dir / "solvent-b"
+        )
+        (output_dir / "solvent-b" / "pure.pkl").write_bytes(
+            pickle.dumps(solvent_b_output)
+        )
 
     return result
 
@@ -257,6 +286,7 @@ def _load_trajectory(
             for frame_idx, traj_idx in enumerate(state_idxs)
         ]
     )
+    assert xyz.shape[1] == system.n_particles, "unexpected number of particles."
 
     if trajectories[0].unitcell_vectors is None:
         return xyz, None
@@ -272,24 +302,26 @@ def _load_trajectory(
 
 
 def _load_samples(
+    solute: smee.TensorTopology,
+    solvent: smee.TensorTopology | None,
     output_dir: pathlib.Path,
     device: str | torch.device,
     dtype: torch.dtype,
     coord_state_idx: int = 0,
-) -> tuple[
-    smee.TensorSystem,
-    float,
-    float | None,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor,
-    torch.Tensor | None,
-]:
+) -> _Sample:
     import pyarrow
     import pymbar.timeseries
 
-    state = pickle.loads((output_dir / "state.pkl").read_bytes())
-    system: smee.TensorSystem = state["system"]
+    state = yaml.safe_load((output_dir / "state.yaml").read_text())
+    assert (state["n_solvent"] is None and solvent is None) or (
+        state["n_solvent"] is not None and solvent is not None
+    ), "solvent must be provided if and only if n_solvent is provided."
+
+    system = smee.TensorSystem(
+        [solute, solvent] if solvent is not None else [solute],
+        [1, state["n_solvent"]] if solvent is not None else [1],
+        is_periodic=solvent is not None,
+    )
 
     temperature = state["temperature"] * openmm.unit.kelvin
 
@@ -346,7 +378,7 @@ def _load_samples(
     assert len(xyz_i) == n_expected_frames
     assert box_i is None or len(box_i) == n_expected_frames
 
-    return (
+    return _Sample(
         system.to(device),
         beta,
         pressure,
@@ -376,14 +408,19 @@ def _compute_energy(
 
 
 def _compute_grads_solvent(
+    solvent: smee.TensorTopology,
     force_field: smee.TensorForceField,
     theta: tuple[torch.Tensor, ...],
     output_dir: pathlib.Path,
 ) -> tuple[torch.Tensor, ...]:
     device = force_field.potentials[0].parameters.device
 
-    system, xyz, box, *_ = torch.load(output_dir / "pure.pt")
-    system.to(device)
+    xyz, box, *_ = pickle.loads((output_dir / "pure.pkl").read_bytes())
+
+    n_solvent = int(xyz.shape[1] // solvent.n_particles)
+    assert n_solvent * solvent.n_particles == xyz.shape[1]
+
+    system = smee.TensorSystem([solvent], [n_solvent], is_periodic=True).to(device)
 
     with torch.enable_grad():
         energy = _compute_energy(system, force_field, xyz, box)
@@ -393,22 +430,32 @@ def _compute_grads_solvent(
 
 
 def compute_dg_and_grads(
+    solute: smee.TensorTopology,
+    solvent: smee.TensorTopology | None,
     force_field: smee.TensorForceField,
     theta: tuple[torch.Tensor, ...],
     output_dir: pathlib.Path,
 ) -> tuple[torch.Tensor, tuple[torch.Tensor, ...]]:
+    """
+    Notes:
+        This function assumes that the energy computed using ``force_field`` is the
+        same as the energy computed by the simulation. This function currently makes
+        no attempt to validate this assumption.
+    """
     import pymbar
 
     device = force_field.potentials[0].parameters.device
     dtype = force_field.potentials[0].parameters.dtype
 
-    system, beta, _, u_kn, n_k, xyz_0, box_0 = _load_samples(output_dir, device, dtype)
+    system, beta, _, u_kn, n_k, xyz_0, box_0 = _load_samples(
+        solute, solvent, output_dir, device, dtype
+    )
     assert (box_0 is not None) == system.is_periodic
 
     mbar = pymbar.MBAR(
         u_kn.detach().cpu().numpy(),
         n_k.detach().cpu().numpy(),
-        solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
+        solver_protocol="robust",
     )
 
     f_i = mbar.compute_free_energy_differences()["Delta_f"][0, :]
@@ -423,8 +470,12 @@ def compute_dg_and_grads(
         energy = _compute_energy(system, force_field, xyz_0, box_0)
         grads = torch.autograd.grad(energy.mean(), theta)
 
-        if (output_dir / "pure.pt").exists():
-            grads_solvent = _compute_grads_solvent(force_field, theta, output_dir)
+        if (output_dir / "pure.pkl").exists():
+            assert solvent is not None, "expected solvent to be provided."
+
+            grads_solvent = _compute_grads_solvent(
+                solvent, force_field, theta, output_dir
+            )
             grads = tuple(g - g_s for g, g_s in zip(grads, grads_solvent, strict=True))
 
     return dg, grads
@@ -454,11 +505,7 @@ def _reweight_dg_and_grads(
         u_kn = numpy.stack([u_0.detach().cpu().numpy(), u_new.detach().cpu().numpy()])
         n_k = numpy.array([n_0.detach().cpu().numpy().item(), 0])
 
-        mbar = pymbar.MBAR(
-            u_kn,
-            n_k,
-            solver_protocol=[{"method": "adaptive", "options": {"min_sc_iter": 0}}],
-        )
+        mbar = pymbar.MBAR(u_kn, n_k, solver_protocol="robust")
 
         n_eff = mbar.compute_effective_sample_number().min().item()
 
@@ -477,6 +524,8 @@ def _reweight_dg_and_grads(
 
 
 def reweight_dg_and_grads(
+    solute: smee.TensorTopology,
+    solvent: smee.TensorTopology | None,
     force_field: smee.TensorForceField,
     theta: tuple[torch.Tensor, ...],
     output_dir: pathlib.Path,
@@ -485,7 +534,7 @@ def reweight_dg_and_grads(
     dtype = force_field.potentials[0].parameters.dtype
 
     system, beta, pressure, u_kn, n_k, xyz_0, box_0 = _load_samples(
-        output_dir, device, dtype
+        solute, solvent, output_dir, device, dtype
     )
     assert (box_0 is not None) == system.is_periodic
     assert (box_0 is not None) == (pressure is not None)
@@ -497,12 +546,17 @@ def reweight_dg_and_grads(
         system, force_field, xyz_0, box_0, u_0, n_0, beta, pressure, theta
     )
 
-    if not (output_dir / "pure.pt").exists():
+    if not (output_dir / "pure.pkl").exists():
         return dg, grads, n_eff
 
-    system_solv, xyz_solv, box_solv, _, _, energy_solv = torch.load(
-        output_dir / "pure.pt"
+    xyz_solv, box_solv, energy_solv = pickle.loads(
+        (output_dir / "pure.pkl").read_bytes()
     )
+
+    n_solvent = int(xyz_solv.shape[1] // solvent.n_particles)
+    assert n_solvent * solvent.n_particles == xyz_solv.shape[1]
+
+    system_solv = smee.TensorSystem([solvent], [n_solvent], is_periodic=True).to(device)
 
     u_0_solv = energy_solv.detach().clone() * beta
 

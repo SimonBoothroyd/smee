@@ -632,10 +632,18 @@ class _ComputeDGSolv(torch.autograd.Function):
         theta_grad = tuple(theta[i] for i in needs_grad)
 
         dg_a, dg_d_theta_a = compute_dg_and_grads(
-            force_field, theta_grad, kwargs["fep_dir"] / "solvent-a"
+            kwargs["solute"],
+            kwargs["solvent_a"],
+            force_field,
+            theta_grad,
+            kwargs["fep_dir"] / "solvent-a",
         )
         dg_b, dg_d_theta_b = compute_dg_and_grads(
-            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
+            kwargs["solute"],
+            kwargs["solvent_b"],
+            force_field,
+            theta_grad,
+            kwargs["fep_dir"] / "solvent-b",
         )
 
         dg = dg_a - dg_b
@@ -678,10 +686,18 @@ class _ReweightDGSolv(torch.autograd.Function):
 
         # new FF G - old FF G
         dg_a, dg_d_theta_a, n_effective_a = reweight_dg_and_grads(
-            force_field, theta_grad, kwargs["fep_dir"] / "solvent-a"
+            kwargs["solute"],
+            kwargs["solvent_a"],
+            force_field,
+            theta_grad,
+            kwargs["fep_dir"] / "solvent-a",
         )
         dg_b, dg_d_theta_b, n_effective_b = reweight_dg_and_grads(
-            force_field, theta_grad, kwargs["fep_dir"] / "solvent-b"
+            kwargs["solute"],
+            kwargs["solvent_b"],
+            force_field,
+            theta_grad,
+            kwargs["fep_dir"] / "solvent-b",
         )
 
         dg = -dg_a + dg_0 + dg_b
@@ -703,15 +719,23 @@ class _ReweightDGSolv(torch.autograd.Function):
 
 
 def compute_dg_solv(
-    force_field: smee.TensorForceField, fep_dir: pathlib.Path
+    solute: smee.TensorTopology,
+    solvent_a: smee.TensorTopology | None,
+    solvent_b: smee.TensorTopology | None,
+    force_field: smee.TensorForceField,
+    fep_dir: pathlib.Path,
 ) -> torch.Tensor:
     """Computes ∆G_solv from existing FEP data.
 
     Notes:
         It is assumed that FEP data was generated using the same force field as
-        ``force_field``, and using ``generate_dg_solv_data``
+        ``force_field``, and using ``generate_dg_solv_data``. No attempt is made to
+        validate this assumption, so proceed with extreme caution.
 
     Args:
+        solute: The solute topology.
+        solvent_a: The topology of the solvent in phase A.
+        solvent_b: The topology of the solvent in phase B.
         force_field: The force field used to generate the FEP data.
         fep_dir: The directory containing the FEP data.
 
@@ -724,6 +748,9 @@ def compute_dg_solv(
     )
 
     kwargs = {
+        "solute": solute,
+        "solvent_a": solvent_a,
+        "solvent_b": solvent_b,
         "force_field": force_field,
         "parameter_lookup": parameter_lookup,
         "attribute_lookup": attribute_lookup,
@@ -734,6 +761,9 @@ def compute_dg_solv(
 
 
 def reweight_dg_solv(
+    solute: smee.TensorTopology,
+    solvent_a: smee.TensorTopology | None,
+    solvent_b: smee.TensorTopology | None,
     force_field: smee.TensorForceField,
     fep_dir: pathlib.Path,
     dg_0: torch.Tensor,
@@ -745,6 +775,9 @@ def reweight_dg_solv(
         It is assumed that FEP data was generated using ``generate_dg_solv_data``.
 
     Args:
+        solute: The solute topology.
+        solvent_a: The topology of the solvent in phase A.
+        solvent_b: The topology of the solvent in phase B.
         force_field: The force field to reweight to.
         fep_dir: The directory containing the FEP data.
         dg_0: ∆G_solv [kcal/mol] computed with the force field used to generate the
@@ -764,6 +797,9 @@ def reweight_dg_solv(
     )
 
     kwargs = {
+        "solute": solute,
+        "solvent_a": solvent_a,
+        "solvent_b": solvent_b,
         "force_field": force_field,
         "parameter_lookup": parameter_lookup,
         "attribute_lookup": attribute_lookup,
