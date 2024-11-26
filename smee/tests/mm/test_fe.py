@@ -2,15 +2,34 @@ import pathlib
 
 import openff.interchange
 import openff.toolkit
+import openff.units
+import openmm.unit
 import pytest
 import torch
 
 import smee.converters
 import smee.mm
+import smee.mm._fe
 
 
 def load_systems(solute: str, solvent: str):
     ff_off = openff.toolkit.ForceField("openff-2.0.0.offxml")
+
+    v_site_handler = ff_off.get_parameter_handler("VirtualSites")
+    v_site_handler.add_parameter(
+        {
+            "type": "DivalentLonePair",
+            "match": "once",
+            "smirks": "[*:2][#7:1][*:3]",
+            "distance": 0.4 * openff.units.unit.angstrom,
+            "epsilon": 0.0 * openff.units.unit.kilojoule_per_mole,
+            "sigma": 0.1 * openff.units.unit.nanometer,
+            "outOfPlaneAngle": 0.0 * openff.units.unit.degree,
+            "charge_increment1": 0.0 * openff.units.unit.elementary_charge,
+            "charge_increment2": 0.0 * openff.units.unit.elementary_charge,
+            "charge_increment3": 0.0 * openff.units.unit.elementary_charge,
+        }
+    )
 
     solute_inter = openff.interchange.Interchange.from_smirnoff(
         ff_off,
@@ -27,6 +46,28 @@ def load_systems(solute: str, solvent: str):
     )
 
     return top_solute, top_solvent, ff
+
+
+def test_extract_pure_solvent(tmp_cwd, mocker):
+    top_solute, top_solvent, ff = load_systems("c1ccncc1", "O")
+
+    system = smee.TensorSystem([top_solute, top_solvent], [1, 10], True)
+    xyz, box = smee.mm.generate_system_coords(system, ff)
+
+    xyz = torch.tensor(xyz.value_in_unit(openmm.unit.angstrom)).unsqueeze(0)
+    box = torch.tensor(box.value_in_unit(openmm.unit.angstrom)).unsqueeze(0) * 10.0
+
+    mocker.patch(
+        "smee.mm._fe._load_samples",
+        return_value=(system, None, None, None, None, xyz, box),
+    )
+
+    xyz_solv, _, _ = smee.mm._fe._extract_pure_solvent(
+        top_solute, top_solvent, ff, tmp_cwd
+    )
+
+    assert xyz_solv.shape == (1, 30, 3)
+    assert torch.allclose(xyz_solv, xyz[:, 12:, :])
 
 
 @pytest.mark.fe

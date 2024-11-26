@@ -47,19 +47,16 @@ def _extract_pure_solvent(
     device = force_field.potentials[0].parameters.device
     dtype = force_field.potentials[0].parameters.dtype
 
-    system, beta, pressure, u_kn, n_k, xyz, box = _load_samples(
+    system, _, _, _, _, xyz, box = _load_samples(
         solute, solvent, output_dir, device, dtype, coord_state_idx=-1
     )
 
     if len(system.topologies) != 2 or system.n_copies[0] != 1:
         raise NotImplementedError("only single solute systems are supported.")
 
-    n_solute_atoms = system.topologies[0].n_atoms
-    xyz = xyz[:, n_solute_atoms:, :]
+    xyz = xyz[:, solute.n_particles :, :]
 
-    system = smee.TensorSystem(
-        [system.topologies[1]], [system.n_copies[1]], is_periodic=True
-    )
+    system = smee.TensorSystem([solvent], [system.n_copies[1]], is_periodic=True)
     energy = _compute_energy(system, force_field, xyz, box)
 
     return xyz, box, energy
