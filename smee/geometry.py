@@ -199,27 +199,27 @@ def _build_v_site_coord_frames(
         origin = weighted_coords[:, 0, :]
 
         xy_plane = weighted_coords[:, 1:, :]
-        xy_plane /= torch.norm(xy_plane, dim=-1).unsqueeze(-1)
+        xy_plane_hat = xy_plane / torch.norm(xy_plane, dim=-1).unsqueeze(-1)
 
-        x_hat = xy_plane[:, 0, :]
+        x_hat = xy_plane_hat[:, 0, :]
 
-        z_hat = torch.cross(x_hat, xy_plane[:, 1, :])
-        z_hat_norm = torch.norm(z_hat, dim=-1).unsqueeze(-1)
-        z_hat_norm = torch.where(
-            torch.isclose(z_hat_norm, smee.utils.tensor_like(0.0, other=z_hat_norm)),
-            smee.utils.tensor_like(1.0, other=z_hat_norm),
-            z_hat_norm,
+        z = torch.cross(x_hat, xy_plane_hat[:, 1, :])
+        z_norm = torch.norm(z, dim=-1).unsqueeze(-1)
+        z_norm_clamped = torch.where(
+            torch.isclose(z_norm, smee.utils.tensor_like(0.0, other=z_norm)),
+            smee.utils.tensor_like(1.0, other=z_norm),
+            z_norm,
         )
-        z_hat /= z_hat_norm
+        z_hat = z / z_norm_clamped
 
-        y_hat = torch.cross(z_hat, x_hat)
-        y_hat_norm = torch.norm(y_hat, dim=-1).unsqueeze(-1)
-        y_hat_norm = torch.where(
-            torch.isclose(y_hat_norm, smee.utils.tensor_like(0.0, other=y_hat_norm)),
-            smee.utils.tensor_like(1.0, other=y_hat_norm),
-            y_hat_norm,
+        y = torch.cross(z_hat, x_hat)
+        y_norm = torch.norm(y, dim=-1).unsqueeze(-1)
+        y_norm_clamped = torch.where(
+            torch.isclose(y_norm, smee.utils.tensor_like(0.0, other=y_norm)),
+            smee.utils.tensor_like(1.0, other=y_norm),
+            y_norm,
         )
-        y_hat /= y_hat_norm
+        y_hat = y / y_norm_clamped
 
         stacked_frames[0].append(origin)
         stacked_frames[1].append(x_hat)

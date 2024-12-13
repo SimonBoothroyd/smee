@@ -352,3 +352,29 @@ def test_add_v_site_coords(conformer, v_site_coords, cat_dim, mocker):
 
     assert coordinates.shape == expected_coords.shape
     assert torch.allclose(coordinates, expected_coords)
+
+
+def test_add_v_site_coords_grad(v_site_force_field):
+    """Test that the gradients of functions of v-site coordinates can be computed,
+    and also gradients of the gradients (e.g. loss of forces involving v-sites). This
+    was found to be a bug upstream, yeilding a tensor modified in place error."""
+    molecule = openff.toolkit.Molecule.from_mapped_smiles("[H:2][O:1][H:3]")
+    molecule.generate_conformers(n_conformers=1)
+
+    conformer = torch.tensor(molecule.conformers[0].m_as(unit.angstrom))
+    conformer.requires_grad_(True)
+
+    interchange = openff.interchange.Interchange.from_smirnoff(
+        v_site_force_field, molecule.to_topology()
+    )
+    force_field, [topology] = smee.converters.convert_interchange(interchange)
+
+    assert topology.v_sites is not None
+    assert len(topology.v_sites.keys) > 0
+
+    v_site_coords = add_v_site_coords(topology.v_sites, conformer, force_field)
+
+    grad = torch.autograd.grad(v_site_coords.sum(), conformer, create_graph=True)[0]
+
+    loss = grad.sum()
+    loss.backward()
